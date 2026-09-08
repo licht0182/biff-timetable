@@ -1,33 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
-
-type Screening = {
-  id: string
-  date: string
-  start: string
-  end?: string
-  venue: string
-  gv?: boolean
-  code?: string
-}
-
-type Film = {
-  id: string
-  title: string
-  englishTitle?: string
-  director?: string
-  country?: string
-  section?: string
-  runtime?: number
-  url?: string
-  synopsis?: string
-  language?: string
-  year?: number
-  screenings: Screening[]
-}
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
+import FilmList from './components/FilmList'
+import type { Film, Screening, TicketStatus, TicketStatusMap } from './components/film-types'
 
 type FilmData = { films: Film[]; note?: string; source?: string }
-type TicketStatus = 'none' | 'planned' | 'booked'
-type TicketStatusMap = Record<string, Exclude<TicketStatus, 'none'>>
 type BackupData = {
   version: 1
   exportedAt: string
@@ -186,6 +161,7 @@ function useViewport() {
 export default function App() {
   const viewport = useViewport()
   const importInputRef = useRef<HTMLInputElement>(null)
+  const filmScrollPositionRef = useRef(0)
   const [films, setFilms] = useState<Film[]>([])
   const [dataNote, setDataNote] = useState('')
   const [dataSource, setDataSource] = useState('')
@@ -193,6 +169,7 @@ export default function App() {
   const [favorites, setFavorites] = useState<string[]>(() => readStorage(FAVORITES_KEY, [] as string[]))
   const [ticketStatus, setTicketStatus] = useState<TicketStatusMap>(() => readStorage(TICKET_STATUS_KEY, {} as TicketStatusMap))
   const [query, setQuery] = useState('')
+  const deferredQuery = useDeferredValue(query)
   const [section, setSection] = useState('전체')
   const [dateFilter, setDateFilter] = useState('전체')
   const [venueFilter, setVenueFilter] = useState('전체')
@@ -282,23 +259,22 @@ export default function App() {
     [films],
   )
 
-  function screeningMatchesFilters(screening: Screening) {
+  const visibleScreenings = useCallback((film: Film) => film.screenings.filter((screening) => {
     if (dateFilter !== '전체' && screening.date !== dateFilter) return false
     if (venueFilter !== '전체' && screening.venue !== venueFilter) return false
     if (gvOnly && !screening.gv) return false
     return true
-  }
+  }), [dateFilter, venueFilter, gvOnly])
 
-  function visibleScreenings(film: Film) {
-    return film.screenings.filter(screeningMatchesFilters)
-  }
+  const selectedSet = useMemo(() => new Set(selected), [selected])
+  const favoriteSet = useMemo(() => new Set(favorites), [favorites])
 
   const filteredFilms = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const q = deferredQuery.trim().toLowerCase()
     return films.filter((film) => {
       const haystack = [film.title, film.englishTitle, film.director, film.country, film.section].filter(Boolean).join(' ').toLowerCase()
       if (section !== '전체' && film.section !== section) return false
-      if (favoritesOnly && !favorites.includes(film.id)) return false
+      if (favoritesOnly && !favoriteSet.has(film.id)) return false
       if (q && !haystack.includes(q)) return false
       return film.screenings.some((screening) => {
         if (dateFilter !== '전체' && screening.date !== dateFilter) return false
@@ -307,11 +283,11 @@ export default function App() {
         return true
       })
     })
-  }, [films, query, section, dateFilter, venueFilter, gvOnly, favoritesOnly, favorites])
+  }, [films, deferredQuery, section, dateFilter, venueFilter, gvOnly, favoritesOnly, favoriteSet])
 
   const selectedItems = useMemo<TimetableItem[]>(
-    () => films.flatMap((film) => film.screenings.filter((screening) => selected.includes(screening.id)).map((screening) => ({ film, screening }))),
-    [films, selected],
+    () => films.flatMap((film) => film.screenings.filter((screening) => selectedSet.has(screening.id)).map((screening) => ({ film, screening }))),
+    [films, selectedSet],
   )
   const dates = useMemo(() => Array.from(new Set(selectedItems.map(({ screening }) => screening.date))).sort(), [selectedItems])
   const timetableEndHour = useMemo(() => {
@@ -339,20 +315,20 @@ export default function App() {
     return { axisWidth, headerHeight, hourHeight, gridHeight, dayWidth, dense, ultraDense }
   }, [viewport, dates.length, timetableEndHour])
 
-  function conflictingSelections(film: Film, screening: Screening) {
+  const conflictingSelections = useCallback((film: Film, screening: Screening) => {
     const start = toMinutes(screening.start)
     const end = endMinutes(film, screening)
     return selectedItems.filter(({ film: otherFilm, screening: other }) => {
       if (other.id === screening.id || other.date !== screening.date) return false
       return start < endMinutes(otherFilm, other) && toMinutes(other.start) < end
     })
-  }
+  }, [selectedItems])
 
-  function conflicts(film: Film, screening: Screening) {
-    return conflictingSelections(film, screening).length > 0
-  }
+  const conflicts = useCallback((film: Film, screening: Screening) => (
+    conflictingSelections(film, screening).length > 0
+  ), [conflictingSelections])
 
-  function transitionWarning(film: Film, screening: Screening) {
+  const transitionWarning = useCallback((film: Film, screening: Screening) => {
     if (!userSettings.showTransferWarnings) return null
     const start = toMinutes(screening.start)
     const end = endMinutes(film, screening)
@@ -373,10 +349,10 @@ export default function App() {
       }
     }
     return null
-  }
+  }, [selectedItems, userSettings])
 
-  function toggle(film: Film, screening: Screening) {
-    const isSelected = selected.includes(screening.id)
+  const toggle = useCallback((film: Film, screening: Screening) => {
+    const isSelected = selectedSet.has(screening.id)
 
     if (isSelected) {
       setSelected((current) => current.filter((id) => id !== screening.id))
@@ -400,20 +376,20 @@ export default function App() {
 
     setSelected((current) => current.includes(screening.id) ? current : [...current, screening.id])
     setTicketStatus((statuses) => ({ ...statuses, [screening.id]: 'planned' }))
-  }
+  }, [selectedSet, conflictingSelections])
 
-  function toggleFavorite(filmId: string) {
+  const toggleFavorite = useCallback((filmId: string) => {
     setFavorites((current) => current.includes(filmId) ? current.filter((id) => id !== filmId) : [...current, filmId])
-  }
+  }, [])
 
-  function setScreeningTicketStatus(screeningId: string, status: TicketStatus) {
+  const setScreeningTicketStatus = useCallback((screeningId: string, status: TicketStatus) => {
     setTicketStatus((current) => {
       const next = { ...current }
       if (status === 'none') delete next[screeningId]
       else next[screeningId] = status
       return next
     })
-  }
+  }, [])
 
   function resetFilters() {
     setQuery('')
@@ -571,6 +547,39 @@ export default function App() {
 
   const bookedCount = selected.filter((id) => ticketStatus[id] === 'booked').length
   const plannedCount = selected.filter((id) => ticketStatus[id] !== 'booked').length
+  const filmViewActive = activeTab === 'films' && !settingsOpen
+
+  const openFilms = useCallback(() => {
+    const target = filmScrollPositionRef.current
+    setActiveTab('films')
+    setSettingsOpen(false)
+
+    let attempts = 0
+    const restore = () => {
+      attempts += 1
+      const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
+      const canReachTarget = maxScroll >= target - 2
+      if (canReachTarget || attempts >= 40) {
+        window.scrollTo(0, Math.min(target, maxScroll))
+        if (Math.abs(window.scrollY - target) > 120 && attempts < 40) window.setTimeout(restore, 16)
+        return
+      }
+      window.setTimeout(restore, 16)
+    }
+
+    window.setTimeout(restore, 0)
+  }, [])
+
+  const openTimetable = useCallback(() => {
+    if (filmViewActive) filmScrollPositionRef.current = window.scrollY
+    setActiveTab('timetable')
+    setSettingsOpen(false)
+  }, [filmViewActive])
+
+  const openSettings = useCallback(() => {
+    if (filmViewActive) filmScrollPositionRef.current = window.scrollY
+    setSettingsOpen(true)
+  }, [filmViewActive])
 
   return (
     <div className={`app-shell ${activeTab === 'timetable' ? 'timetable-mode' : ''}`}>
@@ -580,9 +589,9 @@ export default function App() {
       </header>
 
       <nav className="tabs" aria-label="주요 메뉴">
-        <button className={activeTab === 'films' && !settingsOpen ? 'active' : ''} onClick={() => { setActiveTab('films'); setSettingsOpen(false) }}>영화 찾기</button>
-        <button className={activeTab === 'timetable' && !settingsOpen ? 'active' : ''} onClick={() => { setActiveTab('timetable'); setSettingsOpen(false) }}>내 시간표</button>
-        <button className={`settings-tab-trigger ${settingsOpen ? 'active' : ''}`} onClick={() => setSettingsOpen(true)}>설정</button>
+        <button className={activeTab === 'films' && !settingsOpen ? 'active' : ''} onClick={openFilms}>영화 찾기</button>
+        <button className={activeTab === 'timetable' && !settingsOpen ? 'active' : ''} onClick={openTimetable}>내 시간표</button>
+        <button className={`settings-tab-trigger ${settingsOpen ? 'active' : ''}`} onClick={openSettings}>설정</button>
       </nav>
 
       {activeTab === 'films' && !settingsOpen && dataNote && <div className="notice film-data-notice">{dataNote}{dataSource && <> <a href={dataSource} target="_blank" rel="noreferrer">공식 시간표 ↗</a></>}</div>}
@@ -624,35 +633,25 @@ export default function App() {
           <div className="chips">{sections.map((item) => <button key={item} className={section === item ? 'active' : ''} onClick={() => setSection(item)}>{item}</button>)}</div>
         </section>
 
-        <section className="film-list">
-          {filteredFilms.map((film) => <article className="film-card" key={film.id}>
-            <div className="film-heading">
-              <div><span className="section-label">{film.section ?? '섹션 미정'}</span><h2>{film.title}</h2>{film.englishTitle && <p className="english-title">{film.englishTitle}</p>}<p className="meta">{[film.director, film.country, film.runtime ? `${film.runtime}분` : undefined].filter(Boolean).join(' · ')}</p></div>
-              <div className="film-actions">
-                <button className={`favorite-button ${favorites.includes(film.id) ? 'active' : ''}`} onClick={() => toggleFavorite(film.id)} aria-label={`${film.title} 관심작 ${favorites.includes(film.id) ? '해제' : '추가'}`}>{favorites.includes(film.id) ? '★' : '☆'}</button>
-                <button className="detail-button" onClick={() => setDetailFilm(film)}>상세</button>
-                {film.url && <a className="detail-link" href={film.url} target="_blank" rel="noreferrer">공식정보 ↗</a>}
-              </div>
-            </div>
-            <div className="screenings">{visibleScreenings(film).map((screening) => {
-              const isSelected = selected.includes(screening.id)
-              const hasConflict = !isSelected && conflicts(film, screening)
-              const travel = !hasConflict ? transitionWarning(film, screening) : null
-              const status = ticketStatus[screening.id] ?? 'planned'
-              const rowNote = hasConflict ? '선택한 회차와 시간이 겹칩니다.' : travel ? `이동 여유 ${travel.gap}분 · 권장 ${travel.buffer}분` : ''
-              return <div className={`screening-row ${hasConflict ? 'conflict' : ''} ${travel ? 'travel-warning' : ''}`} key={screening.id}>
-                <div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}</strong><span>{screening.venue} · {screening.start}–{endLabel(film, screening)}{screening.gv ? ' · GV' : ''}</span><small className={`screening-note ${travel ? 'travel-text' : ''}`} title={rowNote || undefined}>{rowNote}</small></div>
-                <div className="screening-actions">
-                  {isSelected && <select className={`ticket-select ${status}`} value={status} onChange={(event) => setScreeningTicketStatus(screening.id, event.target.value as TicketStatus)} aria-label={`${film.title} 예매 상태`}><option value="planned">예매 예정</option><option value="booked">예매 완료</option></select>}
-                  <button className={isSelected ? 'selected' : ''} onClick={() => toggle(film, screening)}>{isSelected ? '선택됨' : '+ 추가'}</button>
-                </div>
-              </div>
-            })}</div>
-          </article>)}
-          {!filteredFilms.length && !loadError && <div className="empty">조건에 맞는 상영작이 없습니다.</div>}
-        </section>
+        {filteredFilms.length > 0 ? (
+          <FilmList
+            films={filteredFilms}
+            favoriteSet={favoriteSet}
+            selectedSet={selectedSet}
+            ticketStatus={ticketStatus}
+            visibleScreenings={visibleScreenings}
+            hasConflict={conflicts}
+            transitionWarning={transitionWarning}
+            formatDate={formatDate}
+            endLabel={endLabel}
+            onFavorite={toggleFavorite}
+            onDetail={setDetailFilm}
+            onToggleScreening={toggle}
+            onStatusChange={setScreeningTicketStatus}
+          />
+        ) : !loadError && <div className="empty">조건에 맞는 상영작이 없습니다.</div>}
       </main> : <main className="timetable-page">
-        {selectedItems.length === 0 ? <div className="empty timetable-empty"><strong>아직 선택한 상영 회차가 없습니다.</strong><span>영화 찾기에서 원하는 회차를 추가해 주세요.</span><button onClick={() => setActiveTab('films')}>영화 찾기</button></div> : <>
+        {selectedItems.length === 0 ? <div className="empty timetable-empty"><strong>아직 선택한 상영 회차가 없습니다.</strong><span>영화 찾기에서 원하는 회차를 추가해 주세요.</span><button onClick={openFilms}>영화 찾기</button></div> : <>
           <div className="timetable-actions enhanced-timetable-actions">
             <div><span className="booking-summary">{timetableSelectionMode ? `삭제할 회차 ${timetableDeleteSelection.length}개 선택` : `예매 완료 ${bookedCount} · 예정 ${plannedCount}`}</span></div>
             <div className="timetable-action-buttons">
