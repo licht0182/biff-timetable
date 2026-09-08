@@ -1,0 +1,12 @@
+.screening-row.conflict {
+  margin: 0;
+  background: #fff8f7;
+  box-shadow: inset 3px 0 0 var(--accent);
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.screening-row.conflict .screening-note,
+.modal-screenings > div.conflict .modal-screening-note {
+  color: var(--accent) !important;
+}
