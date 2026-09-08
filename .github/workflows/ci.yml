@@ -23,5 +23,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Validate screening data
+        run: npm run validate:data
+
       - name: Build
         run: npm run build
