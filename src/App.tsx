@@ -787,7 +787,20 @@ export default function App() {
           <div className="modal-screenings">{detailFilm.screenings.map((screening) => {
             const isSelected = selected.includes(screening.id)
             const isCurrentScreening = screening.id === detailScreeningId
-            return <div className={isCurrentScreening ? 'current-screening' : ''} key={screening.id}><div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}{isCurrentScreening && <em className="current-screening-badge">현재 회차</em>}</strong><span>{screening.venue} · {screening.start}–{endLabel(detailFilm, screening)}{screening.gv ? ' · GV' : ''}</span></div><button className={isSelected ? 'selected' : ''} onClick={() => toggle(detailFilm, screening)}>{isSelected ? '선택됨' : '+ 추가'}</button></div>
+            const hasConflict = conflicts(detailFilm, screening)
+            const travel = transitionWarning(detailFilm, screening)
+            const rowNote = hasConflict
+              ? '선택한 회차와 시간이 겹칩니다.'
+              : travel
+                ? `${travel.routeLabel ? `${travel.routeLabel} · ` : ''}이동 여유 ${travel.gap}분 · 필요 ${travel.buffer}분`
+                : ''
+            const rowNoteTitle = travel?.transferDetail ? `${rowNote}\n${travel.transferDetail}` : rowNote || undefined
+            const rowClassName = [
+              isCurrentScreening ? 'current-screening' : '',
+              hasConflict ? 'conflict' : '',
+              travel ? 'travel-warning' : '',
+            ].filter(Boolean).join(' ')
+            return <div className={rowClassName} key={screening.id}><div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}{isCurrentScreening && <em className="current-screening-badge">현재 회차</em>}</strong><span>{screening.venue} · {screening.start}–{endLabel(detailFilm, screening)}{screening.gv ? ' · GV' : ''}</span>{rowNote && <small className={`modal-screening-note ${travel ? 'travel-text' : ''}`} title={rowNoteTitle}>{rowNote}</small>}</div><button className={isSelected ? 'selected' : ''} onClick={() => toggle(detailFilm, screening)}>{isSelected ? '선택됨' : '+ 추가'}</button></div>
           })}</div>
           <div className="modal-footer"><button className={`favorite-button wide ${favorites.includes(detailFilm.id) ? 'active' : ''}`} onClick={() => toggleFavorite(detailFilm.id)}>{favorites.includes(detailFilm.id) ? '★ 관심작 해제' : '☆ 관심작 추가'}</button>{detailFilm.url && <a href={detailFilm.url} target="_blank" rel="noreferrer">BIFF 공식 작품정보 ↗</a>}</div>
         </section>

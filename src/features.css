@@ -90,3 +90,9 @@ select{font:inherit}
   .film-detail-grid{grid-template-columns:60px 1fr;gap:6px 8px}
   .modal-screenings strong{font-size:11px}.modal-screenings span{font-size:9px}
 }
+
+/* modal-screening-warnings */
+.modal-screenings>div.conflict{background:#fff8f7;box-shadow:inset 3px 0 0 var(--accent);padding-left:8px;padding-right:8px}
+.modal-screenings>div.travel-warning:not(.conflict){box-shadow:inset 3px 0 0 #e3a321;padding-left:8px;padding-right:8px}
+.modal-screening-note{display:block;margin-top:2px;font-size:9px!important;font-weight:700;line-height:1.35;color:var(--accent);white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+.modal-screening-note.travel-text{color:#9a6b10}
