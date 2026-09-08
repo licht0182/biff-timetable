@@ -44,6 +44,9 @@ const DEFAULT_USER_SETTINGS: UserTimetableSettings = {
 let settingsOpen = false
 let applyTimer = 0
 let dataPromise: Promise<SettingsFilmData> | null = null
+let appObserver: MutationObserver | null = null
+let applyingSettings = false
+let applyAgain = false
 
 function readJson<T>(key: string, fallback: T): T {
   try {
@@ -78,6 +81,7 @@ function getSettings() {
 
 function saveSettings(settings: UserTimetableSettings) {
   localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(normalizeSettings(settings)))
+  window.dispatchEvent(new CustomEvent('biff-user-settings-changed'))
   syncSettingsControls()
   scheduleApply()
 }
@@ -170,14 +174,12 @@ function buildWarningMap(items: SelectedSettingsItem[], settings: UserTimetableS
 
 function screeningIndexes(data: SettingsFilmData) {
   const byCode = new Map<string, string>()
-  const byId = new Map<string, SelectedSettingsItem>()
   for (const film of data.films) {
     for (const screening of film.screenings) {
       if (screening.code) byCode.set(String(screening.code), screening.id)
-      byId.set(screening.id, { film, screening })
     }
   }
-  return { byCode, byId }
+  return byCode
 }
 
 function resolveFilmRowId(row: Element, data: SettingsFilmData, byCode: Map<string, string>) {
@@ -195,8 +197,7 @@ function resolveFilmRowId(row: Element, data: SettingsFilmData, byCode: Map<stri
   if (!film) return null
   const candidates = film.screenings.filter((screening) => screening.start === start && (!venue || screening.venue === venue))
   if (candidates.length === 1) return candidates[0].id
-  const dated = candidates.find((screening) => strongText.includes(formatDate(screening.date)))
-  return dated?.id ?? null
+  return candidates.find((screening) => strongText.includes(formatDate(screening.date)))?.id ?? null
 }
 
 function resolveTimetableEventId(event: HTMLElement, items: SelectedSettingsItem[], dates: string[]) {
@@ -231,12 +232,8 @@ function ticketPrefix(screeningId: string) {
   return statuses[screeningId] === 'booked' ? '✓ ' : statuses[screeningId] === 'planned' ? '○ ' : ''
 }
 
-function updateBodyDisplayClasses(settings: UserTimetableSettings) {
-  document.body.classList.toggle('biff-hide-timetable-venues', !settings.showVenueInTimetable)
-}
-
 function patchFilmRows(data: SettingsFilmData, warningMap: Map<string, { gap: number; buffer: number }>, settings: UserTimetableSettings) {
-  const { byCode } = screeningIndexes(data)
+  const byCode = screeningIndexes(data)
   document.querySelectorAll('.screening-row').forEach((row) => {
     const screeningId = resolveFilmRowId(row, data, byCode)
     row.querySelectorAll('small.travel-text:not(.settings-travel-text)').forEach((node) => node.remove())
@@ -257,8 +254,9 @@ function patchFilmRows(data: SettingsFilmData, warningMap: Map<string, { gap: nu
 
     row.classList.add('travel-warning')
     const text = `이동 여유 ${warning.gap}분 · 설정 기준 ${warning.buffer}분`
-    if (existing) existing.textContent = text
-    else {
+    if (existing) {
+      if (existing.textContent !== text) existing.textContent = text
+    } else {
       const small = document.createElement('small')
       small.className = 'travel-text settings-travel-text'
       small.textContent = text
@@ -279,15 +277,17 @@ function patchTimetableEvents(items: SelectedSettingsItem[], warningMap: Map<str
     event.classList.toggle('has-travel-warning', Boolean(settings.showTransferWarnings && warning))
 
     const strong = event.querySelector('strong')
-    if (strong) strong.textContent = `${settings.showBookingStatusInTimetable ? ticketPrefix(screeningId) : ''}${item.film.title}`
+    const desiredTitle = `${settings.showBookingStatusInTimetable ? ticketPrefix(screeningId) : ''}${item.film.title}`
+    if (strong && strong.textContent !== desiredTitle) strong.textContent = desiredTitle
 
     const cleanTitle = (event.getAttribute('title') ?? '')
       .replace(/ · 이동 여유 \d+분\/권장 \d+분/g, '')
       .replace(/ · 이동 여유 \d+분\/설정 기준 \d+분/g, '')
       .replace(/\n클릭하면 시간표에서 제거됩니다\.?/g, '')
-    event.setAttribute('title', settings.showTransferWarnings && warning
+    const desiredTooltip = settings.showTransferWarnings && warning
       ? `${cleanTitle} · 이동 여유 ${warning.gap}분/설정 기준 ${warning.buffer}분`
-      : cleanTitle)
+      : cleanTitle
+    if (event.getAttribute('title') !== desiredTooltip) event.setAttribute('title', desiredTooltip)
   })
 }
 
@@ -298,7 +298,8 @@ function patchTransferNote(settings: UserTimetableSettings) {
       return
     }
     note.style.display = ''
-    note.textContent = `이동 여유 경고 기준: 동일 상영관 ${settings.sameVenueMinutes}분 · 같은 상영관군 ${settings.sameClusterMinutes}분 · 다른 상영관 ${settings.differentVenueMinutes}분. 설정에서 변경할 수 있습니다.`
+    const text = `이동 여유 경고 기준: 동일 상영관 ${settings.sameVenueMinutes}분 · 같은 상영관군 ${settings.sameClusterMinutes}분 · 다른 상영관 ${settings.differentVenueMinutes}분. 설정에서 변경할 수 있습니다.`
+    if (note.textContent !== text) note.textContent = text
   })
 }
 
@@ -320,9 +321,16 @@ function patchPngBoard(board: HTMLElement, items: SelectedSettingsItem[], warnin
 }
 
 async function applySettingsToApp() {
+  if (applyingSettings) {
+    applyAgain = true
+    return
+  }
+
+  applyingSettings = true
+  appObserver?.disconnect()
   try {
     const settings = getSettings()
-    updateBodyDisplayClasses(settings)
+    document.body.classList.toggle('biff-hide-timetable-venues', !settings.showVenueInTimetable)
     const data = await loadFilmData()
     const items = selectedItems(data)
     const warningMap = buildWarningMap(items, settings)
@@ -332,6 +340,13 @@ async function applySettingsToApp() {
     document.querySelectorAll<HTMLElement>('.png-export-board').forEach((board) => patchPngBoard(board, items, warningMap, settings))
   } catch (error) {
     console.error('BIFF settings apply failed', error)
+  } finally {
+    appObserver?.observe(document.body, { childList: true, subtree: true })
+    applyingSettings = false
+    if (applyAgain) {
+      applyAgain = false
+      scheduleApply()
+    }
   }
 }
 
@@ -386,27 +401,25 @@ function buildSettingsPanel() {
   const resetCard = document.createElement('section')
   resetCard.className = 'settings-card settings-reset-card'
   resetCard.innerHTML = `<div><h3>기본 설정</h3><p>이동 시간과 표시 설정을 처음 값으로 되돌립니다.</p></div><button type="button" class="settings-reset-button">기본값으로 초기화</button>`
-
   panel.append(travelCard, displayCard, resetCard)
 
   panel.addEventListener('input', (event) => {
     const input = event.target as HTMLInputElement
-    const key = input.dataset.setting as keyof UserTimetableSettings | undefined
+    const key = input.dataset.setting
     if (!key) return
     const current = getSettings()
-    if (input.type === 'checkbox') {
-      ;(current[key] as boolean) = input.checked
-    } else {
-      const max = Number(input.max) || 240
-      ;(current[key] as number) = clampMinutes(input.value, current[key] as number, max)
-    }
+
+    if (key === 'sameVenueMinutes') current.sameVenueMinutes = clampMinutes(input.value, current.sameVenueMinutes, 120)
+    else if (key === 'sameClusterMinutes') current.sameClusterMinutes = clampMinutes(input.value, current.sameClusterMinutes, 180)
+    else if (key === 'differentVenueMinutes') current.differentVenueMinutes = clampMinutes(input.value, current.differentVenueMinutes, 240)
+    else if (key === 'showTransferWarnings') current.showTransferWarnings = input.checked
+    else if (key === 'showVenueInTimetable') current.showVenueInTimetable = input.checked
+    else if (key === 'showBookingStatusInTimetable') current.showBookingStatusInTimetable = input.checked
+
     saveSettings(current)
   })
 
-  panel.querySelector('.settings-reset-button')?.addEventListener('click', () => {
-    saveSettings({ ...DEFAULT_USER_SETTINGS })
-  })
-
+  panel.querySelector('.settings-reset-button')?.addEventListener('click', () => saveSettings({ ...DEFAULT_USER_SETTINGS }))
   return panel
 }
 
@@ -415,18 +428,20 @@ function syncSettingsControls() {
   if (!panel) return
   const settings = getSettings()
   panel.querySelectorAll<HTMLInputElement>('[data-setting]').forEach((input) => {
-    const key = input.dataset.setting as keyof UserTimetableSettings
-    const value = settings[key]
-    if (input.type === 'checkbox') input.checked = Boolean(value)
-    else input.value = String(value)
+    const key = input.dataset.setting
+    if (key === 'sameVenueMinutes') input.value = String(settings.sameVenueMinutes)
+    else if (key === 'sameClusterMinutes') input.value = String(settings.sameClusterMinutes)
+    else if (key === 'differentVenueMinutes') input.value = String(settings.differentVenueMinutes)
+    else if (key === 'showTransferWarnings') input.checked = settings.showTransferWarnings
+    else if (key === 'showVenueInTimetable') input.checked = settings.showVenueInTimetable
+    else if (key === 'showBookingStatusInTimetable') input.checked = settings.showBookingStatusInTimetable
   })
 }
 
 function setSettingsOpen(open: boolean) {
   settingsOpen = open
   document.body.classList.toggle('biff-settings-open', settingsOpen)
-  const trigger = document.querySelector('.settings-tab-trigger')
-  trigger?.classList.toggle('active', settingsOpen)
+  document.querySelector('.settings-tab-trigger')?.classList.toggle('active', settingsOpen)
   syncSettingsControls()
 }
 
@@ -447,8 +462,7 @@ function ensureSettingsUi() {
 
   const shell = tabs.closest<HTMLElement>('.app-shell')
   if (shell && !shell.querySelector('.biff-settings-panel')) {
-    const panel = buildSettingsPanel()
-    tabs.insertAdjacentElement('afterend', panel)
+    tabs.insertAdjacentElement('afterend', buildSettingsPanel())
     syncSettingsControls()
   }
 }
@@ -464,13 +478,13 @@ function initSettings() {
     if (tabButton && !tabButton.classList.contains('settings-tab-trigger')) setSettingsOpen(false)
   }, true)
 
-  const observer = new MutationObserver((mutations) => {
+  appObserver = new MutationObserver((mutations) => {
     ensureSettingsUi()
-    const pngAdded = mutations.some((mutation) => Array.from(mutation.addedNodes).some((node) => node instanceof Element && (node.matches('.png-export-board, .png-export-host') || node.querySelector?.('.png-export-board'))))
+    const pngAdded = mutations.some((mutation) => Array.from(mutation.addedNodes).some((node) => node instanceof Element && (node.matches('.png-export-board, .png-export-host') || Boolean(node.querySelector?.('.png-export-board')))))
     if (pngAdded) void applySettingsToApp()
     else scheduleApply()
   })
-  observer.observe(document.body, { childList: true, subtree: true })
+  appObserver.observe(document.body, { childList: true, subtree: true })
 
   window.addEventListener('storage', (event) => {
     if ([USER_SETTINGS_KEY, SELECTED_KEY, TICKET_STATUS_KEY].includes(event.key ?? '')) {
