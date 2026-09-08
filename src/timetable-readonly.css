@@ -7,3 +7,64 @@
   filter:none !important;
   transform:none !important;
 }
+
+.timetable-selection-mode .event-block{
+  cursor:pointer !important;
+  pointer-events:auto;
+}
+
+.timetable-selection-mode .event-block:hover{
+  filter:brightness(.97) !important;
+  transform:none !important;
+}
+
+.timetable-selection-mode .event-block strong{
+  padding-right:15px;
+}
+
+.timetable-selection-mode .event-block.has-travel-warning:after{
+  display:none;
+}
+
+.event-block.selected-for-delete{
+  outline:2px solid var(--accent);
+  outline-offset:-2px;
+  box-shadow:inset 0 0 0 2px rgba(198,41,23,.95),inset 0 0 0 999px rgba(255,255,255,.16) !important;
+}
+
+.event-block .event-select-indicator{
+  position:absolute;
+  top:3px;
+  right:3px;
+  z-index:4;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:12px;
+  height:12px;
+  margin:0;
+  border:1px solid rgba(198,41,23,.58);
+  border-radius:50%;
+  background:rgba(255,255,255,.9);
+  color:transparent;
+  font-size:8px;
+  font-weight:900;
+  line-height:1;
+  opacity:1;
+  overflow:visible;
+  text-overflow:clip;
+}
+
+.event-block.selected-for-delete .event-select-indicator{
+  border-color:var(--accent);
+  background:var(--accent);
+  color:#fff;
+}
+
+.timetable-scroll.ultra-dense .event-block .event-select-indicator{
+  top:2px;
+  right:2px;
+  width:10px;
+  height:10px;
+  font-size:7px;
+}

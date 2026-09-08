@@ -12,7 +12,6 @@ import './readability.css'
 import './timetable-display.css'
 import './header-align.css'
 import './header-radius.css'
-import './timetable-readonly'
 import './png-export'
 import './timetable-display'
 
