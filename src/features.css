@@ -16,7 +16,7 @@ select{font:inherit}
 .favorite-button.active{color:#e0a000;border-color:#eedb9c;background:#fffdf4}
 .detail-button:hover,.favorite-button:hover{border-color:#c5c5c5;background:#fafafa}
 .favorite-button.wide{font-size:12px;padding:7px 10px}
-.screening-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-shrink:0}
+.screening-row>.screening-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-shrink:0}
 .ticket-select{width:auto;max-width:105px;height:30px;padding:0 5px;font-size:10px;background:#fff}
 .ticket-select.planned{border-color:#d7b86b;background:#fffaf0;color:#8a681c}
 .ticket-select.booked{border-color:#8cc6a0;background:#f3fbf5;color:#39704a}
@@ -70,7 +70,7 @@ select{font:inherit}
   .film-actions{min-width:0;justify-content:flex-start;margin-top:8px}
   .favorite-button,.detail-button{min-height:27px;font-size:10px}
   .favorite-button{font-size:15px}
-  .screening-actions{display:grid;justify-items:end;gap:4px}
+  .screening-row>.screening-actions{display:flex;align-items:center;justify-content:flex-end;gap:4px}
   .ticket-select{height:27px;max-width:93px;font-size:9px}
   .toast{top:10px;font-size:10px;max-width:calc(100vw - 24px);text-align:center}
   .enhanced-timetable-actions{align-items:stretch;gap:4px;flex-wrap:wrap}
