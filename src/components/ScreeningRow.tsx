@@ -40,7 +40,7 @@ function ScreeningRow({
         <span>{screening.venue} · {screening.start}–{endLabel(film, screening)}{screening.gv ? ' · GV' : ''}</span>
         <small className={`screening-note ${travel ? 'travel-text' : ''}`} title={rowNoteTitle}>{rowNote}</small>
       </div>
-      <div className="screening-actions">
+      <div className={`screening-actions ${isSelected ? 'selected-actions' : ''}`}>
         {isSelected && (
           <select
             className={`ticket-select ${status}`}
