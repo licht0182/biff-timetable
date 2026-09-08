@@ -1,8 +1,17 @@
-.png-export-board{
+.png-export-host{
   position:fixed;
   left:-20000px;
   top:0;
-  z-index:-1;
+  width:1440px;
+  z-index:-2147483648;
+  pointer-events:none;
+}
+
+.png-export-board{
+  position:relative;
+  left:0;
+  top:0;
+  z-index:0;
   box-sizing:border-box;
   padding:42px 46px 30px;
   background:#fff;
