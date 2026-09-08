@@ -1,0 +1,45 @@
+name: Apply detailed venue transfer
+
+on:
+  push:
+    branches:
+      - feature/detailed-venue-transfer-times
+    paths:
+      - .github/workflows/apply-detailed-venue-transfer.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply directed transfer changes
+        run: python scripts/apply-detailed-venue-transfer.py
+      - run: npm install
+      - run: npm run validate:data
+      - run: npm run build
+      - run: npm install --no-save playwright@1.55.0 tsx
+      - run: npx playwright install --with-deps chromium
+      - name: Start preview
+        run: |
+          npm run preview -- --host 127.0.0.1 > /tmp/biff-preview.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/biff-timetable/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/biff-preview.log
+          exit 1
+      - name: Verify detailed directed transfer behavior
+        run: npx tsx scripts/verify-detailed-venue-transfer.ts
+      - name: Commit verified app changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/App.tsx
+          git commit -m "Use directed precise venue transfer times"
+          git push origin HEAD:feature/detailed-venue-transfer-times
