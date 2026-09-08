@@ -1,0 +1,36 @@
+name: Verify desktop notice width
+
+on:
+  push:
+    branches:
+      - fix/desktop-notice-full-width
+    paths:
+      - .github/workflows/verify-notice-width.yml
+      - scripts/verify-notice-width.mjs
+      - src/desktop-notice.css
+      - src/main.tsx
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run validate:data
+      - run: npm run build
+      - run: npm install --no-save playwright@1.55.0
+      - run: npx playwright install --with-deps chromium
+      - name: Start preview
+        run: |
+          npm run preview -- --host 127.0.0.1 > /tmp/biff-preview.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/biff-timetable/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/biff-preview.log
+          exit 1
+      - name: Compare notice and controls geometry
+        run: node scripts/verify-notice-width.mjs
