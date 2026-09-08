@@ -79,7 +79,7 @@ try {
   const beforeRestore = await page.evaluate(() => window.scrollY)
   await page.getByRole('button', { name: '설정' }).click()
   await page.getByRole('button', { name: '영화 찾기' }).click()
-  await page.waitForTimeout(220)
+  await page.waitForTimeout(700)
   const afterRestore = await page.evaluate(() => window.scrollY)
   if (beforeRestore > 500 && Math.abs(beforeRestore - afterRestore) > 180) {
     throw new Error(`film scroll position not restored: ${beforeRestore} -> ${afterRestore}`)
