@@ -1,0 +1,8 @@
+.screening-row>.screening-actions{--screening-action-width:64px}
+.screening-row>.screening-actions>button,.screening-row>.screening-actions>.ticket-select{width:var(--screening-action-width);min-width:var(--screening-action-width);max-width:var(--screening-action-width);height:30px}
+.screening-row>.screening-actions.selected-actions{width:var(--screening-action-width)}
+.screening-row>.screening-actions.selected-actions>.ticket-select,.screening-row>.screening-actions.selected-actions>button{width:var(--screening-action-width);min-width:var(--screening-action-width);max-width:var(--screening-action-width)}
+@media(max-width:700px){
+  .screening-row>.screening-actions{--screening-action-width:64px}
+  .screening-row>.screening-actions>button,.screening-row>.screening-actions>.ticket-select{height:27px}
+}
