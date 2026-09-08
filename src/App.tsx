@@ -371,7 +371,7 @@ export default function App() {
     return null
   }
 
-  function toggle(screening: Screening) {
+  function toggle(film: Film, screening: Screening) {
     const isSelected = selected.includes(screening.id)
 
     if (isSelected) {
@@ -381,6 +381,11 @@ export default function App() {
         delete next[screening.id]
         return next
       })
+      return
+    }
+
+    if (conflicts(film, screening)) {
+      window.alert('이미 선택한 회차와 시간이 겹칩니다.\n겹치는 기존 회차를 먼저 제거한 뒤 추가해 주세요.')
       return
     }
 
@@ -411,10 +416,15 @@ export default function App() {
   }
 
   function clearSelected() {
+    if (!selected.length) return
+    const confirmed = window.confirm(`선택한 ${selected.length}개 회차를 모두 삭제하시겠습니까?\n예매 상태도 함께 제거됩니다.`)
+    if (!confirmed) return
+
     setSelected([])
     setTicketStatus({})
     setTimetableSelectionMode(false)
     setTimetableDeleteSelection([])
+    setToast('선택한 모든 회차를 시간표에서 삭제했습니다.')
   }
 
   function toggleTimetableSelectionMode() {
@@ -624,7 +634,7 @@ export default function App() {
                 <div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}</strong><span>{screening.venue} · {screening.start}–{endLabel(film, screening)}{screening.gv ? ' · GV' : ''}</span>{hasConflict && <small>선택한 회차와 시간이 겹칩니다.</small>}{travel && <small className="travel-text">이동 여유 {travel.gap}분 · 권장 {travel.buffer}분</small>}</div>
                 <div className="screening-actions">
                   {isSelected && <select className={`ticket-select ${status}`} value={status} onChange={(event) => setScreeningTicketStatus(screening.id, event.target.value as TicketStatus)} aria-label={`${film.title} 예매 상태`}><option value="planned">예매 예정</option><option value="booked">예매 완료</option></select>}
-                  <button className={isSelected ? 'selected' : ''} onClick={() => toggle(screening)}>{isSelected ? '선택됨' : '+ 추가'}</button>
+                  <button className={isSelected ? 'selected' : ''} onClick={() => toggle(film, screening)}>{isSelected ? '선택됨' : '+ 추가'}</button>
                 </div>
               </div>
             })}</div>
@@ -697,7 +707,7 @@ export default function App() {
           {detailFilm.synopsis && <p className="synopsis">{detailFilm.synopsis}</p>}
           <div className="modal-screenings">{detailFilm.screenings.map((screening) => {
             const isSelected = selected.includes(screening.id)
-            return <div key={screening.id}><div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}</strong><span>{screening.venue} · {screening.start}–{endLabel(detailFilm, screening)}{screening.gv ? ' · GV' : ''}</span></div><button className={isSelected ? 'selected' : ''} onClick={() => toggle(screening)}>{isSelected ? '선택됨' : '+ 추가'}</button></div>
+            return <div key={screening.id}><div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}</strong><span>{screening.venue} · {screening.start}–{endLabel(detailFilm, screening)}{screening.gv ? ' · GV' : ''}</span></div><button className={isSelected ? 'selected' : ''} onClick={() => toggle(detailFilm, screening)}>{isSelected ? '선택됨' : '+ 추가'}</button></div>
           })}</div>
           <div className="modal-footer"><button className={`favorite-button wide ${favorites.includes(detailFilm.id) ? 'active' : ''}`} onClick={() => toggleFavorite(detailFilm.id)}>{favorites.includes(detailFilm.id) ? '★ 관심작 해제' : '☆ 관심작 추가'}</button>{detailFilm.url && <a href={detailFilm.url} target="_blank" rel="noreferrer">BIFF 공식 작품정보 ↗</a>}</div>
         </section>
