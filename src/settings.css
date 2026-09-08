@@ -17,6 +17,18 @@ body.biff-settings-open .tabs button.active:not(.settings-tab-trigger):after{dis
 .settings-card h3{margin:0;font-size:14px;letter-spacing:-.02em}
 .settings-card p{margin:4px 0 0;color:#929292;font-size:11px;line-height:1.45}
 .settings-list{display:grid}
+.precise-transfer-panel{padding:12px 15px 13px;border-bottom:1px solid #ececec;background:#fff}
+.precise-transfer-panel>strong{display:block;margin-bottom:7px;font-size:12px;color:#444}
+.travel-matrix-wrap{overflow-x:auto;border:1px solid #ececec;border-radius:6px;background:#fff}
+.travel-matrix{width:100%;min-width:540px;border-collapse:collapse;table-layout:fixed;font-size:10px;color:#555}
+.travel-matrix th,.travel-matrix td{padding:7px 5px;border-right:1px solid #f0f0f0;border-bottom:1px solid #f0f0f0;text-align:center;white-space:nowrap}
+.travel-matrix th{background:#fafafa;font-weight:800;color:#666}
+.travel-matrix th:first-child{width:92px;text-align:left;padding-left:8px}
+.travel-matrix tbody th{background:#fcfcfc}
+.travel-matrix tr:last-child th,.travel-matrix tr:last-child td{border-bottom:0}
+.travel-matrix th:last-child,.travel-matrix td:last-child{border-right:0}
+.travel-matrix td{font-weight:800;color:#444}
+.precise-transfer-note{margin:8px 1px 0!important;font-size:9.5px!important;line-height:1.5!important;color:#999!important}
 .settings-number-row,.settings-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:64px;padding:11px 15px;border-bottom:1px solid #f0f0f0;cursor:pointer}
 .settings-number-row:last-child,.settings-toggle-row:last-child{border-bottom:0}
 .settings-number-row>span:first-child,.settings-toggle-row>span:first-child{display:grid;gap:3px;min-width:0}
@@ -50,6 +62,12 @@ body.biff-hide-timetable-venues .event-venue{display:none!important}
   .settings-card-head{padding:12px 11px 9px}
   .settings-card h3{font-size:13px}
   .settings-card p{font-size:9.5px}
+  .precise-transfer-panel{padding:10px 11px 11px}
+  .precise-transfer-panel>strong{font-size:10.5px}
+  .travel-matrix{min-width:500px;font-size:9px}
+  .travel-matrix th,.travel-matrix td{padding:6px 4px}
+  .travel-matrix th:first-child{width:84px;padding-left:6px}
+  .precise-transfer-note{font-size:8.5px!important}
   .settings-number-row,.settings-toggle-row{padding:10px 11px;gap:12px;min-height:60px}
   .settings-number-row strong,.settings-toggle-row strong{font-size:11px}
   .settings-number-row small,.settings-toggle-row small{font-size:9px}

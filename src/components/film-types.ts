@@ -29,4 +29,7 @@ export type TicketStatusMap = Record<string, Exclude<TicketStatus, 'none'>>
 export type TravelWarning = {
   gap: number
   buffer: number
+  routeLabel?: string
+  transferDetail?: string
+  precise?: boolean
 }
