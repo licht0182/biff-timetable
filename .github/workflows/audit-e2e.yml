@@ -1,0 +1,73 @@
+name: Full E2E and code audit
+
+on:
+  push:
+    branches:
+      - audit/full-e2e-20260909
+    paths:
+      - .github/workflows/audit-e2e.yml
+      - scripts/audit-e2e.mjs
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/full-e2e-20260909
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install application dependencies
+        run: npm install
+      - name: Validate data
+        run: npm run validate:data
+      - name: Production build
+        run: npm run build
+      - name: Dependency vulnerability audit
+        shell: bash
+        run: |
+          set +e
+          npm audit --json > /tmp/npm-audit.json
+          status=$?
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs'
+          const report = JSON.parse(fs.readFileSync('/tmp/npm-audit.json','utf8'))
+          console.log('NPM_AUDIT_METADATA=' + JSON.stringify(report.metadata ?? {}))
+          console.log('NPM_AUDIT_VULNERABILITIES=' + JSON.stringify(report.vulnerabilities ?? {}))
+          NODE
+          echo "npm audit exit code: $status"
+          exit 0
+      - name: Check outdated packages
+        shell: bash
+        run: |
+          set +e
+          npm outdated --json > /tmp/npm-outdated.json
+          echo 'NPM_OUTDATED:'
+          cat /tmp/npm-outdated.json || true
+          exit 0
+      - name: Static risky-pattern inventory
+        shell: bash
+        run: |
+          echo '--- direct DOM / global browser mutation patterns ---'
+          grep -RInE 'MutationObserver|document\.|window\.fetch|innerHTML|dangerouslySetInnerHTML|eval\(|new Function|localStorage|window\.open' src index.html || true
+          echo '--- external links ---'
+          grep -RInE 'target="_blank"|window\.open' src index.html || true
+      - name: Install Playwright
+        run: npm install --no-save playwright@1.55.0
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Start production preview
+        run: |
+          npm run preview -- --host 127.0.0.1 > /tmp/biff-preview.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/biff-timetable/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/biff-preview.log
+          exit 1
+      - name: Run full browser audit
+        run: node scripts/audit-e2e.mjs
