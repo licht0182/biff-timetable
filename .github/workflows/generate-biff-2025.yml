@@ -8,6 +8,9 @@ on:
       - 'scripts/check-biff-2025-codes.mjs'
       - '.github/workflows/generate-biff-2025.yml'
 
+permissions:
+  contents: write
+
 jobs:
   generate:
     runs-on: ubuntu-latest
@@ -20,6 +23,19 @@ jobs:
         run: node scripts/import-biff-2025.mjs
       - name: Reconcile official screening codes
         run: node scripts/check-biff-2025-codes.mjs
+      - name: Replace test database on research branch
+        run: cp generated-screenings.json public/screenings.json
+      - name: Commit verified dataset
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/screenings.json
+          if git diff --cached --quiet; then
+            echo "Dataset is already current."
+          else
+            git commit -m "Load complete BIFF 2025 Korean timetable"
+            git push
+          fi
       - name: Upload generated dataset
         uses: actions/upload-artifact@v4
         with:
