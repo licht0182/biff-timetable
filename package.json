@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "validate:data": "node scripts/validate-screenings.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview"
   },
