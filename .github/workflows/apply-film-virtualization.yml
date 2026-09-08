@@ -41,7 +41,7 @@ jobs:
           done
           cat /tmp/biff-preview.log
           exit 1
-      - name: Verify virtualization, scroll restore, and menu performance
+      - name: Verify virtualized DOM and menu performance
         run: node scripts/verify-film-virtualization.mjs
       - name: Commit verified app changes
         run: |
