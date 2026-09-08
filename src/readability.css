@@ -1,0 +1,40 @@
+/* Slightly larger typography without changing timetable geometry. */
+.film-card h2{font-size:19px}
+.english-title,.meta{font-size:13px}
+.screening-row strong{font-size:14px}
+.screening-row span{font-size:12px}
+.screening-row small{font-size:11px}
+.notice,.empty{font-size:13px}
+.date-head{font-size:12px}
+.time-axis>div{font-size:10px}
+.event-block strong{font-size:10px;line-height:1.08}
+.event-block span{font-size:8.5px;line-height:1.08}
+.timetable-scroll.dense .date-head{font-size:10px}
+.timetable-scroll.dense .event-block strong{font-size:8.5px}
+.timetable-scroll.dense .event-block span{font-size:7.5px}
+.timetable-scroll.ultra-dense .date-head{font-size:8.5px}
+.timetable-scroll.ultra-dense .time-axis>div{font-size:8.5px}
+.timetable-scroll.ultra-dense .event-block strong{font-size:7.2px;line-height:1.03}
+.timetable-actions p{font-size:12px}
+.timetable-actions button{font-size:11px}
+
+@media(max-width:700px){
+  .film-card h2{font-size:17px}
+  .english-title,.meta{font-size:12px}
+  .screening-row strong{font-size:12px}
+  .screening-row span{font-size:11px}
+  .screening-row small{font-size:10.5px}
+  .notice,.empty{font-size:11px}
+  .date-head{font-size:10.5px}
+  .time-axis>div{font-size:8.5px}
+  .event-block strong{font-size:8.5px}
+  .event-block span{font-size:7px}
+  .timetable-actions p{font-size:10px}
+  .timetable-actions button{font-size:10px}
+  .timetable-scroll.dense .date-head{font-size:9.5px}
+  .timetable-scroll.dense .event-block strong{font-size:8px}
+  .timetable-scroll.dense .event-block span{font-size:7px}
+  .timetable-scroll.ultra-dense .date-head{font-size:8px}
+  .timetable-scroll.ultra-dense .time-axis>div{font-size:8px}
+  .timetable-scroll.ultra-dense .event-block strong{font-size:7px}
+}
