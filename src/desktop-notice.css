@@ -1,0 +1,12 @@
+@media (min-width: 701px) {
+  .film-data-notice {
+    display: block;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    align-self: stretch;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
+  }
+}
