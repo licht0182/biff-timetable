@@ -19,7 +19,9 @@ jobs:
         with:
           node-version: 22
       - name: Apply virtualization refactor
-        run: python scripts/apply-film-virtualization.py
+        run: |
+          python scripts/apply-film-virtualization.py
+          python scripts/fix-film-scroll-restore.py
       - name: Install dependencies
         run: npm install
       - name: Validate screening data
