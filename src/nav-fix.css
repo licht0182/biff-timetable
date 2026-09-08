@@ -17,6 +17,18 @@
 .hour-line{transform:translateY(8px)}
 .event-block{margin-top:8px}
 
+/* App.tsx renders interval lines through 02:00; add the final 03:00 boundary line. */
+.day-column::after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  top:calc(var(--grid-height) + 8px);
+  border-top:1px solid #eeeeee;
+  pointer-events:none;
+  z-index:1;
+}
+
 @media(max-width:700px){
   .timetable-mode{padding:10px 8px 5px}
   .timetable-mode .topbar{padding:13px 12px}
