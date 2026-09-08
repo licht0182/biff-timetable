@@ -1,4 +1,4 @@
-import { toPng } from 'html-to-image'
+import { toBlob } from 'html-to-image'
 
 type Screening = {
   id: string
@@ -31,6 +31,7 @@ const EXPORT_AXIS_WIDTH = 72
 const EXPORT_HEADER_HEIGHT = 56
 const EXPORT_HOUR_HEIGHT = 58
 const EXPORT_EDGE_SPACE = 16
+const EXPORT_FILENAME = 'BIFF-timetable.png'
 
 function readStorage<T>(key: string, fallback: T): T {
   try {
@@ -218,13 +219,84 @@ async function loadExportItems() {
   return { items, ticketStatus }
 }
 
-function downloadDataUrl(filename: string, dataUrl: string) {
+function isAppleMobile() {
+  const userAgent = navigator.userAgent
+  const classicIOS = /iPad|iPhone|iPod/.test(userAgent)
+  const iPadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1
+  return classicIOS || iPadOS
+}
+
+function downloadBlob(filename: string, blob: Blob) {
+  const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.download = filename
-  link.href = dataUrl
+  link.href = url
   document.body.append(link)
   link.click()
   link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1500)
+}
+
+function showAppleSaveSheet(blob: Blob) {
+  document.querySelector('.png-ios-overlay')?.remove()
+
+  const url = URL.createObjectURL(blob)
+  const file = new File([blob], EXPORT_FILENAME, { type: 'image/png' })
+  const overlay = element('div', 'png-ios-overlay')
+  const panel = element('section', 'png-ios-panel')
+  const head = element('div', 'png-ios-head')
+  const titleWrap = element('div')
+  titleWrap.append(element('strong', '', 'PNG가 준비되었습니다'))
+  titleWrap.append(element('span', '', '아이폰에서는 아래 버튼으로 공유하거나 사진 앱에 저장할 수 있습니다.'))
+  const close = element('button', 'png-ios-close', '×') as HTMLButtonElement
+  close.type = 'button'
+  close.setAttribute('aria-label', 'PNG 저장 창 닫기')
+  head.append(titleWrap, close)
+
+  const preview = element('img', 'png-ios-preview') as HTMLImageElement
+  preview.src = url
+  preview.alt = '내 BIFF 시간표 PNG 미리보기'
+
+  const actions = element('div', 'png-ios-actions')
+  const shareButton = element('button', 'png-ios-share', '공유 / 저장') as HTMLButtonElement
+  shareButton.type = 'button'
+  const tip = element('p', 'png-ios-tip', '공유 메뉴에서 “이미지 저장” 또는 “파일에 저장”을 선택하세요. 이미지를 길게 눌러 저장할 수도 있습니다.')
+  actions.append(shareButton)
+  panel.append(head, preview, actions, tip)
+  overlay.append(panel)
+  document.body.append(overlay)
+
+  const closeOverlay = () => {
+    overlay.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  close.addEventListener('click', closeOverlay)
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) closeOverlay()
+  })
+
+  const shareData: ShareData = { files: [file], title: 'BIFF Timetable' }
+  const canShareFile = typeof navigator.share === 'function'
+    && typeof navigator.canShare === 'function'
+    && navigator.canShare(shareData)
+
+  if (canShareFile) {
+    shareButton.addEventListener('click', async () => {
+      try {
+        await navigator.share(shareData)
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        console.error(error)
+      }
+    })
+  } else {
+    shareButton.textContent = '이미지 크게 보기'
+    shareButton.addEventListener('click', () => {
+      window.open(url, '_blank')
+    })
+    tip.textContent = '이미지를 길게 누른 뒤 “사진에 저장”을 선택하세요.'
+  }
 }
 
 async function exportPng(button: HTMLButtonElement) {
@@ -246,15 +318,22 @@ async function exportPng(button: HTMLButtonElement) {
     await document.fonts?.ready
     await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
 
-    const png = await toPng(board, {
+    const blob = await toBlob(board, {
       backgroundColor: '#ffffff',
       cacheBust: true,
       pixelRatio: 1.5,
       width: board.scrollWidth,
       height: board.scrollHeight,
     })
-    downloadDataUrl('BIFF-timetable.png', png)
-    button.textContent = '저장 완료'
+    if (!blob) throw new Error('PNG 이미지를 만들지 못했습니다.')
+
+    if (isAppleMobile()) {
+      showAppleSaveSheet(blob)
+      button.textContent = 'PNG 준비 완료'
+    } else {
+      downloadBlob(EXPORT_FILENAME, blob)
+      button.textContent = '저장 완료'
+    }
   } catch (error) {
     console.error(error)
     button.textContent = '저장 실패'
