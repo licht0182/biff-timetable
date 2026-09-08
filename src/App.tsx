@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 
 type Screening = { id: string; date: string; start: string; end?: string; venue: string; gv?: boolean; code?: string }
 type Film = { id: string; title: string; englishTitle?: string; director?: string; country?: string; section?: string; runtime?: number; url?: string; screenings: Screening[] }
 type FilmData = { films: Film[]; note?: string; source?: string }
 
 const STORAGE_KEY = 'biff-timetable:selected-screenings:v1'
-const HOUR_HEIGHT = 72
 const START_HOUR = 8
 const END_HOUR = 27
 const FALLBACK_RUNTIME = 120
+const DATA_VERSION = '2025-test-20260908-2'
 
 function toMinutes(time: string) {
   const [h, m] = time.split(':').map(Number)
@@ -34,11 +34,35 @@ function endLabel(film: Film, screening: Screening) {
   return screening.end ? label : `${label} 예상`
 }
 
-function formatDate(date: string) {
+function formatDate(date: string, compact = false) {
+  if (compact) {
+    return new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric' }).format(new Date(`${date}T00:00:00`))
+  }
   return new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short' }).format(new Date(`${date}T00:00:00`))
 }
 
+function useViewport() {
+  const [viewport, setViewport] = useState(() => ({
+    width: typeof window === 'undefined' ? 1200 : window.innerWidth,
+    height: typeof window === 'undefined' ? 800 : window.innerHeight,
+  }))
+
+  useEffect(() => {
+    const update = () => setViewport({ width: window.innerWidth, height: window.innerHeight })
+    update()
+    window.addEventListener('resize', update)
+    window.addEventListener('orientationchange', update)
+    return () => {
+      window.removeEventListener('resize', update)
+      window.removeEventListener('orientationchange', update)
+    }
+  }, [])
+
+  return viewport
+}
+
 export default function App() {
+  const viewport = useViewport()
   const [films, setFilms] = useState<Film[]>([])
   const [dataNote, setDataNote] = useState('')
   const [dataSource, setDataSource] = useState('')
@@ -51,7 +75,7 @@ export default function App() {
   const [loadError, setLoadError] = useState('')
 
   useEffect(() => {
-    fetch(`${import.meta.env.BASE_URL}screenings.json`)
+    fetch(`${import.meta.env.BASE_URL}screenings.json?v=${DATA_VERSION}`, { cache: 'no-store' })
       .then((res) => { if (!res.ok) throw new Error('상영 데이터를 불러오지 못했습니다.'); return res.json() })
       .then((data: FilmData) => {
         setFilms(data.films)
@@ -75,6 +99,23 @@ export default function App() {
   const selectedItems = useMemo(() => films.flatMap((film) => film.screenings.filter((s) => selected.includes(s.id)).map((screening) => ({ film, screening }))), [films, selected])
   const dates = useMemo(() => Array.from(new Set(selectedItems.map(({ screening }) => screening.date))).sort(), [selectedItems])
 
+  const timetableMetrics = useMemo(() => {
+    const isMobile = viewport.width <= 700
+    const shellPadding = isMobile ? 32 : 48
+    const contentWidth = Math.max(280, Math.min(1180, viewport.width - shellPadding))
+    const axisWidth = isMobile ? 38 : 50
+    const headerHeight = isMobile ? 32 : 38
+    const chromeHeight = isMobile ? 205 : 225
+    const usableGridHeight = Math.max(180, viewport.height - chromeHeight - headerHeight)
+    const hourHeight = Math.max(9.5, usableGridHeight / (END_HOUR - START_HOUR))
+    const gridHeight = hourHeight * (END_HOUR - START_HOUR)
+    const dayWidth = dates.length > 0 ? Math.max(1, (contentWidth - axisWidth) / dates.length) : contentWidth - axisWidth
+    const dense = dayWidth < 76
+    const ultraDense = dayWidth < 48
+
+    return { axisWidth, headerHeight, hourHeight, gridHeight, dayWidth, dense, ultraDense }
+  }, [viewport, dates.length])
+
   function conflicts(film: Film, screening: Screening) {
     const start = toMinutes(screening.start)
     const end = endMinutes(film, screening)
@@ -88,8 +129,16 @@ export default function App() {
     setSelected((current) => current.includes(screening.id) ? current.filter((id) => id !== screening.id) : [...current, screening.id])
   }
 
+  const timetableStyle = {
+    '--axis-width': `${timetableMetrics.axisWidth}px`,
+    '--header-height': `${timetableMetrics.headerHeight}px`,
+    '--hour-height': `${timetableMetrics.hourHeight}px`,
+    '--grid-height': `${timetableMetrics.gridHeight}px`,
+    gridTemplateColumns: `${timetableMetrics.axisWidth}px repeat(${dates.length}, minmax(0, 1fr))`,
+  } as CSSProperties
+
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${activeTab === 'timetable' ? 'timetable-mode' : ''}`}>
       <header className="topbar">
         <div><p className="eyebrow">BUSAN INTERNATIONAL FILM FESTIVAL</p><h1>BIFF Timetable</h1><p className="subtitle">상영작을 고르고 나만의 영화제 시간표를 만드세요.</p></div>
         <div className="selection-count">선택 {selected.length}회</div>
@@ -100,7 +149,7 @@ export default function App() {
         <button className={activeTab === 'timetable' ? 'active' : ''} onClick={() => setActiveTab('timetable')}>내 시간표</button>
       </nav>
 
-      {dataNote && <div className="notice">{dataNote}{dataSource && <> <a href={dataSource} target="_blank" rel="noreferrer">공식 시간표 ↗</a></>}</div>}
+      {activeTab === 'films' && dataNote && <div className="notice">{dataNote}{dataSource && <> <a href={dataSource} target="_blank" rel="noreferrer">공식 시간표 ↗</a></>}</div>}
       {loadError && <div className="notice error">{loadError}</div>}
 
       {activeTab === 'films' ? <main>
@@ -128,19 +177,33 @@ export default function App() {
         </section>
       </main> : <main className="timetable-page">
         {selectedItems.length === 0 ? <div className="empty timetable-empty"><strong>아직 선택한 상영 회차가 없습니다.</strong><span>영화 찾기에서 원하는 회차를 추가해 주세요.</span><button onClick={() => setActiveTab('films')}>영화 찾기</button></div> : <>
-          <div className="timetable-actions"><p>선택한 회차는 이 브라우저에 자동 저장됩니다.</p><button onClick={() => setSelected([])}>전체 비우기</button></div>
-          <div className="timetable-scroll"><div className="timetable" style={{ minWidth: `${80 + dates.length * 190}px`, gridTemplateColumns: `80px repeat(${dates.length}, minmax(190px, 1fr))` }}>
-            <div className="corner" />{dates.map((date) => <div className="date-head" key={date}>{formatDate(date)}</div>)}
-            <div className="time-axis">{Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((hour) => <div key={hour} style={{ top: `${(hour - START_HOUR) * HOUR_HEIGHT}px` }}>{hour < 24 ? String(hour).padStart(2, '0') : String(hour - 24).padStart(2, '0')}:00</div>)}</div>
-            {dates.map((date) => <div className="day-column" key={date}>{Array.from({ length: END_HOUR - START_HOUR }, (_, i) => <div className="hour-line" key={i} style={{ top: `${i * HOUR_HEIGHT}px` }} />)}
-              {selectedItems.filter(({ screening }) => screening.date === date).map(({ film, screening }) => {
-                const start = toMinutes(screening.start), end = endMinutes(film, screening)
-                const top = ((start - START_HOUR * 60) / 60) * HOUR_HEIGHT
-                const height = Math.max(((end - start) / 60) * HOUR_HEIGHT, 48)
-                return <button className="event-block" key={screening.id} style={{ top: `${top}px`, height: `${height}px` }} title="클릭하면 시간표에서 제거됩니다." onClick={() => toggle(screening)}><strong>{film.title}</strong><span>{screening.start}–{endLabel(film, screening)}</span><span>{screening.venue}</span></button>
-              })}
-            </div>)}
-          </div></div>
+          <div className="timetable-actions"><p>브라우저 크기에 맞춰 전체 시간표를 자동 조정합니다.</p><button onClick={() => setSelected([])}>전체 비우기</button></div>
+          <div className={`timetable-scroll ${timetableMetrics.dense ? 'dense' : ''} ${timetableMetrics.ultraDense ? 'ultra-dense' : ''}`}>
+            <div className="timetable" style={timetableStyle}>
+              <div className="corner" />
+              {dates.map((date) => <div className="date-head" key={date} title={formatDate(date)}>{formatDate(date, timetableMetrics.dense)}</div>)}
+              <div className="time-axis">{Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((hour) => <div key={hour} style={{ top: `${(hour - START_HOUR) * timetableMetrics.hourHeight}px` }}>{hour < 24 ? String(hour).padStart(2, '0') : String(hour - 24).padStart(2, '0')}</div>)}</div>
+              {dates.map((date) => <div className="day-column" key={date}>
+                {Array.from({ length: END_HOUR - START_HOUR }, (_, i) => <div className="hour-line" key={i} style={{ top: `${i * timetableMetrics.hourHeight}px` }} />)}
+                {selectedItems.filter(({ screening }) => screening.date === date).map(({ film, screening }) => {
+                  const start = toMinutes(screening.start), end = endMinutes(film, screening)
+                  const top = ((start - START_HOUR * 60) / 60) * timetableMetrics.hourHeight
+                  const height = Math.max(((end - start) / 60) * timetableMetrics.hourHeight, timetableMetrics.ultraDense ? 16 : 22)
+                  return <button
+                    className="event-block"
+                    key={screening.id}
+                    style={{ top: `${top}px`, height: `${height}px` }}
+                    title={`${film.title} · ${screening.start}–${endLabel(film, screening)} · ${screening.venue}\n클릭하면 시간표에서 제거됩니다.`}
+                    onClick={() => toggle(screening)}
+                  >
+                    <strong>{film.title}</strong>
+                    {!timetableMetrics.ultraDense && <span className="event-time">{screening.start}</span>}
+                    {!timetableMetrics.dense && <span className="event-venue">{screening.venue}</span>}
+                  </button>
+                })}
+              </div>)}
+            </div>
+          </div>
         </>}
       </main>}
     </div>
