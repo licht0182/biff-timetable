@@ -19,6 +19,7 @@
 .timetable-actions button{font-size:11px}
 
 @media(max-width:700px){
+  .eyebrow,.timetable-mode .eyebrow{display:block}
   .film-card h2{font-size:17px}
   .english-title,.meta{font-size:12px}
   .screening-row strong{font-size:12px}
