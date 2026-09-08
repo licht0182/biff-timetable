@@ -20,9 +20,22 @@ type Film = {
 type FilmData = { films: Film[] }
 type TicketStatusMap = Record<string, 'planned' | 'booked'>
 type ExportItem = { film: Film; screening: Screening }
+type UserTimetableSettings = {
+  sameVenueMinutes: number
+  sameClusterMinutes: number
+  differentVenueMinutes: number
+  showTransferWarnings: boolean
+}
 
 const STORAGE_KEY = 'biff-timetable:selected-screenings:v1'
 const TICKET_STATUS_KEY = 'biff-timetable:ticket-status:v1'
+const USER_SETTINGS_KEY = 'biff-timetable:user-settings:v1'
+const DEFAULT_USER_SETTINGS: UserTimetableSettings = {
+  sameVenueMinutes: 0,
+  sameClusterMinutes: 10,
+  differentVenueMinutes: 30,
+  showTransferWarnings: true,
+}
 const START_HOUR = 8
 const END_HOUR = 27
 const FALLBACK_RUNTIME = 120
@@ -87,13 +100,25 @@ function venueCluster(venue: string) {
   return venue
 }
 
-function transferBufferMinutes(a: string, b: string) {
-  if (a === b) return 0
-  if (venueCluster(a) === venueCluster(b)) return 10
-  return 30
+function exportUserSettings() {
+  const stored = readStorage<Partial<UserTimetableSettings>>(USER_SETTINGS_KEY, DEFAULT_USER_SETTINGS)
+  return {
+    sameVenueMinutes: Number.isFinite(Number(stored.sameVenueMinutes)) ? Math.max(0, Number(stored.sameVenueMinutes)) : DEFAULT_USER_SETTINGS.sameVenueMinutes,
+    sameClusterMinutes: Number.isFinite(Number(stored.sameClusterMinutes)) ? Math.max(0, Number(stored.sameClusterMinutes)) : DEFAULT_USER_SETTINGS.sameClusterMinutes,
+    differentVenueMinutes: Number.isFinite(Number(stored.differentVenueMinutes)) ? Math.max(0, Number(stored.differentVenueMinutes)) : DEFAULT_USER_SETTINGS.differentVenueMinutes,
+    showTransferWarnings: typeof stored.showTransferWarnings === 'boolean' ? stored.showTransferWarnings : true,
+  }
+}
+
+function transferBufferMinutes(a: string, b: string, settings: UserTimetableSettings) {
+  if (a === b) return settings.sameVenueMinutes
+  if (venueCluster(a) === venueCluster(b)) return settings.sameClusterMinutes
+  return settings.differentVenueMinutes
 }
 
 function hasTransferWarning(item: ExportItem, items: ExportItem[]) {
+  const settings = exportUserSettings()
+  if (!settings.showTransferWarnings) return false
   const start = displayStartMinutes(item.screening.start)
   const end = displayEndMinutes(item.film, item.screening)
 
@@ -101,7 +126,7 @@ function hasTransferWarning(item: ExportItem, items: ExportItem[]) {
     if (other.screening.id === item.screening.id || other.screening.date !== item.screening.date) return false
     const otherStart = displayStartMinutes(other.screening.start)
     const otherEnd = displayEndMinutes(other.film, other.screening)
-    const buffer = transferBufferMinutes(item.screening.venue, other.screening.venue)
+    const buffer = transferBufferMinutes(item.screening.venue, other.screening.venue, settings)
     if (!buffer) return false
 
     if (end <= otherStart) return otherStart - end < buffer

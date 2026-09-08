@@ -13,7 +13,6 @@ import './timetable-display.css'
 import './header-align.css'
 import './timetable-readonly'
 import './png-export'
-import './settings'
 import './timetable-display'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

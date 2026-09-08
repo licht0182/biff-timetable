@@ -37,10 +37,27 @@ type BackupData = {
 }
 
 type TimetableItem = { film: Film; screening: Screening }
+type UserTimetableSettings = {
+  sameVenueMinutes: number
+  sameClusterMinutes: number
+  differentVenueMinutes: number
+  showTransferWarnings: boolean
+  showVenueInTimetable: boolean
+  showBookingStatusInTimetable: boolean
+}
 
 const STORAGE_KEY = 'biff-timetable:selected-screenings:v1'
 const FAVORITES_KEY = 'biff-timetable:favorites:v1'
 const TICKET_STATUS_KEY = 'biff-timetable:ticket-status:v1'
+const USER_SETTINGS_KEY = 'biff-timetable:user-settings:v1'
+const DEFAULT_USER_SETTINGS: UserTimetableSettings = {
+  sameVenueMinutes: 0,
+  sameClusterMinutes: 10,
+  differentVenueMinutes: 30,
+  showTransferWarnings: true,
+  showVenueInTimetable: true,
+  showBookingStatusInTimetable: true,
+}
 const START_HOUR = 8
 const END_HOUR = 27
 const FALLBACK_RUNTIME = 120
@@ -52,6 +69,24 @@ function readStorage<T>(key: string, fallback: T): T {
     return raw ? JSON.parse(raw) as T : fallback
   } catch {
     return fallback
+  }
+}
+
+function clampSetting(value: unknown, fallback: number, max: number) {
+  const number = Number(value)
+  if (!Number.isFinite(number)) return fallback
+  return Math.max(0, Math.min(max, Math.round(number)))
+}
+
+function normalizeUserSettings(value: unknown): UserTimetableSettings {
+  const source = value && typeof value === 'object' ? value as Partial<UserTimetableSettings> : {}
+  return {
+    sameVenueMinutes: clampSetting(source.sameVenueMinutes, DEFAULT_USER_SETTINGS.sameVenueMinutes, 120),
+    sameClusterMinutes: clampSetting(source.sameClusterMinutes, DEFAULT_USER_SETTINGS.sameClusterMinutes, 180),
+    differentVenueMinutes: clampSetting(source.differentVenueMinutes, DEFAULT_USER_SETTINGS.differentVenueMinutes, 240),
+    showTransferWarnings: typeof source.showTransferWarnings === 'boolean' ? source.showTransferWarnings : DEFAULT_USER_SETTINGS.showTransferWarnings,
+    showVenueInTimetable: typeof source.showVenueInTimetable === 'boolean' ? source.showVenueInTimetable : DEFAULT_USER_SETTINGS.showVenueInTimetable,
+    showBookingStatusInTimetable: typeof source.showBookingStatusInTimetable === 'boolean' ? source.showBookingStatusInTimetable : DEFAULT_USER_SETTINGS.showBookingStatusInTimetable,
   }
 }
 
@@ -79,11 +114,10 @@ function endLabel(film: Film, screening: Screening) {
   return screening.end ? label : `${label} 예상`
 }
 
-function formatDate(date: string, compact = false) {
-  if (compact) {
-    return new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric' }).format(new Date(`${date}T00:00:00`))
-  }
-  return new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short' }).format(new Date(`${date}T00:00:00`))
+function formatDate(date: string, _compact = false) {
+  const value = new Date(`${date}T00:00:00`)
+  const weekdays = ['일', '월', '화', '수', '목', '금', '토']
+  return `${value.getMonth() + 1}월 ${value.getDate()}일 ${weekdays[value.getDay()]}`
 }
 
 function venueCluster(venue: string) {
@@ -94,10 +128,10 @@ function venueCluster(venue: string) {
   return venue
 }
 
-function transferBufferMinutes(a: string, b: string) {
-  if (a === b) return 0
-  if (venueCluster(a) === venueCluster(b)) return 10
-  return 30
+function transferBufferMinutes(a: string, b: string, settings: UserTimetableSettings) {
+  if (a === b) return settings.sameVenueMinutes
+  if (venueCluster(a) === venueCluster(b)) return settings.sameClusterMinutes
+  return settings.differentVenueMinutes
 }
 
 function downloadText(filename: string, content: string, type: string) {
@@ -168,6 +202,8 @@ export default function App() {
   const [detailFilm, setDetailFilm] = useState<Film | null>(null)
   const [loadError, setLoadError] = useState('')
   const [toast, setToast] = useState('')
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [userSettings, setUserSettings] = useState<UserTimetableSettings>(() => normalizeUserSettings(readStorage(USER_SETTINGS_KEY, DEFAULT_USER_SETTINGS)))
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}screenings.json?v=${DATA_VERSION}`, { cache: 'no-store' })
@@ -186,6 +222,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(selected)) }, [selected])
   useEffect(() => { localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites)) }, [favorites])
   useEffect(() => { localStorage.setItem(TICKET_STATUS_KEY, JSON.stringify(ticketStatus)) }, [ticketStatus])
+  useEffect(() => { localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(userSettings)) }, [userSettings])
 
   useEffect(() => {
     setTicketStatus((current) => {
@@ -289,6 +326,7 @@ export default function App() {
   }
 
   function transitionWarning(film: Film, screening: Screening) {
+    if (!userSettings.showTransferWarnings) return null
     const start = toMinutes(screening.start)
     const end = endMinutes(film, screening)
 
@@ -296,7 +334,7 @@ export default function App() {
       if (other.id === screening.id || other.date !== screening.date) continue
       const otherStart = toMinutes(other.start)
       const otherEnd = endMinutes(otherFilm, other)
-      const buffer = transferBufferMinutes(screening.venue, other.venue)
+      const buffer = transferBufferMinutes(screening.venue, other.venue, userSettings)
       if (buffer === 0) continue
 
       if (end <= otherStart) {
@@ -464,15 +502,38 @@ export default function App() {
       </header>
 
       <nav className="tabs" aria-label="주요 메뉴">
-        <button className={activeTab === 'films' ? 'active' : ''} onClick={() => setActiveTab('films')}>영화 찾기</button>
-        <button className={activeTab === 'timetable' ? 'active' : ''} onClick={() => setActiveTab('timetable')}>내 시간표</button>
+        <button className={activeTab === 'films' && !settingsOpen ? 'active' : ''} onClick={() => { setActiveTab('films'); setSettingsOpen(false) }}>영화 찾기</button>
+        <button className={activeTab === 'timetable' && !settingsOpen ? 'active' : ''} onClick={() => { setActiveTab('timetable'); setSettingsOpen(false) }}>내 시간표</button>
+        <button className={`settings-tab-trigger ${settingsOpen ? 'active' : ''}`} onClick={() => setSettingsOpen(true)}>설정</button>
       </nav>
 
-      {activeTab === 'films' && dataNote && <div className="notice">{dataNote}{dataSource && <> <a href={dataSource} target="_blank" rel="noreferrer">공식 시간표 ↗</a></>}</div>}
+      {activeTab === 'films' && !settingsOpen && dataNote && <div className="notice">{dataNote}{dataSource && <> <a href={dataSource} target="_blank" rel="noreferrer">공식 시간표 ↗</a></>}</div>}
       {loadError && <div className="notice error">{loadError}</div>}
       {toast && <div className="toast" role="status">{toast}</div>}
 
-      {activeTab === 'films' ? <main>
+
+      {settingsOpen && <main className="biff-settings-panel react-settings-panel">
+        <section className="settings-intro"><p className="settings-kicker">PERSONAL SETTINGS</p><h2>설정</h2><p>시간표 계산과 표시 방식을 현재 기기에 맞게 조정할 수 있습니다. 변경사항은 이 브라우저에 자동 저장됩니다.</p></section>
+        <section className="settings-card">
+          <div className="settings-card-head"><div><h3>이동 시간</h3><p>연속 상영 사이에 필요한 최소 이동 여유를 정합니다.</p></div></div>
+          <div className="settings-list">
+            <label className="settings-number-row"><span><strong>동일 상영관</strong><small>같은 관에서 다음 상영을 볼 때 필요한 여유</small></span><span className="settings-number-control"><input type="number" min="0" max="120" step="5" inputMode="numeric" value={userSettings.sameVenueMinutes} onChange={(event) => setUserSettings((current) => ({ ...current, sameVenueMinutes: clampSetting(event.target.value, current.sameVenueMinutes, 120) }))} /><em>분</em></span></label>
+            <label className="settings-number-row"><span><strong>같은 상영관군</strong><small>영화의전당 내부처럼 같은 건물군에서 관을 이동할 때</small></span><span className="settings-number-control"><input type="number" min="0" max="180" step="5" inputMode="numeric" value={userSettings.sameClusterMinutes} onChange={(event) => setUserSettings((current) => ({ ...current, sameClusterMinutes: clampSetting(event.target.value, current.sameClusterMinutes, 180) }))} /><em>분</em></span></label>
+            <label className="settings-number-row"><span><strong>서로 다른 상영관</strong><small>CGV ↔ 영화의전당처럼 상영관군이 달라질 때</small></span><span className="settings-number-control"><input type="number" min="0" max="240" step="5" inputMode="numeric" value={userSettings.differentVenueMinutes} onChange={(event) => setUserSettings((current) => ({ ...current, differentVenueMinutes: clampSetting(event.target.value, current.differentVenueMinutes, 240) }))} /><em>분</em></span></label>
+            <label className="settings-toggle-row"><span><strong>이동 여유 경고 표시</strong><small>설정한 시간보다 여유가 짧은 연속 상영을 표시합니다.</small></span><span className="settings-switch"><input type="checkbox" checked={userSettings.showTransferWarnings} onChange={(event) => setUserSettings((current) => ({ ...current, showTransferWarnings: event.target.checked }))} /><i /></span></label>
+          </div>
+        </section>
+        <section className="settings-card">
+          <div className="settings-card-head"><div><h3>시간표 표시</h3><p>작은 화면에서 필요한 정보만 남길 수 있습니다.</p></div></div>
+          <div className="settings-list">
+            <label className="settings-toggle-row"><span><strong>상영관명 표시</strong><small>내 시간표 영화 블록 안에 상영관명을 표시합니다.</small></span><span className="settings-switch"><input type="checkbox" checked={userSettings.showVenueInTimetable} onChange={(event) => setUserSettings((current) => ({ ...current, showVenueInTimetable: event.target.checked }))} /><i /></span></label>
+            <label className="settings-toggle-row"><span><strong>예매 상태 기호 표시</strong><small>예매 완료 ✓, 예매 예정 ○ 기호를 영화 제목 앞에 표시합니다.</small></span><span className="settings-switch"><input type="checkbox" checked={userSettings.showBookingStatusInTimetable} onChange={(event) => setUserSettings((current) => ({ ...current, showBookingStatusInTimetable: event.target.checked }))} /><i /></span></label>
+          </div>
+        </section>
+        <section className="settings-card settings-reset-card"><div><h3>기본 설정</h3><p>이동 시간과 표시 설정을 처음 값으로 되돌립니다.</p></div><button type="button" className="settings-reset-button" onClick={() => setUserSettings({ ...DEFAULT_USER_SETTINGS })}>기본값으로 초기화</button></section>
+      </main>}
+
+      {!settingsOpen && (activeTab === 'films' ? <main>
         <section className="controls enhanced-controls">
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="제목, 감독, 국가 검색" aria-label="영화 검색" />
           <div className="filter-row">
@@ -526,7 +587,7 @@ export default function App() {
             <div className="timetable" style={timetableStyle}>
               <div className="corner" />
               {dates.map((date) => <div className="date-head" key={date} title={formatDate(date)}>{formatDate(date, timetableMetrics.dense)}</div>)}
-              <div className="time-axis">{Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((hour) => <div key={hour} style={{ top: `${(hour - START_HOUR) * timetableMetrics.hourHeight}px` }}>{hour < 24 ? String(hour).padStart(2, '0') : String(hour - 24).padStart(2, '0')}</div>)}</div>
+              <div className="time-axis">{Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((hour) => <div key={hour} style={{ top: `${(hour - START_HOUR) * timetableMetrics.hourHeight}px` }}>{`${hour < 24 ? String(hour).padStart(2, '0') : String(hour - 24).padStart(2, '0')}시`}</div>)}</div>
               {dates.map((date) => <div className="day-column" key={date}>
                 {Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => <div className="hour-line" key={i} style={{ top: `${i * timetableMetrics.hourHeight}px` }} />)}
                 {selectedItems.filter(({ screening }) => screening.date === date).map(({ film, screening }) => {
@@ -536,7 +597,7 @@ export default function App() {
                   const height = Math.max(((end - start) / 60) * timetableMetrics.hourHeight, timetableMetrics.ultraDense ? 16 : 22)
                   const travel = transitionWarning(film, screening)
                   const status = ticketStatus[screening.id] ?? 'planned'
-                  const statusPrefix = status === 'booked' ? '✓ ' : status === 'planned' ? '○ ' : ''
+                  const statusPrefix = userSettings.showBookingStatusInTimetable ? (status === 'booked' ? '✓ ' : status === 'planned' ? '○ ' : '') : ''
                   return <button
                     className={`event-block status-${status} ${travel ? 'has-travel-warning' : ''}`}
                     key={screening.id}
@@ -546,15 +607,15 @@ export default function App() {
                   >
                     <strong>{statusPrefix}{film.title}</strong>
                     {!timetableMetrics.ultraDense && <span className="event-time">{screening.start}{screening.gv ? ' · GV' : ''}</span>}
-                    {!timetableMetrics.dense && <span className="event-venue">{screening.venue}</span>}
+                    {userSettings.showVenueInTimetable && !timetableMetrics.dense && <span className="event-venue">{screening.venue}</span>}
                   </button>
                 })}
               </div>)}
             </div>
           </div>
-          <p className="transfer-note">이동 여유 경고는 같은 건물군 10분, 서로 다른 상영관군 30분을 기본 기준으로 계산합니다.</p>
+          {userSettings.showTransferWarnings && <p className="transfer-note">이동 여유 경고 기준: 동일 상영관 {userSettings.sameVenueMinutes}분 · 같은 상영관군 {userSettings.sameClusterMinutes}분 · 다른 상영관 {userSettings.differentVenueMinutes}분.</p>}
         </>}
-      </main>}
+      </main>)}
 
       {detailFilm && <div className="modal-backdrop" onMouseDown={() => setDetailFilm(null)}>
         <section className="film-modal" role="dialog" aria-modal="true" aria-labelledby="film-detail-title" onMouseDown={(event) => event.stopPropagation()}>

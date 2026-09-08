@@ -61,3 +61,5 @@ body.biff-hide-timetable-venues .event-venue{display:none!important}
   .settings-reset-card{padding:12px 11px}
   .settings-reset-button{font-size:10px;padding:7px 9px}
 }
+
+.react-settings-panel{display:block!important}
