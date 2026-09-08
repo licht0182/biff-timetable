@@ -12,6 +12,7 @@ import './readability.css'
 import './timetable-readonly'
 import './png-export'
 import './settings'
+import './ui-consistency'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
