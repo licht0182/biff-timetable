@@ -1,0 +1,26 @@
+name: Generate BIFF 2025 full timetable
+
+on:
+  push:
+    branches: [research/full-2025-import]
+    paths:
+      - 'scripts/import-biff-2025.mjs'
+      - '.github/workflows/generate-biff-2025.yml'
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate full 2025 dataset
+        run: node scripts/import-biff-2025.mjs
+      - name: Upload generated dataset
+        uses: actions/upload-artifact@v4
+        with:
+          name: biff-2025-full-dataset
+          path: |
+            generated-screenings.json
+            generated-report.json
