@@ -4,14 +4,13 @@ on:
   push:
     branches:
       - debug/deselect-e2e
-    paths:
-      - scripts/patch-settings-react.py
 
 permissions:
   contents: write
 
 jobs:
   patch:
+    if: github.event.head_commit.message != 'Move timetable settings into React state'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
