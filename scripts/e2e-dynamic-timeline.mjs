@@ -40,7 +40,7 @@ try {
   const timetableBox = await midnight.page.locator('.timetable').boundingBox()
 
   if (midnightLabels[0] !== '08시') throw new Error(`midnight start label: ${midnightLabels[0]}`)
-  if (midnightLabels.at(-1) !== '06시') throw new Error(`midnight end label: ${midnightLabels.at(-1]}`)
+  if (midnightLabels.at(-1) !== '06시') throw new Error(`midnight end label: ${midnightLabels.at(-1)}`)
   if (midnightLabels.length !== 23) throw new Error(`midnight label count: ${midnightLabels.length}`)
   if (!eventBox || !timetableBox) throw new Error('missing timetable geometry')
   if (eventBox.y + eventBox.height > timetableBox.y + timetableBox.height + 2) throw new Error('midnight event is clipped below timetable')
