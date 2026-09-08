@@ -1,0 +1,41 @@
+/* Timetable readability: explicit Korean time/date labels and title-first wrapping. */
+.time-axis>div{
+  white-space:nowrap;
+  letter-spacing:-.03em;
+}
+
+.date-head{
+  white-space:normal;
+  overflow:hidden;
+  text-overflow:clip;
+  text-align:center;
+  line-height:1.15;
+  word-break:keep-all;
+}
+
+.event-block strong{
+  white-space:normal !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  overflow-wrap:anywhere;
+  word-break:keep-all;
+  line-height:1.08;
+}
+
+/* If a short block cannot hold all metadata, preserve the full title first. */
+.event-block.title-priority .event-time,
+.event-block.title-priority .event-venue{
+  display:none !important;
+}
+
+.timetable-scroll.dense .event-block strong,
+.timetable-scroll.ultra-dense .event-block strong{
+  white-space:normal !important;
+  line-height:1.05;
+}
+
+@media(max-width:700px){
+  .date-head{line-height:1.1}
+  .time-axis>div{right:2px}
+  .event-block strong{line-height:1.04}
+}
