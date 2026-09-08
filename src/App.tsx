@@ -59,7 +59,7 @@ const DEFAULT_USER_SETTINGS: UserTimetableSettings = {
   showBookingStatusInTimetable: true,
 }
 const START_HOUR = 8
-const BASE_timetableEndHour = 24
+const BASE_END_HOUR = 24
 const FALLBACK_RUNTIME = 120
 const DATA_VERSION = '2025-test-20260908-2'
 
@@ -301,9 +301,9 @@ export default function App() {
   const timetableEndHour = useMemo(() => {
     const latestEndMinutes = selectedItems.reduce(
       (latest, { film, screening }) => Math.max(latest, endMinutes(film, screening)),
-      BASE_timetableEndHour * 60,
+      BASE_END_HOUR * 60,
     )
-    return Math.max(BASE_timetableEndHour, Math.ceil(latestEndMinutes / 60))
+    return Math.max(BASE_END_HOUR, Math.ceil(latestEndMinutes / 60))
   }, [selectedItems])
 
   const timetableMetrics = useMemo(() => {

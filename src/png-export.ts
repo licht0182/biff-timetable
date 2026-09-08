@@ -37,7 +37,7 @@ const DEFAULT_USER_SETTINGS: UserTimetableSettings = {
   showTransferWarnings: true,
 }
 const START_HOUR = 8
-const BASE_endHour = 24
+const BASE_END_HOUR = 24
 const FALLBACK_RUNTIME = 120
 const EXPORT_WIDTH = 1440
 const EXPORT_AXIS_WIDTH = 72
@@ -77,9 +77,9 @@ function displayEndMinutes(film: Film, screening: Screening) {
 function exportEndHour(items: ExportItem[]) {
   const latestEndMinutes = items.reduce(
     (latest, { film, screening }) => Math.max(latest, displayEndMinutes(film, screening)),
-    BASE_endHour * 60,
+    BASE_END_HOUR * 60,
   )
-  return Math.max(BASE_endHour, Math.ceil(latestEndMinutes / 60))
+  return Math.max(BASE_END_HOUR, Math.ceil(latestEndMinutes / 60))
 }
 
 function formatDate(date: string) {
