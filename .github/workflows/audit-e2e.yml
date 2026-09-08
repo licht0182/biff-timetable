@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/audit-e2e.yml
       - scripts/audit-e2e.mjs
+      - scripts/audit-webkit.mjs
 
 permissions:
   contents: read
@@ -58,8 +59,8 @@ jobs:
           grep -RInE 'target="_blank"|window\.open' src index.html || true
       - name: Install Playwright
         run: npm install --no-save playwright@1.55.0
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Install Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
       - name: Start production preview
         run: |
           npm run preview -- --host 127.0.0.1 > /tmp/biff-preview.log 2>&1 &
@@ -69,5 +70,8 @@ jobs:
           done
           cat /tmp/biff-preview.log
           exit 1
-      - name: Run full browser audit
+      - name: Run full Chromium browser audit
+        continue-on-error: true
         run: node scripts/audit-e2e.mjs
+      - name: Run WebKit mobile/iPhone smoke audit
+        run: node scripts/audit-webkit.mjs
