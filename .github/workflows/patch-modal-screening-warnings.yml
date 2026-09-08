@@ -27,11 +27,12 @@ jobs:
 
           app_path = Path('src/App.tsx')
           app = app_path.read_text()
-          old = '''          <div className="modal-screenings">{detailFilm.screenings.map((screening) => {
-            const isSelected = selected.includes(screening.id)
-            const isCurrentScreening = screening.id === detailScreeningId
-            return <div className={isCurrentScreening ? 'current-screening' : ''} key={screening.id}><div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}{isCurrentScreening && <em className="current-screening-badge">현재 회차</em>}</strong><span>{screening.venue} · {screening.start}–{endLabel(detailFilm, screening)}{screening.gv ? ' · GV' : ''}</span></div><button className={isSelected ? 'selected' : ''} onClick={() => toggle(detailFilm, screening)}>{isSelected ? '선택됨' : '+ 추가'}</button></div>
-          })}</div>'''
+          start_marker = '          <div className="modal-screenings">{detailFilm.screenings.map((screening) => {'
+          end_marker = '          <div className="modal-footer">'
+          start = app.find(start_marker)
+          end = app.find(end_marker, start)
+          if start < 0 or end < 0:
+              raise SystemExit('modal screenings markers not found')
           new = '''          <div className="modal-screenings">{detailFilm.screenings.map((screening) => {
             const isSelected = selected.includes(screening.id)
             const isCurrentScreening = screening.id === detailScreeningId
@@ -49,10 +50,9 @@ jobs:
               travel ? 'travel-warning' : '',
             ].filter(Boolean).join(' ')
             return <div className={rowClassName} key={screening.id}><div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}{isCurrentScreening && <em className="current-screening-badge">현재 회차</em>}</strong><span>{screening.venue} · {screening.start}–{endLabel(detailFilm, screening)}{screening.gv ? ' · GV' : ''}</span>{rowNote && <small className={`modal-screening-note ${travel ? 'travel-text' : ''}`} title={rowNoteTitle}>{rowNote}</small>}</div><button className={isSelected ? 'selected' : ''} onClick={() => toggle(detailFilm, screening)}>{isSelected ? '선택됨' : '+ 추가'}</button></div>
-          })}</div>'''
-          if old not in app:
-              raise SystemExit('modal screenings block not found')
-          app_path.write_text(app.replace(old, new))
+          })}</div>
+'''
+          app_path.write_text(app[:start] + new + app[end:])
 
           css_path = Path('src/features.css')
           css = css_path.read_text()
