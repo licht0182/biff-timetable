@@ -49,7 +49,7 @@
 .png-export-legend .warning{color:#b53a2d;background:#fff3f1;border-color:#f0cbc5}
 
 .png-export-grid{
-  --png-body-height:calc(var(--png-edge-space) * 2 + var(--png-hour-height) * 19);
+  --png-body-height:calc(var(--png-edge-space) * 2 + var(--png-hour-height) * var(--png-hours));
   display:grid;
   grid-template-columns:var(--png-axis-width) repeat(var(--png-days),minmax(0,1fr));
   grid-template-rows:var(--png-header-height) var(--png-body-height);
