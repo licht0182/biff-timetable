@@ -1,3 +1,5 @@
+export {}
+
 type StoredTicketStatus = 'planned' | 'booked'
 type StoredTicketStatusMap = Record<string, StoredTicketStatus>
 
