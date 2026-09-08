@@ -28,7 +28,7 @@ try {
 
   await block.click()
   await modal.waitFor({ state: 'visible' })
-  await page.locator('.corner').click({ position: { x: 2, y: 2 } })
+  await page.locator('.timetable-detail-backdrop').click({ position: { x: 2, y: 2 } })
   await modal.waitFor({ state: 'hidden' })
 
   await page.getByRole('button', { name: '선택', exact: true }).click()
