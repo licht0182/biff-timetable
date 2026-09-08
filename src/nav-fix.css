@@ -1,0 +1,25 @@
+.timetable-mode{padding:22px 20px 10px}
+.timetable-mode .topbar{padding:19px 22px}
+.timetable-mode .topbar>div:first-child{padding-left:54px}
+.timetable-mode .topbar>div:first-child:before{width:42px;height:42px;border-radius:11px;font-size:11px}
+.timetable-mode .topbar h1{font-size:24px}
+.timetable-mode .eyebrow{display:block}
+.timetable-mode .subtitle{display:block}
+.timetable-mode .selection-count{font-size:13px;padding:8px 11px}
+.timetable-mode .tabs{margin-bottom:14px;padding:0 18px}
+.timetable-mode .tabs button{padding:14px 16px 13px;font-size:14px}
+.timetable-mode .tabs button.active:after{left:14px;right:14px}
+
+@media(max-width:700px){
+  .timetable-mode{padding:10px 8px 5px}
+  .timetable-mode .topbar{padding:13px 12px}
+  .timetable-mode .topbar>div:first-child{padding-left:43px}
+  .timetable-mode .topbar>div:first-child:before{width:34px;height:34px;border-radius:8px;font-size:9px}
+  .timetable-mode .topbar h1{font-size:19px}
+  .timetable-mode .eyebrow{display:none}
+  .timetable-mode .subtitle{display:block;font-size:11px;margin-top:4px}
+  .timetable-mode .selection-count{font-size:11px;padding:6px 8px}
+  .timetable-mode .tabs{padding:0 6px;margin-bottom:8px}
+  .timetable-mode .tabs button{padding:11px 12px 10px;font-size:12px}
+  .timetable-mode .tabs button.active:after{left:10px;right:10px}
+}
