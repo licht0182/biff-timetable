@@ -43,3 +43,5 @@ jobs:
           git add src/App.tsx src/timetable-readonly.css
           git commit -m "Open timetable details from screening blocks"
           git push origin HEAD:feature/timetable-click-details
+
+# Verification rerun after correcting outside-click simulation.
