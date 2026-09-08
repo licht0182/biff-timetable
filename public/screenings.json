@@ -1,45 +1,249 @@
 {
+  "note": "2026 상영시간표 공개 전 테스트용으로 BIFF 2025 공식 시간표의 실제 시작시간·상영관·상영코드를 사용합니다. 종료시간에 '예상'이 붙은 경우 현재는 120분 기준 임시 계산입니다.",
+  "source": "https://www.biff.kr/pop/20250909/schedule_eng.asp",
   "films": [
     {
-      "id": "demo-001",
-      "title": "샘플 영화 A",
-      "englishTitle": "Sample Film A",
-      "director": "홍길동",
-      "country": "대한민국",
-      "section": "뉴 커런츠",
-      "runtime": 118,
-      "url": "https://www.biff.kr/",
+      "id": "2025-no-other-choice",
+      "title": "어쩔수가없다",
+      "englishTitle": "No Other Choice",
+      "section": "2025 테스트",
       "screenings": [
-        { "id": "demo-001-s1", "date": "2026-09-18", "start": "10:30", "end": "12:28", "venue": "영화의전당 중극장", "gv": true },
-        { "id": "demo-001-s2", "date": "2026-09-20", "start": "18:10", "end": "20:08", "venue": "CGV 센텀시티 3관" }
+        { "id": "2025-001", "code": "001", "date": "2025-09-17", "start": "18:00", "venue": "영화의전당 야외극장", "gv": true },
+        { "id": "2025-020", "code": "020", "date": "2025-09-18", "start": "09:00", "venue": "CGV 센텀시티 IMAX", "gv": true },
+        { "id": "2025-083", "code": "083", "date": "2025-09-19", "start": "11:30", "venue": "영화의전당 중극장", "gv": true }
       ]
     },
     {
-      "id": "demo-002",
-      "title": "샘플 영화 B",
-      "englishTitle": "Sample Film B",
-      "director": "김영화",
-      "country": "일본",
-      "section": "아시아 영화의 창",
-      "runtime": 104,
-      "url": "https://www.biff.kr/",
+      "id": "2025-final-piece",
+      "title": "The Final Piece",
+      "englishTitle": "The Final Piece",
+      "section": "2025 테스트",
       "screenings": [
-        { "id": "demo-002-s1", "date": "2026-09-18", "start": "12:00", "end": "13:44", "venue": "영화의전당 소극장" },
-        { "id": "demo-002-s2", "date": "2026-09-19", "start": "15:20", "end": "17:04", "venue": "롯데시네마 센텀시티 4관", "gv": true }
+        { "id": "2025-003", "code": "003", "date": "2025-09-18", "start": "20:00", "venue": "영화의전당 야외극장", "gv": true }
       ]
     },
     {
-      "id": "demo-003",
-      "title": "샘플 영화 C",
-      "englishTitle": "Sample Film C",
-      "director": "Alex Kim",
-      "country": "프랑스",
-      "section": "월드 시네마",
-      "runtime": 132,
-      "url": "https://www.biff.kr/",
+      "id": "2025-last-samurai-standing",
+      "title": "Last Samurai Standing",
+      "englishTitle": "Last Samurai Standing",
+      "section": "2025 테스트",
       "screenings": [
-        { "id": "demo-003-s1", "date": "2026-09-19", "start": "19:00", "end": "21:12", "venue": "영화의전당 하늘연극장" },
-        { "id": "demo-003-s2", "date": "2026-09-21", "start": "11:00", "end": "13:12", "venue": "CGV 센텀시티 5관" }
+        { "id": "2025-004", "code": "004", "date": "2025-09-18", "start": "09:00", "venue": "영화의전당 하늘연극장", "gv": true }
+      ]
+    },
+    {
+      "id": "2025-bakas-identity",
+      "title": "BAKA's Identity",
+      "englishTitle": "BAKA's Identity",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-005", "code": "005", "date": "2025-09-18", "start": "12:30", "venue": "영화의전당 하늘연극장", "gv": true },
+        { "id": "2025-087", "code": "087", "date": "2025-09-19", "start": "13:00", "venue": "영화의전당 소극장", "gv": true }
+      ]
+    },
+    {
+      "id": "2025-another-birth",
+      "title": "Another Birth",
+      "englishTitle": "Another Birth",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-006", "code": "006", "date": "2025-09-18", "start": "17:00", "venue": "영화의전당 하늘연극장", "gv": true },
+        { "id": "2025-088", "code": "088", "date": "2025-09-19", "start": "17:00", "venue": "영화의전당 소극장", "gv": true }
+      ]
+    },
+    {
+      "id": "2025-wizard-kremlin",
+      "title": "The Wizard of the Kremlin",
+      "englishTitle": "The Wizard of the Kremlin",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-007", "code": "007", "date": "2025-09-18", "start": "20:10", "venue": "영화의전당 하늘연극장" }
+      ]
+    },
+    {
+      "id": "2025-blue-trail",
+      "title": "The Blue Trail",
+      "englishTitle": "The Blue Trail",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-010", "code": "010", "date": "2025-09-18", "start": "08:30", "venue": "영화의전당 중극장" }
+      ]
+    },
+    {
+      "id": "2025-good-news",
+      "title": "Good News",
+      "englishTitle": "Good News",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-009", "code": "009", "date": "2025-09-18", "start": "11:00", "venue": "영화의전당 중극장", "gv": true },
+        { "id": "2025-080", "code": "080", "date": "2025-09-19", "start": "19:50", "venue": "영화의전당 하늘연극장", "gv": true }
+      ]
+    },
+    {
+      "id": "2025-it-was-just-an-accident",
+      "title": "It Was Just an Accident",
+      "englishTitle": "It Was Just an Accident",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-011", "code": "011", "date": "2025-09-18", "start": "15:30", "venue": "영화의전당 중극장", "gv": true }
+      ]
+    },
+    {
+      "id": "2025-heat",
+      "title": "Heat",
+      "englishTitle": "Heat",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-012", "code": "012", "date": "2025-09-18", "start": "19:20", "venue": "영화의전당 중극장", "gv": true }
+      ]
+    },
+    {
+      "id": "2025-nobody-knows",
+      "title": "Nobody Knows",
+      "englishTitle": "Nobody Knows",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-013", "code": "013", "date": "2025-09-18", "start": "09:00", "venue": "영화의전당 소극장", "gv": true }
+      ]
+    },
+    {
+      "id": "2025-drive-my-car",
+      "title": "Drive My Car",
+      "englishTitle": "Drive My Car",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-018", "code": "018", "date": "2025-09-18", "start": "14:00", "venue": "영화의전당 시네마테크", "gv": true }
+      ]
+    },
+    {
+      "id": "2025-project-y",
+      "title": "Project Y",
+      "englishTitle": "Project Y",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-021", "code": "021", "date": "2025-09-18", "start": "13:20", "venue": "CGV 센텀시티 IMAX", "gv": true }
+      ]
+    },
+    {
+      "id": "2025-frankenstein",
+      "title": "Frankenstein",
+      "englishTitle": "Frankenstein",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-023", "code": "023", "date": "2025-09-18", "start": "19:30", "venue": "CGV 센텀시티 IMAX", "gv": true },
+        { "id": "2025-179", "code": "179", "date": "2025-09-20", "start": "15:30", "venue": "CGV 센텀시티 IMAX", "gv": true }
+      ]
+    },
+    {
+      "id": "2025-mastermind",
+      "title": "The Mastermind",
+      "englishTitle": "The Mastermind",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-039", "code": "039", "date": "2025-09-18", "start": "09:30", "venue": "CGV 센텀시티 6관" },
+        { "id": "2025-340", "code": "340", "date": "2025-09-22", "start": "12:00", "venue": "CGV 센텀시티 IMAX" }
+      ]
+    },
+    {
+      "id": "2025-shadow-edge",
+      "title": "The Shadow's Edge",
+      "englishTitle": "The Shadow's Edge",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-077", "code": "077", "date": "2025-09-19", "start": "20:00", "venue": "영화의전당 야외극장", "gv": true }
+      ]
+    },
+    {
+      "id": "2025-two-seasons",
+      "title": "Two Seasons, Two Strangers",
+      "englishTitle": "Two Seasons, Two Strangers",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-078", "code": "078", "date": "2025-09-19", "start": "12:10", "venue": "영화의전당 하늘연극장", "gv": true },
+        { "id": "2025-170", "code": "170", "date": "2025-09-20", "start": "12:30", "venue": "영화의전당 소극장", "gv": true }
+      ]
+    },
+    {
+      "id": "2025-old-boy",
+      "title": "올드보이",
+      "englishTitle": "Old Boy",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-092", "code": "092", "date": "2025-09-19", "start": "16:30", "venue": "영화의전당 시네마테크", "gv": true }
+      ]
+    },
+    {
+      "id": "2025-bugonia",
+      "title": "Bugonia",
+      "englishTitle": "Bugonia",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-096", "code": "096", "date": "2025-09-19", "start": "17:00", "venue": "CGV 센텀시티 IMAX" }
+      ]
+    },
+    {
+      "id": "2025-kokuho",
+      "title": "KOKUHO",
+      "englishTitle": "KOKUHO",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-163", "code": "163", "date": "2025-09-20", "start": "19:00", "venue": "영화의전당 하늘연극장", "gv": true },
+        { "id": "2025-259", "code": "259", "date": "2025-09-21", "start": "16:00", "venue": "CGV 센텀시티 IMAX", "gv": true }
+      ]
+    },
+    {
+      "id": "2025-romeria",
+      "title": "Romeria",
+      "englishTitle": "Romeria",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-166", "code": "166", "date": "2025-09-20", "start": "13:00", "venue": "영화의전당 중극장" }
+      ]
+    },
+    {
+      "id": "2025-sirat",
+      "title": "Sirât",
+      "englishTitle": "Sirât",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-178", "code": "178", "date": "2025-09-20", "start": "12:30", "venue": "CGV 센텀시티 IMAX" }
+      ]
+    },
+    {
+      "id": "2025-measure-in-love",
+      "title": "Measure in Love",
+      "englishTitle": "Measure in Love",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-239", "code": "239", "date": "2025-09-21", "start": "20:00", "venue": "영화의전당 야외극장", "gv": true }
+      ]
+    },
+    {
+      "id": "2025-la-grazia",
+      "title": "La Grazia",
+      "englishTitle": "La Grazia",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-246", "code": "246", "date": "2025-09-21", "start": "12:30", "venue": "영화의전당 중극장" }
+      ]
+    },
+    {
+      "id": "2025-5cm",
+      "title": "초속 5센티미터",
+      "englishTitle": "5 Centimeters Per Second",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-073", "code": "073", "date": "2025-09-18", "start": "19:30", "venue": "동서대학교 소향씨어터 신한카드홀", "gv": true },
+        { "id": "2025-324", "code": "324", "date": "2025-09-22", "start": "20:00", "venue": "영화의전당 야외극장", "gv": true }
+      ]
+    },
+    {
+      "id": "2025-left-handed-girl",
+      "title": "Left-Handed Girl",
+      "englishTitle": "Left-Handed Girl",
+      "section": "2025 테스트",
+      "screenings": [
+        { "id": "2025-326", "code": "326", "date": "2025-09-22", "start": "12:30", "venue": "영화의전당 하늘연극장", "gv": true }
       ]
     }
   ]
