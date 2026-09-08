@@ -10,6 +10,13 @@
 .timetable-mode .tabs button{padding:14px 16px 13px;font-size:14px}
 .timetable-mode .tabs button.active:after{left:14px;right:14px}
 
+/* Keep the first/last time labels and edge screenings away from clipping. */
+.timetable{grid-template-rows:var(--header-height) calc(var(--grid-height) + 16px)}
+.time-axis,.day-column{height:calc(var(--grid-height) + 16px)}
+.time-axis>div{transform:translateY(calc(-50% + 8px))}
+.hour-line{transform:translateY(8px)}
+.event-block{margin-top:8px}
+
 @media(max-width:700px){
   .timetable-mode{padding:10px 8px 5px}
   .timetable-mode .topbar{padding:13px 12px}
