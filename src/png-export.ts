@@ -62,11 +62,14 @@ function displayEndMinutes(film: Film, screening: Screening) {
 }
 
 function formatDate(date: string) {
-  return new Intl.DateTimeFormat('ko-KR', {
-    month: 'numeric',
-    day: 'numeric',
-    weekday: 'short',
-  }).format(new Date(`${date}T00:00:00`))
+  const value = new Date(`${date}T00:00:00`)
+  const weekdays = ['일', '월', '화', '수', '목', '금', '토']
+  return `${value.getMonth() + 1}월 ${value.getDate()}일 ${weekdays[value.getDay()]}`
+}
+
+function formatHourLabel(hour: number) {
+  const normalized = hour < 24 ? hour : hour - 24
+  return `${String(normalized).padStart(2, '0')}시`
 }
 
 function formatClock(minutes: number) {
@@ -139,7 +142,7 @@ function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap) {
   const period = dates.length
     ? `${formatDate(dates[0])}${dates.length > 1 ? ` – ${formatDate(dates[dates.length - 1])}` : ''}`
     : ''
-  titleGroup.append(element('p', 'png-export-period', `${period} · 선택 ${items.length}회`))
+  titleGroup.append(element('p', 'png-export-period', `${period} · 총 ${items.length}개 선택`))
   brand.append(titleGroup)
   head.append(brand)
 
@@ -157,7 +160,7 @@ function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap) {
 
   const axis = element('div', 'png-export-axis')
   for (let hour = START_HOUR; hour <= END_HOUR; hour += 1) {
-    const label = element('span', '', String(hour < 24 ? hour : hour - 24).padStart(2, '0'))
+    const label = element('span', '', formatHourLabel(hour))
     label.style.top = `${EXPORT_EDGE_SPACE + (hour - START_HOUR) * EXPORT_HOUR_HEIGHT}px`
     axis.append(label)
   }
@@ -185,7 +188,7 @@ function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap) {
         event.style.top = `${top}px`
         event.style.height = `${height}px`
 
-        const title = element('strong', '', `${statusPrefix}${film.title}`)
+        const title = element('strong', 'png-export-event-title', `${statusPrefix}${film.title}`)
         const time = element('span', 'png-export-event-time', `${screening.start}–${formatClock(end)}${screening.gv ? ' · GV' : ''}`)
         const venue = element('span', 'png-export-event-venue', screening.venue)
         event.append(title, time, venue)
@@ -202,6 +205,44 @@ function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap) {
   footer.append(element('span', '', '종료시간이 공식 데이터에 없는 회차는 러닝타임 또는 임시 기준으로 계산될 수 있습니다.'))
   board.append(footer)
   return board
+}
+
+function stabilizeExportEventWidths(board: HTMLElement) {
+  board.querySelectorAll<HTMLElement>('.png-export-event').forEach((event) => {
+    const column = event.parentElement
+    if (!column) return
+    const width = Math.max(1, column.getBoundingClientRect().width - 10)
+    event.style.left = '5px'
+    event.style.right = 'auto'
+    event.style.width = `${width}px`
+  })
+}
+
+function fitExportEventTitle(event: HTMLElement) {
+  const title = event.querySelector<HTMLElement>('.png-export-event-title')
+  if (!title) return
+
+  title.style.removeProperty('font-size')
+  event.classList.remove('title-priority')
+  if (event.scrollHeight <= event.clientHeight + 1) return
+
+  event.classList.add('title-priority')
+  let size = Number.parseFloat(getComputedStyle(title).fontSize)
+  const minimum = 5.5
+
+  while (event.scrollHeight > event.clientHeight + 1 && size > minimum) {
+    size = Math.max(minimum, size - 0.4)
+    title.style.fontSize = `${size}px`
+  }
+}
+
+function prepareExportBoard(board: HTMLElement) {
+  stabilizeExportEventWidths(board)
+  board.querySelectorAll<HTMLElement>('.png-export-event').forEach(fitExportEventTitle)
+}
+
+async function nextPaint() {
+  await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
 }
 
 async function loadExportItems() {
@@ -316,7 +357,9 @@ async function exportPng(button: HTMLButtonElement) {
     document.body.append(host)
 
     await document.fonts?.ready
-    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+    await nextPaint()
+    prepareExportBoard(board)
+    await nextPaint()
 
     const blob = await toBlob(board, {
       backgroundColor: '#ffffff',
