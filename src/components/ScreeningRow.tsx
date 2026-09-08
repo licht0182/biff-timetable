@@ -29,15 +29,16 @@ function ScreeningRow({
   const rowNote = hasConflict
     ? '선택한 회차와 시간이 겹칩니다.'
     : travel
-      ? `이동 여유 ${travel.gap}분 · 권장 ${travel.buffer}분`
+      ? `${travel.routeLabel ? `${travel.routeLabel} · ` : ''}이동 여유 ${travel.gap}분 · 필요 ${travel.buffer}분`
       : ''
+  const rowNoteTitle = travel?.transferDetail ? `${rowNote}\n${travel.transferDetail}` : rowNote || undefined
 
   return (
     <div className={`screening-row ${hasConflict ? 'conflict' : ''} ${travel ? 'travel-warning' : ''}`}>
       <div>
         <strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}</strong>
         <span>{screening.venue} · {screening.start}–{endLabel(film, screening)}{screening.gv ? ' · GV' : ''}</span>
-        <small className={`screening-note ${travel ? 'travel-text' : ''}`} title={rowNote || undefined}>{rowNote}</small>
+        <small className={`screening-note ${travel ? 'travel-text' : ''}`} title={rowNoteTitle}>{rowNote}</small>
       </div>
       <div className="screening-actions">
         {isSelected && (
