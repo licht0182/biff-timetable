@@ -188,6 +188,20 @@ export default function App() {
   useEffect(() => { localStorage.setItem(TICKET_STATUS_KEY, JSON.stringify(ticketStatus)) }, [ticketStatus])
 
   useEffect(() => {
+    setTicketStatus((current) => {
+      let changed = false
+      const next = { ...current }
+      for (const id of selected) {
+        if (next[id] !== 'planned' && next[id] !== 'booked') {
+          next[id] = 'planned'
+          changed = true
+        }
+      }
+      return changed ? next : current
+    })
+  }, [selected])
+
+  useEffect(() => {
     if (!toast) return
     const timer = window.setTimeout(() => setToast(''), 2800)
     return () => window.clearTimeout(timer)
@@ -297,17 +311,20 @@ export default function App() {
   }
 
   function toggle(screening: Screening) {
-    setSelected((current) => {
-      if (current.includes(screening.id)) {
-        setTicketStatus((statuses) => {
-          const next = { ...statuses }
-          delete next[screening.id]
-          return next
-        })
-        return current.filter((id) => id !== screening.id)
-      }
-      return [...current, screening.id]
-    })
+    const isSelected = selected.includes(screening.id)
+
+    if (isSelected) {
+      setSelected((current) => current.filter((id) => id !== screening.id))
+      setTicketStatus((statuses) => {
+        const next = { ...statuses }
+        delete next[screening.id]
+        return next
+      })
+      return
+    }
+
+    setSelected((current) => current.includes(screening.id) ? current : [...current, screening.id])
+    setTicketStatus((statuses) => ({ ...statuses, [screening.id]: 'planned' }))
   }
 
   function toggleFavorite(filmId: string) {
@@ -360,7 +377,9 @@ export default function App() {
       const validFilmIds = new Set(films.map((film) => film.id))
 
       if (Array.isArray(parsed)) {
-        setSelected(parsed.filter((id): id is string => typeof id === 'string' && validScreeningIds.has(id)))
+        const nextSelected = parsed.filter((id): id is string => typeof id === 'string' && validScreeningIds.has(id))
+        setSelected(nextSelected)
+        setTicketStatus(Object.fromEntries(nextSelected.map((id) => [id, 'planned'])) as TicketStatusMap)
         setToast('기존 형식의 선택 회차를 가져왔습니다.')
         return
       }
@@ -377,6 +396,9 @@ export default function App() {
         for (const [id, status] of Object.entries(parsed.ticketStatus)) {
           if (validScreeningIds.has(id) && (status === 'planned' || status === 'booked')) nextStatuses[id] = status
         }
+      }
+      for (const id of nextSelected) {
+        if (!nextStatuses[id]) nextStatuses[id] = 'planned'
       }
 
       setSelected(nextSelected)
@@ -432,13 +454,13 @@ export default function App() {
   } as CSSProperties
 
   const bookedCount = selected.filter((id) => ticketStatus[id] === 'booked').length
-  const plannedCount = selected.filter((id) => ticketStatus[id] === 'planned').length
+  const plannedCount = selected.filter((id) => ticketStatus[id] !== 'booked').length
 
   return (
     <div className={`app-shell ${activeTab === 'timetable' ? 'timetable-mode' : ''}`}>
       <header className="topbar">
         <div><p className="eyebrow">BUSAN INTERNATIONAL FILM FESTIVAL</p><h1>BIFF Timetable</h1><p className="subtitle">상영작을 고르고 나만의 영화제 시간표를 만드세요.</p></div>
-        <div className="selection-count">선택 {selected.length}회</div>
+        <div className="selection-count">총 {selected.length}개 선택</div>
       </header>
 
       <nav className="tabs" aria-label="주요 메뉴">
@@ -477,11 +499,11 @@ export default function App() {
               const isSelected = selected.includes(screening.id)
               const hasConflict = !isSelected && conflicts(film, screening)
               const travel = !hasConflict ? transitionWarning(film, screening) : null
-              const status = ticketStatus[screening.id] ?? 'none'
+              const status = ticketStatus[screening.id] ?? 'planned'
               return <div className={`screening-row ${hasConflict ? 'conflict' : ''} ${travel ? 'travel-warning' : ''}`} key={screening.id}>
                 <div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}</strong><span>{screening.venue} · {screening.start}–{endLabel(film, screening)}{screening.gv ? ' · GV' : ''}</span>{hasConflict && <small>선택한 회차와 시간이 겹칩니다.</small>}{travel && <small className="travel-text">이동 여유 {travel.gap}분 · 권장 {travel.buffer}분</small>}</div>
                 <div className="screening-actions">
-                  {isSelected && <select className={`ticket-select ${status}`} value={status} onChange={(event) => setScreeningTicketStatus(screening.id, event.target.value as TicketStatus)} aria-label={`${film.title} 예매 상태`}><option value="none">상태 없음</option><option value="planned">예매 예정</option><option value="booked">예매 완료</option></select>}
+                  {isSelected && <select className={`ticket-select ${status}`} value={status} onChange={(event) => setScreeningTicketStatus(screening.id, event.target.value as TicketStatus)} aria-label={`${film.title} 예매 상태`}><option value="planned">예매 예정</option><option value="booked">예매 완료</option></select>}
                   <button className={isSelected ? 'selected' : ''} onClick={() => toggle(screening)}>{isSelected ? '선택됨' : '+ 추가'}</button>
                 </div>
               </div>
@@ -513,7 +535,7 @@ export default function App() {
                   const top = ((start - START_HOUR * 60) / 60) * timetableMetrics.hourHeight
                   const height = Math.max(((end - start) / 60) * timetableMetrics.hourHeight, timetableMetrics.ultraDense ? 16 : 22)
                   const travel = transitionWarning(film, screening)
-                  const status = ticketStatus[screening.id] ?? 'none'
+                  const status = ticketStatus[screening.id] ?? 'planned'
                   const statusPrefix = status === 'booked' ? '✓ ' : status === 'planned' ? '○ ' : ''
                   return <button
                     className={`event-block status-${status} ${travel ? 'has-travel-warning' : ''}`}
