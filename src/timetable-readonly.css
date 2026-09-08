@@ -1,0 +1,9 @@
+.event-block{
+  cursor:default !important;
+  pointer-events:none;
+}
+
+.event-block:hover{
+  filter:none !important;
+  transform:none !important;
+}
