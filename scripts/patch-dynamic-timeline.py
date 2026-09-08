@@ -28,10 +28,10 @@ text = text.replace("hourHeight * (END_HOUR - START_HOUR)", "hourHeight * (timet
 text = text.replace("}, [viewport, dates.length])", "}, [viewport, dates.length, timetableEndHour])", 1)
 
 text = text.replace("브라우저 크기에 맞춰 전체 시간표를 자동 조정합니다.", "선택한 회차의 종료시간과 브라우저 크기에 맞춰 시간표 범위를 자동 조정합니다.", 1)
-text = text.replace("Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i)", "Array.from({ length: timetableEndHour - START_HOUR + 1 }, (_, i) => START_HOUR + i)", 1)
-text = text.replace("Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => <div className=\"hour-line\"", "Array.from({ length: timetableEndHour - START_HOUR + 1 }, (_, i) => <div className=\"hour-line\"", 1)
+text = text.replace("END_HOUR", "timetableEndHour")
 
 assert 'END_HOUR' not in text
+assert 'const timetableEndHour = 27' not in text
 app.write_text(text)
 
 png = Path('src/png-export.ts')
@@ -65,9 +65,9 @@ assert old_build in png_text
 png_text = png_text.replace(old_build, new_build, 1)
 
 png_text = png_text.replace("board.style.setProperty('--png-hour-height', `${EXPORT_HOUR_HEIGHT}px`)", "board.style.setProperty('--png-hour-height', `${EXPORT_HOUR_HEIGHT}px`)\n  board.style.setProperty('--png-hours', String(endHour - START_HOUR))", 1)
-png_text = png_text.replace("for (let hour = START_HOUR; hour <= END_HOUR; hour += 1)", "for (let hour = START_HOUR; hour <= endHour; hour += 1)", 1)
-png_text = png_text.replace("for (let i = 0; i <= END_HOUR - START_HOUR; i += 1)", "for (let i = 0; i <= endHour - START_HOUR; i += 1)", 1)
+png_text = png_text.replace("END_HOUR", "endHour")
 assert 'END_HOUR' not in png_text
+assert 'const endHour = 27' not in png_text
 png.write_text(png_text)
 
 css = Path('src/png-export.css')
