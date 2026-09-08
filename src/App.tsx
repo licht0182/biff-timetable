@@ -1,6 +1,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
 import FilmList from './components/FilmList'
 import type { Film, Screening, TicketStatus, TicketStatusMap } from './components/film-types'
+import { VENUE_TRANSFER_SITES, getPreciseVenueTransfer, getVenueSiteTransferMinutes } from './venue-travel'
 
 type FilmData = { films: Film[]; note?: string; source?: string }
 type BackupData = {
@@ -97,16 +98,42 @@ function formatDate(date: string, _compact = false) {
 
 function venueCluster(venue: string) {
   if (venue.startsWith('영화의전당')) return '영화의전당'
-  if (venue.startsWith('CGV 센텀시티')) return 'CGV 센텀시티'
+  if (venue.startsWith('CGV센텀시티') || venue.startsWith('CGV 센텀시티')) return 'CGV센텀시티'
   if (venue.startsWith('롯데시네마 센텀')) return '롯데시네마 센텀시티'
-  if (venue.includes('소향씨어터')) return '소향씨어터'
+  if (venue.includes('소향씨어터') || venue.startsWith('동서대학교-경남정보대학교')) return '동서대 센텀캠퍼스'
+  if (venue.includes('영화진흥위원회')) return '영화진흥위원회'
+  if (venue.includes('시청자미디어센터')) return '시청자미디어센터'
   return venue
 }
 
-function transferBufferMinutes(a: string, b: string, settings: UserTimetableSettings) {
-  if (a === b) return settings.sameVenueMinutes
-  if (venueCluster(a) === venueCluster(b)) return settings.sameClusterMinutes
-  return settings.differentVenueMinutes
+function transferBuffer(fromVenue: string, toVenue: string, settings: UserTimetableSettings) {
+  if (fromVenue === toVenue) {
+    return {
+      minutes: settings.sameVenueMinutes,
+      routeLabel: '동일 상영관',
+      transferDetail: `같은 상영관 연속 관람 기본 여유 ${settings.sameVenueMinutes}분`,
+      precise: false,
+    }
+  }
+
+  const precise = getPreciseVenueTransfer(fromVenue, toVenue)
+  if (precise) {
+    return {
+      minutes: precise.minutes,
+      routeLabel: precise.routeLabel,
+      transferDetail: precise.detail,
+      precise: true,
+    }
+  }
+
+  const sameCluster = venueCluster(fromVenue) === venueCluster(toVenue)
+  const minutes = sameCluster ? settings.sameClusterMinutes : settings.differentVenueMinutes
+  return {
+    minutes,
+    routeLabel: `${fromVenue} → ${toVenue}`,
+    transferDetail: `정밀 이동시간 미등록 조합 · ${sameCluster ? '같은 시설' : '다른 시설'} 기본값 ${minutes}분 적용`,
+    precise: false,
+  }
 }
 
 function downloadText(filename: string, content: string, type: string) {
@@ -340,15 +367,33 @@ export default function App() {
       if (other.id === screening.id || other.date !== screening.date) continue
       const otherStart = toMinutes(other.start)
       const otherEnd = endMinutes(otherFilm, other)
-      const buffer = transferBufferMinutes(screening.venue, other.venue, userSettings)
-      if (buffer === 0) continue
 
       if (end <= otherStart) {
+        const transfer = transferBuffer(screening.venue, other.venue, userSettings)
+        if (transfer.minutes === 0) continue
         const gap = otherStart - end
-        if (gap < buffer) return { otherFilm, other, gap, buffer }
+        if (gap < transfer.minutes) return {
+          otherFilm,
+          other,
+          gap,
+          buffer: transfer.minutes,
+          routeLabel: transfer.routeLabel,
+          transferDetail: transfer.transferDetail,
+          precise: transfer.precise,
+        }
       } else if (otherEnd <= start) {
+        const transfer = transferBuffer(other.venue, screening.venue, userSettings)
+        if (transfer.minutes === 0) continue
         const gap = start - otherEnd
-        if (gap < buffer) return { otherFilm, other, gap, buffer }
+        if (gap < transfer.minutes) return {
+          otherFilm,
+          other,
+          gap,
+          buffer: transfer.minutes,
+          routeLabel: transfer.routeLabel,
+          transferDetail: transfer.transferDetail,
+          precise: transfer.precise,
+        }
       }
     }
     return null
@@ -605,12 +650,25 @@ export default function App() {
       {settingsOpen && <main className="biff-settings-panel react-settings-panel">
         <section className="settings-intro"><p className="settings-kicker">PERSONAL SETTINGS</p><h2>설정</h2><p>시간표 계산과 표시 방식을 현재 기기에 맞게 조정할 수 있습니다. 변경사항은 이 브라우저에 자동 저장됩니다.</p></section>
         <section className="settings-card">
-          <div className="settings-card-head"><div><h3>이동 시간</h3><p>연속 상영 사이에 필요한 최소 이동 여유를 정합니다.</p></div></div>
+          <div className="settings-card-head"><div><h3>이동 시간</h3><p>등록된 BIFF 센텀권 상영관은 실제 출발 → 도착 방향에 따라 정밀 이동시간을 적용합니다.</p></div></div>
+          <div className="precise-transfer-panel">
+            <strong>방향별 권장 이동시간</strong>
+            <div className="travel-matrix-wrap">
+              <table className="travel-matrix" aria-label="상영관 방향별 권장 이동시간">
+                <thead><tr><th>출발 ↓ / 도착 →</th>{VENUE_TRANSFER_SITES.map((site) => <th key={site.id} title={site.label}>{site.shortLabel}</th>)}</tr></thead>
+                <tbody>{VENUE_TRANSFER_SITES.map((from) => <tr key={from.id}><th title={from.label}>{from.shortLabel}</th>{VENUE_TRANSFER_SITES.map((to) => {
+                  const minutes = getVenueSiteTransferMinutes(from.id, to.id)
+                  return <td key={to.id} title={`${from.label} → ${to.label}`}>{minutes == null ? '—' : `${minutes}분`}</td>
+                })}</tr>)}</tbody>
+              </table>
+            </div>
+            <p className="precise-transfer-note">퇴장·건물 내부 이동 + 시설 간 도보 + 목적지 입장 시간을 합산한 보수적 최소값입니다. 대각선은 같은 시설 안의 다른 관/층 이동 기준이며, 같은 정확한 상영관은 아래 ‘동일한 관’ 값을 사용합니다.</p>
+          </div>
           <div className="settings-list">
-            <label className="settings-number-row"><span><strong>동일 상영관</strong><small>같은 관에서 다음 상영을 볼 때 필요한 여유</small></span><span className="settings-number-control"><input type="number" min="0" max="120" step="5" inputMode="numeric" value={userSettings.sameVenueMinutes} onChange={(event) => setUserSettings((current) => ({ ...current, sameVenueMinutes: clampSetting(event.target.value, current.sameVenueMinutes, 120) }))} /><em>분</em></span></label>
-            <label className="settings-number-row"><span><strong>같은 상영관군</strong><small>영화의전당 내부처럼 같은 건물군에서 관을 이동할 때</small></span><span className="settings-number-control"><input type="number" min="0" max="180" step="5" inputMode="numeric" value={userSettings.sameClusterMinutes} onChange={(event) => setUserSettings((current) => ({ ...current, sameClusterMinutes: clampSetting(event.target.value, current.sameClusterMinutes, 180) }))} /><em>분</em></span></label>
-            <label className="settings-number-row"><span><strong>서로 다른 상영관</strong><small>CGV ↔ 영화의전당처럼 상영관군이 달라질 때</small></span><span className="settings-number-control"><input type="number" min="0" max="240" step="5" inputMode="numeric" value={userSettings.differentVenueMinutes} onChange={(event) => setUserSettings((current) => ({ ...current, differentVenueMinutes: clampSetting(event.target.value, current.differentVenueMinutes, 240) }))} /><em>분</em></span></label>
-            <label className="settings-toggle-row"><span><strong>이동 여유 경고 표시</strong><small>설정한 시간보다 여유가 짧은 연속 상영을 표시합니다.</small></span><span className="settings-switch"><input type="checkbox" checked={userSettings.showTransferWarnings} onChange={(event) => setUserSettings((current) => ({ ...current, showTransferWarnings: event.target.checked }))} /><i /></span></label>
+            <label className="settings-number-row"><span><strong>동일한 관</strong><small>완전히 같은 상영관에서 연속 관람할 때의 여유</small></span><span className="settings-number-control"><input type="number" min="0" max="120" step="5" inputMode="numeric" value={userSettings.sameVenueMinutes} onChange={(event) => setUserSettings((current) => ({ ...current, sameVenueMinutes: clampSetting(event.target.value, current.sameVenueMinutes, 120) }))} /><em>분</em></span></label>
+            <label className="settings-number-row"><span><strong>미등록 같은 시설</strong><small>새 관명 등으로 정밀 매칭이 되지 않지만 같은 시설로 판단될 때</small></span><span className="settings-number-control"><input type="number" min="0" max="180" step="5" inputMode="numeric" value={userSettings.sameClusterMinutes} onChange={(event) => setUserSettings((current) => ({ ...current, sameClusterMinutes: clampSetting(event.target.value, current.sameClusterMinutes, 180) }))} /><em>분</em></span></label>
+            <label className="settings-number-row"><span><strong>미등록 다른 시설</strong><small>정밀 이동시간 데이터에 없는 새로운 상영관 조합의 안전 기본값</small></span><span className="settings-number-control"><input type="number" min="0" max="240" step="5" inputMode="numeric" value={userSettings.differentVenueMinutes} onChange={(event) => setUserSettings((current) => ({ ...current, differentVenueMinutes: clampSetting(event.target.value, current.differentVenueMinutes, 240) }))} /><em>분</em></span></label>
+            <label className="settings-toggle-row"><span><strong>이동 여유 경고 표시</strong><small>실제 회차 순서의 출발지 → 도착지 이동시간보다 여유가 짧으면 표시합니다.</small></span><span className="settings-switch"><input type="checkbox" checked={userSettings.showTransferWarnings} onChange={(event) => setUserSettings((current) => ({ ...current, showTransferWarnings: event.target.checked }))} /><i /></span></label>
           </div>
         </section>
         <section className="settings-card">
@@ -687,7 +745,7 @@ export default function App() {
                     className={`event-block status-${status} ${travel ? 'has-travel-warning' : ''} ${timetableSelectionMode ? 'delete-selectable' : ''} ${isMarkedForDelete ? 'selected-for-delete' : ''}`}
                     key={screening.id}
                     style={{ top: `${top}px`, height: `${height}px` }}
-                    title={`${film.title} · ${screening.start}–${endLabel(film, screening)} · ${screening.venue}${travel ? ` · 이동 여유 ${travel.gap}분/권장 ${travel.buffer}분` : ''}${timetableSelectionMode ? `\n${isMarkedForDelete ? '삭제 선택됨 · 클릭하여 선택 해제' : '삭제할 회차로 선택하려면 클릭'}` : '\n클릭하여 상세정보 보기'}`}
+                    title={`${film.title} · ${screening.start}–${endLabel(film, screening)} · ${screening.venue}${travel ? ` · ${travel.routeLabel ? `${travel.routeLabel} · ` : ''}이동 여유 ${travel.gap}분/필요 ${travel.buffer}분${travel.transferDetail ? ` · ${travel.transferDetail}` : ''}` : ''}${timetableSelectionMode ? `\n${isMarkedForDelete ? '삭제 선택됨 · 클릭하여 선택 해제' : '삭제할 회차로 선택하려면 클릭'}` : '\n클릭하여 상세정보 보기'}`}
                     onClick={() => {
                       if (timetableSelectionMode) {
                         toggleTimetableDeleteSelection(screening.id)
@@ -710,7 +768,7 @@ export default function App() {
               </div>)}
             </div>
           </div>
-          {userSettings.showTransferWarnings && <p className="transfer-note">이동 여유 경고 기준: 동일 상영관 {userSettings.sameVenueMinutes}분 · 같은 상영관군 {userSettings.sameClusterMinutes}분 · 다른 상영관 {userSettings.differentVenueMinutes}분.</p>}
+          {userSettings.showTransferWarnings && <p className="transfer-note">이동시간은 등록된 센텀권 상영관의 출발 → 도착 방향별 정밀값을 우선 사용합니다. 같은 정확한 관 {userSettings.sameVenueMinutes}분 · 미등록 같은 시설 {userSettings.sameClusterMinutes}분 · 미등록 다른 시설 {userSettings.differentVenueMinutes}분.</p>}
         </>}
       </main>)}
 
