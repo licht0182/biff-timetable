@@ -1,0 +1,6 @@
+/* Web-app header only: vertically center the BIFF mark with the title stack.
+   PNG export branding uses separate .png-export-* classes and is intentionally untouched. */
+.topbar>div:first-child::before{
+  top:50% !important;
+  transform:translateY(-50%);
+}
