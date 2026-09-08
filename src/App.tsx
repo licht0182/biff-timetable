@@ -1,17 +1,37 @@
 import { useEffect, useMemo, useState } from 'react'
 
-type Screening = { id: string; date: string; start: string; end: string; venue: string; gv?: boolean }
+type Screening = { id: string; date: string; start: string; end?: string; venue: string; gv?: boolean; code?: string }
 type Film = { id: string; title: string; englishTitle?: string; director?: string; country?: string; section?: string; runtime?: number; url?: string; screenings: Screening[] }
-type FilmData = { films: Film[] }
+type FilmData = { films: Film[]; note?: string; source?: string }
 
 const STORAGE_KEY = 'biff-timetable:selected-screenings:v1'
 const HOUR_HEIGHT = 72
-const START_HOUR = 9
-const END_HOUR = 24
+const START_HOUR = 8
+const END_HOUR = 27
+const FALLBACK_RUNTIME = 120
 
 function toMinutes(time: string) {
   const [h, m] = time.split(':').map(Number)
   return h * 60 + m
+}
+
+function endMinutes(film: Film, screening: Screening) {
+  const start = toMinutes(screening.start)
+  if (screening.end) {
+    let end = toMinutes(screening.end)
+    if (end <= start) end += 24 * 60
+    return end
+  }
+  return start + (film.runtime ?? FALLBACK_RUNTIME)
+}
+
+function endLabel(film: Film, screening: Screening) {
+  const end = endMinutes(film, screening)
+  const normalized = end % (24 * 60)
+  const h = Math.floor(normalized / 60)
+  const m = normalized % 60
+  const label = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  return screening.end ? label : `${label} 예상`
 }
 
 function formatDate(date: string) {
@@ -20,6 +40,8 @@ function formatDate(date: string) {
 
 export default function App() {
   const [films, setFilms] = useState<Film[]>([])
+  const [dataNote, setDataNote] = useState('')
+  const [dataSource, setDataSource] = useState('')
   const [selected, setSelected] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]') } catch { return [] }
   })
@@ -31,7 +53,11 @@ export default function App() {
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}screenings.json`)
       .then((res) => { if (!res.ok) throw new Error('상영 데이터를 불러오지 못했습니다.'); return res.json() })
-      .then((data: FilmData) => setFilms(data.films))
+      .then((data: FilmData) => {
+        setFilms(data.films)
+        setDataNote(data.note ?? '')
+        setDataSource(data.source ?? '')
+      })
       .catch((err: Error) => setLoadError(err.message))
   }, [])
 
@@ -49,8 +75,13 @@ export default function App() {
   const selectedItems = useMemo(() => films.flatMap((film) => film.screenings.filter((s) => selected.includes(s.id)).map((screening) => ({ film, screening }))), [films, selected])
   const dates = useMemo(() => Array.from(new Set(selectedItems.map(({ screening }) => screening.date))).sort(), [selectedItems])
 
-  function conflicts(screening: Screening) {
-    return selectedItems.some(({ screening: other }) => other.id !== screening.id && other.date === screening.date && toMinutes(screening.start) < toMinutes(other.end) && toMinutes(other.start) < toMinutes(screening.end))
+  function conflicts(film: Film, screening: Screening) {
+    const start = toMinutes(screening.start)
+    const end = endMinutes(film, screening)
+    return selectedItems.some(({ film: otherFilm, screening: other }) => {
+      if (other.id === screening.id || other.date !== screening.date) return false
+      return start < endMinutes(otherFilm, other) && toMinutes(other.start) < end
+    })
   }
 
   function toggle(screening: Screening) {
@@ -69,6 +100,7 @@ export default function App() {
         <button className={activeTab === 'timetable' ? 'active' : ''} onClick={() => setActiveTab('timetable')}>내 시간표</button>
       </nav>
 
+      {dataNote && <div className="notice">{dataNote}{dataSource && <> <a href={dataSource} target="_blank" rel="noreferrer">공식 시간표 ↗</a></>}</div>}
       {loadError && <div className="notice error">{loadError}</div>}
 
       {activeTab === 'films' ? <main>
@@ -85,9 +117,9 @@ export default function App() {
             </div>
             <div className="screenings">{film.screenings.map((screening) => {
               const isSelected = selected.includes(screening.id)
-              const hasConflict = !isSelected && conflicts(screening)
+              const hasConflict = !isSelected && conflicts(film, screening)
               return <div className={`screening-row ${hasConflict ? 'conflict' : ''}`} key={screening.id}>
-                <div><strong>{formatDate(screening.date)} {screening.start}</strong><span>{screening.venue} · {screening.start}–{screening.end}{screening.gv ? ' · GV' : ''}</span>{hasConflict && <small>선택한 회차와 시간이 겹칩니다.</small>}</div>
+                <div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}</strong><span>{screening.venue} · {screening.start}–{endLabel(film, screening)}{screening.gv ? ' · GV' : ''}</span>{hasConflict && <small>선택한 회차와 시간이 겹칩니다.</small>}</div>
                 <button className={isSelected ? 'selected' : ''} onClick={() => toggle(screening)}>{isSelected ? '선택됨' : '+ 추가'}</button>
               </div>
             })}</div>
@@ -99,13 +131,13 @@ export default function App() {
           <div className="timetable-actions"><p>선택한 회차는 이 브라우저에 자동 저장됩니다.</p><button onClick={() => setSelected([])}>전체 비우기</button></div>
           <div className="timetable-scroll"><div className="timetable" style={{ minWidth: `${80 + dates.length * 190}px`, gridTemplateColumns: `80px repeat(${dates.length}, minmax(190px, 1fr))` }}>
             <div className="corner" />{dates.map((date) => <div className="date-head" key={date}>{formatDate(date)}</div>)}
-            <div className="time-axis">{Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((hour) => <div key={hour} style={{ top: `${(hour - START_HOUR) * HOUR_HEIGHT}px` }}>{String(hour).padStart(2, '0')}:00</div>)}</div>
+            <div className="time-axis">{Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((hour) => <div key={hour} style={{ top: `${(hour - START_HOUR) * HOUR_HEIGHT}px` }}>{hour < 24 ? String(hour).padStart(2, '0') : String(hour - 24).padStart(2, '0')}:00</div>)}</div>
             {dates.map((date) => <div className="day-column" key={date}>{Array.from({ length: END_HOUR - START_HOUR }, (_, i) => <div className="hour-line" key={i} style={{ top: `${i * HOUR_HEIGHT}px` }} />)}
               {selectedItems.filter(({ screening }) => screening.date === date).map(({ film, screening }) => {
-                const start = toMinutes(screening.start), end = toMinutes(screening.end)
+                const start = toMinutes(screening.start), end = endMinutes(film, screening)
                 const top = ((start - START_HOUR * 60) / 60) * HOUR_HEIGHT
                 const height = Math.max(((end - start) / 60) * HOUR_HEIGHT, 48)
-                return <button className="event-block" key={screening.id} style={{ top: `${top}px`, height: `${height}px` }} title="클릭하면 시간표에서 제거됩니다." onClick={() => toggle(screening)}><strong>{film.title}</strong><span>{screening.start}–{screening.end}</span><span>{screening.venue}</span></button>
+                return <button className="event-block" key={screening.id} style={{ top: `${top}px`, height: `${height}px` }} title="클릭하면 시간표에서 제거됩니다." onClick={() => toggle(screening)}><strong>{film.title}</strong><span>{screening.start}–{endLabel(film, screening)}</span><span>{screening.venue}</span></button>
               })}
             </div>)}
           </div></div>
