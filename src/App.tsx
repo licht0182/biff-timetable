@@ -204,6 +204,8 @@ export default function App() {
   const [toast, setToast] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [userSettings, setUserSettings] = useState<UserTimetableSettings>(() => normalizeUserSettings(readStorage(USER_SETTINGS_KEY, DEFAULT_USER_SETTINGS)))
+  const [timetableSelectionMode, setTimetableSelectionMode] = useState(false)
+  const [timetableDeleteSelection, setTimetableDeleteSelection] = useState<string[]>([])
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}screenings.json?v=${DATA_VERSION}`, { cache: 'no-store' })
@@ -252,6 +254,20 @@ export default function App() {
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [detailFilm])
+
+  useEffect(() => {
+    if (activeTab === 'timetable' && !settingsOpen) return
+    setTimetableSelectionMode(false)
+    setTimetableDeleteSelection([])
+  }, [activeTab, settingsOpen])
+
+  useEffect(() => {
+    setTimetableDeleteSelection((current) => {
+      const next = current.filter((id) => selected.includes(id))
+      return next.length === current.length ? current : next
+    })
+    if (selected.length === 0) setTimetableSelectionMode(false)
+  }, [selected])
 
   const allDates = useMemo(
     () => Array.from(new Set(films.flatMap((film) => film.screenings.map((screening) => screening.date)))).sort(),
@@ -397,6 +413,42 @@ export default function App() {
   function clearSelected() {
     setSelected([])
     setTicketStatus({})
+    setTimetableSelectionMode(false)
+    setTimetableDeleteSelection([])
+  }
+
+  function toggleTimetableSelectionMode() {
+    if (timetableSelectionMode) {
+      setTimetableSelectionMode(false)
+      setTimetableDeleteSelection([])
+      return
+    }
+    setTimetableSelectionMode(true)
+  }
+
+  function toggleTimetableDeleteSelection(screeningId: string) {
+    if (!timetableSelectionMode) return
+    setTimetableDeleteSelection((current) => current.includes(screeningId)
+      ? current.filter((id) => id !== screeningId)
+      : [...current, screeningId])
+  }
+
+  function deleteTimetableSelection() {
+    const count = timetableDeleteSelection.length
+    if (!count) return
+    const confirmed = window.confirm(`선택한 ${count}개 회차를 정말 삭제하시겠습니까?\n삭제하면 해당 회차의 예매 상태도 함께 제거됩니다.`)
+    if (!confirmed) return
+
+    const targets = new Set(timetableDeleteSelection)
+    setSelected((current) => current.filter((id) => !targets.has(id)))
+    setTicketStatus((current) => {
+      const next = { ...current }
+      for (const id of targets) delete next[id]
+      return next
+    })
+    setTimetableDeleteSelection([])
+    setTimetableSelectionMode(false)
+    setToast(`${count}개 회차를 시간표에서 삭제했습니다.`)
   }
 
   function exportBackup() {
@@ -514,7 +566,7 @@ export default function App() {
         <button className={`settings-tab-trigger ${settingsOpen ? 'active' : ''}`} onClick={() => setSettingsOpen(true)}>설정</button>
       </nav>
 
-      {activeTab === 'films' && !settingsOpen && dataNote && <div className="notice">{dataNote}{dataSource && <> <a href={dataSource} target="_blank" rel="noreferrer">공식 시간표 ↗</a></>}</div>}
+      {activeTab === 'films' && !settingsOpen && dataNote && <div className="notice film-data-notice">{dataNote}{dataSource && <> <a href={dataSource} target="_blank" rel="noreferrer">공식 시간표 ↗</a></>}</div>}
       {loadError && <div className="notice error">{loadError}</div>}
       {toast && <div className="toast" role="status">{toast}</div>}
 
@@ -582,15 +634,17 @@ export default function App() {
       </main> : <main className="timetable-page">
         {selectedItems.length === 0 ? <div className="empty timetable-empty"><strong>아직 선택한 상영 회차가 없습니다.</strong><span>영화 찾기에서 원하는 회차를 추가해 주세요.</span><button onClick={() => setActiveTab('films')}>영화 찾기</button></div> : <>
           <div className="timetable-actions enhanced-timetable-actions">
-            <div><p>선택한 회차의 종료시간과 브라우저 크기에 맞춰 시간표 범위를 자동 조정합니다.</p><span className="booking-summary">예매 완료 {bookedCount} · 예정 {plannedCount}</span></div>
+            <div><span className="booking-summary">{timetableSelectionMode ? `삭제할 회차 ${timetableDeleteSelection.length}개 선택` : `예매 완료 ${bookedCount} · 예정 ${plannedCount}`}</span></div>
             <div className="timetable-action-buttons">
               <button onClick={exportIcs}>캘린더</button>
               <details className="backup-menu"><summary>백업</summary><div><button onClick={exportBackup}>JSON 저장</button><button onClick={() => importInputRef.current?.click()}>가져오기</button></div></details>
+              <button type="button" className={`timetable-selection-button ${timetableSelectionMode ? 'active' : ''}`} onClick={toggleTimetableSelectionMode}>{timetableSelectionMode ? '선택 취소' : '선택'}</button>
+              {timetableSelectionMode && <button type="button" className="timetable-delete-button" onClick={deleteTimetableSelection} disabled={timetableDeleteSelection.length === 0}>삭제 {timetableDeleteSelection.length}</button>}
               <button onClick={clearSelected}>전체 비우기</button>
             </div>
             <input ref={importInputRef} type="file" accept="application/json,.json" className="visually-hidden" onChange={importBackup} />
           </div>
-          <div className={`timetable-scroll ${timetableMetrics.dense ? 'dense' : ''} ${timetableMetrics.ultraDense ? 'ultra-dense' : ''}`}>
+          <div className={`timetable-scroll ${timetableMetrics.dense ? 'dense' : ''} ${timetableMetrics.ultraDense ? 'ultra-dense' : ''} ${timetableSelectionMode ? 'timetable-selection-mode' : ''}`}>
             <div className="timetable" style={timetableStyle}>
               <div className="corner" />
               {dates.map((date) => <div className="date-head" key={date} title={formatDate(date)}>{formatDate(date, timetableMetrics.dense)}</div>)}
@@ -605,13 +659,18 @@ export default function App() {
                   const travel = transitionWarning(film, screening)
                   const status = ticketStatus[screening.id] ?? 'planned'
                   const statusPrefix = userSettings.showBookingStatusInTimetable ? (status === 'booked' ? '✓ ' : status === 'planned' ? '○ ' : '') : ''
+                  const isMarkedForDelete = timetableDeleteSelection.includes(screening.id)
                   return <button
-                    className={`event-block status-${status} ${travel ? 'has-travel-warning' : ''}`}
+                    type="button"
+                    className={`event-block status-${status} ${travel ? 'has-travel-warning' : ''} ${timetableSelectionMode ? 'delete-selectable' : ''} ${isMarkedForDelete ? 'selected-for-delete' : ''}`}
                     key={screening.id}
                     style={{ top: `${top}px`, height: `${height}px` }}
-                    title={`${film.title} · ${screening.start}–${endLabel(film, screening)} · ${screening.venue}${travel ? ` · 이동 여유 ${travel.gap}분/권장 ${travel.buffer}분` : ''}\n클릭하면 시간표에서 제거됩니다.`}
-                    onClick={() => toggle(screening)}
+                    title={`${film.title} · ${screening.start}–${endLabel(film, screening)} · ${screening.venue}${travel ? ` · 이동 여유 ${travel.gap}분/권장 ${travel.buffer}분` : ''}${timetableSelectionMode ? `\n${isMarkedForDelete ? '삭제 선택됨 · 클릭하여 선택 해제' : '삭제할 회차로 선택하려면 클릭'}` : ''}`}
+                    onClick={() => toggleTimetableDeleteSelection(screening.id)}
+                    tabIndex={timetableSelectionMode ? 0 : -1}
+                    aria-pressed={timetableSelectionMode ? isMarkedForDelete : undefined}
                   >
+                    {timetableSelectionMode && <span className="event-select-indicator" aria-hidden="true">{isMarkedForDelete ? '✓' : ''}</span>}
                     <strong>{statusPrefix}{film.title}</strong>
                     {!timetableMetrics.ultraDense && <span className="event-time">{screening.start}{screening.gv ? ' · GV' : ''}</span>}
                     {userSettings.showVenueInTimetable && !timetableMetrics.dense && <span className="event-venue">{screening.venue}</span>}
