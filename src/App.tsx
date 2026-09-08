@@ -177,6 +177,7 @@ export default function App() {
   const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [activeTab, setActiveTab] = useState<'films' | 'timetable'>('films')
   const [detailFilm, setDetailFilm] = useState<Film | null>(null)
+  const [detailScreeningId, setDetailScreeningId] = useState<string | null>(null)
   const [loadError, setLoadError] = useState('')
   const [toast, setToast] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -226,7 +227,9 @@ export default function App() {
   useEffect(() => {
     if (!detailFilm) return
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setDetailFilm(null)
+      if (event.key !== 'Escape') return
+      setDetailFilm(null)
+      setDetailScreeningId(null)
     }
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
@@ -645,7 +648,7 @@ export default function App() {
             formatDate={formatDate}
             endLabel={endLabel}
             onFavorite={toggleFavorite}
-            onDetail={setDetailFilm}
+            onDetail={(film) => { setDetailScreeningId(null); setDetailFilm(film) }}
             onToggleScreening={toggle}
             onStatusChange={setScreeningTicketStatus}
           />
@@ -684,10 +687,19 @@ export default function App() {
                     className={`event-block status-${status} ${travel ? 'has-travel-warning' : ''} ${timetableSelectionMode ? 'delete-selectable' : ''} ${isMarkedForDelete ? 'selected-for-delete' : ''}`}
                     key={screening.id}
                     style={{ top: `${top}px`, height: `${height}px` }}
-                    title={`${film.title} · ${screening.start}–${endLabel(film, screening)} · ${screening.venue}${travel ? ` · 이동 여유 ${travel.gap}분/권장 ${travel.buffer}분` : ''}${timetableSelectionMode ? `\n${isMarkedForDelete ? '삭제 선택됨 · 클릭하여 선택 해제' : '삭제할 회차로 선택하려면 클릭'}` : ''}`}
-                    onClick={() => toggleTimetableDeleteSelection(screening.id)}
-                    tabIndex={timetableSelectionMode ? 0 : -1}
+                    title={`${film.title} · ${screening.start}–${endLabel(film, screening)} · ${screening.venue}${travel ? ` · 이동 여유 ${travel.gap}분/권장 ${travel.buffer}분` : ''}${timetableSelectionMode ? `\n${isMarkedForDelete ? '삭제 선택됨 · 클릭하여 선택 해제' : '삭제할 회차로 선택하려면 클릭'}` : '\n클릭하여 상세정보 보기'}`}
+                    onClick={() => {
+                      if (timetableSelectionMode) {
+                        toggleTimetableDeleteSelection(screening.id)
+                        return
+                      }
+                      setDetailScreeningId(screening.id)
+                      setDetailFilm(film)
+                    }}
+                    tabIndex={0}
+                    aria-haspopup={timetableSelectionMode ? undefined : 'dialog'}
                     aria-pressed={timetableSelectionMode ? isMarkedForDelete : undefined}
+                    aria-label={timetableSelectionMode ? `${film.title} 삭제 ${isMarkedForDelete ? '선택 해제' : '선택'}` : `${film.title} ${formatDate(screening.date)} ${screening.start} 상세정보 보기`}
                   >
                     {timetableSelectionMode && <span className="event-select-indicator" aria-hidden="true">{isMarkedForDelete ? '✓' : ''}</span>}
                     <strong>{statusPrefix}{film.title}</strong>
@@ -702,9 +714,9 @@ export default function App() {
         </>}
       </main>)}
 
-      {detailFilm && <div className="modal-backdrop" onMouseDown={() => setDetailFilm(null)}>
-        <section className="film-modal" role="dialog" aria-modal="true" aria-labelledby="film-detail-title" onMouseDown={(event) => event.stopPropagation()}>
-          <div className="modal-head"><div><span className="section-label">{detailFilm.section ?? '섹션 미정'}</span><h2 id="film-detail-title">{detailFilm.title}</h2>{detailFilm.englishTitle && <p>{detailFilm.englishTitle}</p>}</div><button className="modal-close" onClick={() => setDetailFilm(null)} aria-label="상세보기 닫기">×</button></div>
+      {detailFilm && <div className={`modal-backdrop ${detailScreeningId ? 'timetable-detail-backdrop' : ''}`} onMouseDown={() => { setDetailFilm(null); setDetailScreeningId(null) }}>
+        <section className={`film-modal ${detailScreeningId ? 'timetable-detail-modal' : ''}`} role="dialog" aria-modal="true" aria-labelledby="film-detail-title" onMouseDown={(event) => event.stopPropagation()}>
+          <div className="modal-head"><div><span className="section-label">{detailFilm.section ?? '섹션 미정'}</span><h2 id="film-detail-title">{detailFilm.title}</h2>{detailFilm.englishTitle && <p>{detailFilm.englishTitle}</p>}</div><button className="modal-close" onClick={() => { setDetailFilm(null); setDetailScreeningId(null) }} aria-label="상세보기 닫기">×</button></div>
           <dl className="film-detail-grid">
             {detailFilm.director && <><dt>감독</dt><dd>{detailFilm.director}</dd></>}
             {detailFilm.country && <><dt>국가</dt><dd>{detailFilm.country}</dd></>}
@@ -716,7 +728,8 @@ export default function App() {
           {detailFilm.synopsis && <p className="synopsis">{detailFilm.synopsis}</p>}
           <div className="modal-screenings">{detailFilm.screenings.map((screening) => {
             const isSelected = selected.includes(screening.id)
-            return <div key={screening.id}><div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}</strong><span>{screening.venue} · {screening.start}–{endLabel(detailFilm, screening)}{screening.gv ? ' · GV' : ''}</span></div><button className={isSelected ? 'selected' : ''} onClick={() => toggle(detailFilm, screening)}>{isSelected ? '선택됨' : '+ 추가'}</button></div>
+            const isCurrentScreening = screening.id === detailScreeningId
+            return <div className={isCurrentScreening ? 'current-screening' : ''} key={screening.id}><div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}{isCurrentScreening && <em className="current-screening-badge">현재 회차</em>}</strong><span>{screening.venue} · {screening.start}–{endLabel(detailFilm, screening)}{screening.gv ? ' · GV' : ''}</span></div><button className={isSelected ? 'selected' : ''} onClick={() => toggle(detailFilm, screening)}>{isSelected ? '선택됨' : '+ 추가'}</button></div>
           })}</div>
           <div className="modal-footer"><button className={`favorite-button wide ${favorites.includes(detailFilm.id) ? 'active' : ''}`} onClick={() => toggleFavorite(detailFilm.id)}>{favorites.includes(detailFilm.id) ? '★ 관심작 해제' : '☆ 관심작 추가'}</button>{detailFilm.url && <a href={detailFilm.url} target="_blank" rel="noreferrer">BIFF 공식 작품정보 ↗</a>}</div>
         </section>
