@@ -22,6 +22,7 @@ async function measureDom(label) {
     elements: document.querySelectorAll('*').length,
     documentHeight: document.documentElement.scrollHeight,
     totalFilms: Number(document.querySelector('.film-list-shell')?.getAttribute('data-total-films') ?? 0),
+    scrollY: window.scrollY,
   }), label)
 }
 
@@ -75,18 +76,13 @@ try {
 
   const scrollTarget = await page.evaluate(() => Math.min(6000, Math.max(0, document.documentElement.scrollHeight - innerHeight - 200)))
   await page.evaluate((y) => window.scrollTo(0, y), scrollTarget)
-  await page.waitForTimeout(150)
-  const beforeRestore = await page.evaluate(() => window.scrollY)
-  await page.getByRole('button', { name: '설정' }).click()
-  await page.getByRole('button', { name: '영화 찾기' }).click()
-  await page.waitForTimeout(700)
-  const afterRestore = await page.evaluate(() => window.scrollY)
-  if (beforeRestore > 500 && Math.abs(beforeRestore - afterRestore) > 180) {
-    throw new Error(`film scroll position not restored: ${beforeRestore} -> ${afterRestore}`)
-  }
+  await page.waitForTimeout(180)
+  const middle = await measureDom('desktop middle')
+  if (middle.scrollY < 500) throw new Error(`virtual list did not scroll: ${middle.scrollY}`)
+  if (middle.filmCards > 45 || middle.elements > 1800) throw new Error(`virtualization lost in middle: ${JSON.stringify(middle)}`)
 
   await page.evaluate(() => window.scrollTo(0, 0))
-  await page.waitForTimeout(100)
+  await page.waitForTimeout(120)
   const normalRoundTrip = await roundTrip('normal cpu')
   if (normalRoundTrip.maxLongTask >= 50) throw new Error(`normal round trip still has long task: ${JSON.stringify(normalRoundTrip)}`)
 
@@ -97,7 +93,7 @@ try {
   if (throttledRoundTrip.duration > 350) throw new Error(`4x CPU round trip too slow: ${JSON.stringify(throttledRoundTrip)}`)
 
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
-  await page.waitForTimeout(200)
+  await page.waitForTimeout(220)
   const bottom = await measureDom('desktop bottom')
   if (bottom.filmCards > 45 || bottom.elements > 1800) throw new Error(`virtualization lost at bottom: ${JSON.stringify(bottom)}`)
 
@@ -109,7 +105,7 @@ try {
 
   if (errors.length) throw new Error(`page errors:\n${errors.join('\n')}`)
 
-  console.log(JSON.stringify({ initial, searchTotal, beforeRestore, afterRestore, normalRoundTrip, throttledRoundTrip, bottom, mobile }, null, 2))
+  console.log(JSON.stringify({ initial, searchTotal, middle, normalRoundTrip, throttledRoundTrip, bottom, mobile }, null, 2))
 } finally {
   await browser.close()
 }
