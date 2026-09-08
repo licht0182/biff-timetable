@@ -14,6 +14,7 @@ import './header-align.css'
 import './header-radius.css'
 import './desktop-notice.css'
 import './screening-action-size.css'
+import './film-modal-center.css'
 import './png-export'
 import './timetable-display'
 
