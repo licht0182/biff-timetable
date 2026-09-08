@@ -231,15 +231,18 @@ async function exportPng(button: HTMLButtonElement) {
   const originalText = button.textContent ?? 'PNG 저장'
   button.disabled = true
   button.textContent = 'PNG 생성 중…'
-  let board: HTMLElement | null = null
+  let host: HTMLElement | null = null
 
   try {
     const { items, ticketStatus } = await loadExportItems()
     if (!items.length) throw new Error('저장할 시간표가 없습니다.')
 
     items.sort((a, b) => `${a.screening.date} ${a.screening.start}`.localeCompare(`${b.screening.date} ${b.screening.start}`))
-    board = buildExportBoard(items, ticketStatus)
-    document.body.append(board)
+    const board = buildExportBoard(items, ticketStatus)
+    host = element('div', 'png-export-host')
+    host.append(board)
+    document.body.append(host)
+
     await document.fonts?.ready
     await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
 
@@ -247,6 +250,8 @@ async function exportPng(button: HTMLButtonElement) {
       backgroundColor: '#ffffff',
       cacheBust: true,
       pixelRatio: 1.5,
+      width: board.scrollWidth,
+      height: board.scrollHeight,
     })
     downloadDataUrl('BIFF-timetable.png', png)
     button.textContent = '저장 완료'
@@ -254,7 +259,7 @@ async function exportPng(button: HTMLButtonElement) {
     console.error(error)
     button.textContent = '저장 실패'
   } finally {
-    board?.remove()
+    host?.remove()
     window.setTimeout(() => {
       button.disabled = false
       button.textContent = originalText
