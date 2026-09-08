@@ -37,7 +37,7 @@ const DEFAULT_USER_SETTINGS: UserTimetableSettings = {
   showTransferWarnings: true,
 }
 const START_HOUR = 8
-const END_HOUR = 27
+const BASE_END_HOUR = 24
 const FALLBACK_RUNTIME = 120
 const EXPORT_WIDTH = 1440
 const EXPORT_AXIS_WIDTH = 72
@@ -72,6 +72,14 @@ function displayEndMinutes(film: Film, screening: Screening) {
   let end = toMinutes(screening.end)
   while (end <= start) end += 24 * 60
   return end
+}
+
+function exportEndHour(items: ExportItem[]) {
+  const latestEndMinutes = items.reduce(
+    (latest, { film, screening }) => Math.max(latest, displayEndMinutes(film, screening)),
+    BASE_END_HOUR * 60,
+  )
+  return Math.max(BASE_END_HOUR, Math.ceil(latestEndMinutes / 60))
 }
 
 function formatDate(date: string) {
@@ -150,11 +158,13 @@ function element<K extends keyof HTMLElementTagNameMap>(tag: K, className?: stri
 
 function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap) {
   const dates = Array.from(new Set(items.map(({ screening }) => screening.date))).sort()
+  const endHour = exportEndHour(items)
   const board = element('section', 'png-export-board')
   board.style.setProperty('--png-days', String(Math.max(dates.length, 1)))
   board.style.setProperty('--png-axis-width', `${EXPORT_AXIS_WIDTH}px`)
   board.style.setProperty('--png-header-height', `${EXPORT_HEADER_HEIGHT}px`)
   board.style.setProperty('--png-hour-height', `${EXPORT_HOUR_HEIGHT}px`)
+  board.style.setProperty('--png-hours', String(endHour - START_HOUR))
   board.style.setProperty('--png-edge-space', `${EXPORT_EDGE_SPACE}px`)
   board.style.width = `${EXPORT_WIDTH}px`
 
@@ -184,7 +194,7 @@ function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap) {
   dates.forEach((date) => grid.append(element('div', 'png-export-date', formatDate(date))))
 
   const axis = element('div', 'png-export-axis')
-  for (let hour = START_HOUR; hour <= END_HOUR; hour += 1) {
+  for (let hour = START_HOUR; hour <= endHour; hour += 1) {
     const label = element('span', '', formatHourLabel(hour))
     label.style.top = `${EXPORT_EDGE_SPACE + (hour - START_HOUR) * EXPORT_HOUR_HEIGHT}px`
     axis.append(label)
@@ -193,7 +203,7 @@ function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap) {
 
   dates.forEach((date) => {
     const column = element('div', 'png-export-day')
-    for (let i = 0; i <= END_HOUR - START_HOUR; i += 1) {
+    for (let i = 0; i <= endHour - START_HOUR; i += 1) {
       const line = element('div', 'png-export-hour-line')
       line.style.top = `${EXPORT_EDGE_SPACE + i * EXPORT_HOUR_HEIGHT}px`
       column.append(line)

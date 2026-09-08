@@ -59,7 +59,7 @@ const DEFAULT_USER_SETTINGS: UserTimetableSettings = {
   showBookingStatusInTimetable: true,
 }
 const START_HOUR = 8
-const END_HOUR = 27
+const BASE_END_HOUR = 24
 const FALLBACK_RUNTIME = 120
 const DATA_VERSION = '2025-test-20260908-2'
 
@@ -298,6 +298,13 @@ export default function App() {
     [films, selected],
   )
   const dates = useMemo(() => Array.from(new Set(selectedItems.map(({ screening }) => screening.date))).sort(), [selectedItems])
+  const timetableEndHour = useMemo(() => {
+    const latestEndMinutes = selectedItems.reduce(
+      (latest, { film, screening }) => Math.max(latest, endMinutes(film, screening)),
+      BASE_END_HOUR * 60,
+    )
+    return Math.max(BASE_END_HOUR, Math.ceil(latestEndMinutes / 60))
+  }, [selectedItems])
 
   const timetableMetrics = useMemo(() => {
     const isMobile = viewport.width <= 700
@@ -307,14 +314,14 @@ export default function App() {
     const headerHeight = isMobile ? 32 : 38
     const chromeHeight = 245
     const usableGridHeight = Math.max(180, viewport.height - chromeHeight - headerHeight)
-    const hourHeight = Math.max(9.5, usableGridHeight / (END_HOUR - START_HOUR))
-    const gridHeight = hourHeight * (END_HOUR - START_HOUR)
+    const hourHeight = Math.max(9.5, usableGridHeight / (timetableEndHour - START_HOUR))
+    const gridHeight = hourHeight * (timetableEndHour - START_HOUR)
     const dayWidth = dates.length > 0 ? Math.max(1, (contentWidth - axisWidth) / dates.length) : contentWidth - axisWidth
     const dense = dayWidth < 76
     const ultraDense = dayWidth < 48
 
     return { axisWidth, headerHeight, hourHeight, gridHeight, dayWidth, dense, ultraDense }
-  }, [viewport, dates.length])
+  }, [viewport, dates.length, timetableEndHour])
 
   function conflicts(film: Film, screening: Screening) {
     const start = toMinutes(screening.start)
@@ -575,7 +582,7 @@ export default function App() {
       </main> : <main className="timetable-page">
         {selectedItems.length === 0 ? <div className="empty timetable-empty"><strong>아직 선택한 상영 회차가 없습니다.</strong><span>영화 찾기에서 원하는 회차를 추가해 주세요.</span><button onClick={() => setActiveTab('films')}>영화 찾기</button></div> : <>
           <div className="timetable-actions enhanced-timetable-actions">
-            <div><p>브라우저 크기에 맞춰 전체 시간표를 자동 조정합니다.</p><span className="booking-summary">예매 완료 {bookedCount} · 예정 {plannedCount}</span></div>
+            <div><p>선택한 회차의 종료시간과 브라우저 크기에 맞춰 시간표 범위를 자동 조정합니다.</p><span className="booking-summary">예매 완료 {bookedCount} · 예정 {plannedCount}</span></div>
             <div className="timetable-action-buttons">
               <button onClick={exportIcs}>캘린더</button>
               <details className="backup-menu"><summary>백업</summary><div><button onClick={exportBackup}>JSON 저장</button><button onClick={() => importInputRef.current?.click()}>가져오기</button></div></details>
@@ -587,9 +594,9 @@ export default function App() {
             <div className="timetable" style={timetableStyle}>
               <div className="corner" />
               {dates.map((date) => <div className="date-head" key={date} title={formatDate(date)}>{formatDate(date, timetableMetrics.dense)}</div>)}
-              <div className="time-axis">{Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((hour) => <div key={hour} style={{ top: `${(hour - START_HOUR) * timetableMetrics.hourHeight}px` }}>{`${hour < 24 ? String(hour).padStart(2, '0') : String(hour - 24).padStart(2, '0')}시`}</div>)}</div>
+              <div className="time-axis">{Array.from({ length: timetableEndHour - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((hour) => <div key={hour} style={{ top: `${(hour - START_HOUR) * timetableMetrics.hourHeight}px` }}>{`${hour < 24 ? String(hour).padStart(2, '0') : String(hour - 24).padStart(2, '0')}시`}</div>)}</div>
               {dates.map((date) => <div className="day-column" key={date}>
-                {Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => <div className="hour-line" key={i} style={{ top: `${i * timetableMetrics.hourHeight}px` }} />)}
+                {Array.from({ length: timetableEndHour - START_HOUR + 1 }, (_, i) => <div className="hour-line" key={i} style={{ top: `${i * timetableMetrics.hourHeight}px` }} />)}
                 {selectedItems.filter(({ screening }) => screening.date === date).map(({ film, screening }) => {
                   const start = toMinutes(screening.start)
                   const end = endMinutes(film, screening)
