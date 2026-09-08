@@ -27,7 +27,7 @@ function ScreeningRow({
   onStatusChange,
 }: ScreeningRowProps) {
   const rowNote = hasConflict
-    ? '선택한 회차와 시간이 겹칩니다.'
+    ? '선택된 회차와 시간이 겹칩니다.'
     : travel
       ? `${travel.routeLabel ? `${travel.routeLabel} · ` : ''}이동 여유 ${travel.gap}분 · 필요 ${travel.buffer}분`
       : ''
@@ -38,7 +38,7 @@ function ScreeningRow({
       <div>
         <strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}</strong>
         <span>{screening.venue} · {screening.start}–{endLabel(film, screening)}{screening.gv ? ' · GV' : ''}</span>
-        <small className={`screening-note ${travel ? 'travel-text' : ''}`} title={rowNoteTitle}>{rowNote}</small>
+        <small className={`screening-note ${travel && !hasConflict ? 'travel-text' : ''}`} title={rowNoteTitle}>{rowNote}</small>
       </div>
       <div className={`screening-actions ${isSelected ? 'selected-actions' : ''}`}>
         {isSelected && (
