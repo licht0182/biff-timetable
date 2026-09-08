@@ -1,0 +1,5 @@
+.modal-backdrop{place-items:center}
+@media(max-width:700px){
+  .modal-backdrop{align-items:center;justify-items:center;padding:8px}
+  .film-modal{border-radius:10px}
+}
