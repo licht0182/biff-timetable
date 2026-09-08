@@ -6,6 +6,7 @@ import './nav-fix.css'
 import './features.css'
 import './timetable-readonly.css'
 import './png-export.css'
+import './png-ios.css'
 import './timetable-readonly'
 import './png-export'
 
