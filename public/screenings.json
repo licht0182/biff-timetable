@@ -1,0 +1,46 @@
+{
+  "films": [
+    {
+      "id": "demo-001",
+      "title": "샘플 영화 A",
+      "englishTitle": "Sample Film A",
+      "director": "홍길동",
+      "country": "대한민국",
+      "section": "뉴 커런츠",
+      "runtime": 118,
+      "url": "https://www.biff.kr/",
+      "screenings": [
+        { "id": "demo-001-s1", "date": "2026-09-18", "start": "10:30", "end": "12:28", "venue": "영화의전당 중극장", "gv": true },
+        { "id": "demo-001-s2", "date": "2026-09-20", "start": "18:10", "end": "20:08", "venue": "CGV 센텀시티 3관" }
+      ]
+    },
+    {
+      "id": "demo-002",
+      "title": "샘플 영화 B",
+      "englishTitle": "Sample Film B",
+      "director": "김영화",
+      "country": "일본",
+      "section": "아시아 영화의 창",
+      "runtime": 104,
+      "url": "https://www.biff.kr/",
+      "screenings": [
+        { "id": "demo-002-s1", "date": "2026-09-18", "start": "12:00", "end": "13:44", "venue": "영화의전당 소극장" },
+        { "id": "demo-002-s2", "date": "2026-09-19", "start": "15:20", "end": "17:04", "venue": "롯데시네마 센텀시티 4관", "gv": true }
+      ]
+    },
+    {
+      "id": "demo-003",
+      "title": "샘플 영화 C",
+      "englishTitle": "Sample Film C",
+      "director": "Alex Kim",
+      "country": "프랑스",
+      "section": "월드 시네마",
+      "runtime": 132,
+      "url": "https://www.biff.kr/",
+      "screenings": [
+        { "id": "demo-003-s1", "date": "2026-09-19", "start": "19:00", "end": "21:12", "venue": "영화의전당 하늘연극장" },
+        { "id": "demo-003-s2", "date": "2026-09-21", "start": "11:00", "end": "13:12", "venue": "CGV 센텀시티 5관" }
+      ]
+    }
+  ]
+}
