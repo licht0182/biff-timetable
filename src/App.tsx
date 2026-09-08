@@ -339,13 +339,17 @@ export default function App() {
     return { axisWidth, headerHeight, hourHeight, gridHeight, dayWidth, dense, ultraDense }
   }, [viewport, dates.length, timetableEndHour])
 
-  function conflicts(film: Film, screening: Screening) {
+  function conflictingSelections(film: Film, screening: Screening) {
     const start = toMinutes(screening.start)
     const end = endMinutes(film, screening)
-    return selectedItems.some(({ film: otherFilm, screening: other }) => {
+    return selectedItems.filter(({ film: otherFilm, screening: other }) => {
       if (other.id === screening.id || other.date !== screening.date) return false
       return start < endMinutes(otherFilm, other) && toMinutes(other.start) < end
     })
+  }
+
+  function conflicts(film: Film, screening: Screening) {
+    return conflictingSelections(film, screening).length > 0
   }
 
   function transitionWarning(film: Film, screening: Screening) {
@@ -384,8 +388,13 @@ export default function App() {
       return
     }
 
-    if (conflicts(film, screening)) {
-      window.alert('이미 선택한 회차와 시간이 겹칩니다.\n겹치는 기존 회차를 먼저 제거한 뒤 추가해 주세요.')
+    const overlapping = conflictingSelections(film, screening)
+    if (overlapping.length) {
+      const conflictDetails = overlapping.map(({ film: otherFilm, screening: other }) => {
+        const code = other.code ? `[${other.code}] ` : ''
+        return `• ${code}${otherFilm.title} · ${formatDate(other.date)} ${other.start}–${endLabel(otherFilm, other)} · ${other.venue}`
+      }).join('\n')
+      window.alert(`이미 선택한 다음 회차와 시간이 겹칩니다.\n${conflictDetails}\n\n겹치는 기존 회차를 먼저 제거한 뒤 추가해 주세요.`)
       return
     }
 
@@ -630,8 +639,9 @@ export default function App() {
               const hasConflict = !isSelected && conflicts(film, screening)
               const travel = !hasConflict ? transitionWarning(film, screening) : null
               const status = ticketStatus[screening.id] ?? 'planned'
+              const rowNote = hasConflict ? '선택한 회차와 시간이 겹칩니다.' : travel ? `이동 여유 ${travel.gap}분 · 권장 ${travel.buffer}분` : ''
               return <div className={`screening-row ${hasConflict ? 'conflict' : ''} ${travel ? 'travel-warning' : ''}`} key={screening.id}>
-                <div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}</strong><span>{screening.venue} · {screening.start}–{endLabel(film, screening)}{screening.gv ? ' · GV' : ''}</span>{hasConflict && <small>선택한 회차와 시간이 겹칩니다.</small>}{travel && <small className="travel-text">이동 여유 {travel.gap}분 · 권장 {travel.buffer}분</small>}</div>
+                <div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}</strong><span>{screening.venue} · {screening.start}–{endLabel(film, screening)}{screening.gv ? ' · GV' : ''}</span><small className={`screening-note ${travel ? 'travel-text' : ''}`} title={rowNote || undefined}>{rowNote}</small></div>
                 <div className="screening-actions">
                   {isSelected && <select className={`ticket-select ${status}`} value={status} onChange={(event) => setScreeningTicketStatus(screening.id, event.target.value as TicketStatus)} aria-label={`${film.title} 예매 상태`}><option value="planned">예매 예정</option><option value="booked">예매 완료</option></select>}
                   <button className={isSelected ? 'selected' : ''} onClick={() => toggle(film, screening)}>{isSelected ? '선택됨' : '+ 추가'}</button>
