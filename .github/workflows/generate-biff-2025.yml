@@ -5,6 +5,7 @@ on:
     branches: [research/full-2025-import]
     paths:
       - 'scripts/import-biff-2025.mjs'
+      - 'scripts/check-biff-2025-codes.mjs'
       - '.github/workflows/generate-biff-2025.yml'
 
 jobs:
@@ -17,6 +18,8 @@ jobs:
           node-version: 22
       - name: Generate full 2025 dataset
         run: node scripts/import-biff-2025.mjs
+      - name: Reconcile official screening codes
+        run: node scripts/check-biff-2025-codes.mjs
       - name: Upload generated dataset
         uses: actions/upload-artifact@v4
         with:
