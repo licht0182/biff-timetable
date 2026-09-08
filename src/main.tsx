@@ -13,6 +13,7 @@ import './timetable-readonly'
 import './png-export'
 import './settings'
 import './ui-consistency'
+import './ticket-defaults'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
