@@ -14,8 +14,6 @@ import './header-align.css'
 import './timetable-readonly'
 import './png-export'
 import './settings'
-import './ui-consistency'
-import './ticket-defaults'
 import './timetable-display'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
