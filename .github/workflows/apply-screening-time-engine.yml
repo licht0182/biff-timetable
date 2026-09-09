@@ -1,0 +1,63 @@
+name: Apply screening time engine
+
+on:
+  push:
+    branches:
+      - refactor/screening-time-engine
+    paths:
+      - .github/workflows/apply-screening-time-engine.yml
+      - scripts/apply-screening-time-engine.py
+      - scripts/verify-screening-time.ts
+      - scripts/verify-screening-time-browser.mjs
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/screening-time-engine
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply App refactor
+        run: python scripts/apply-screening-time-engine.py
+      - name: Install dependencies
+        run: npm install
+      - name: Validate data
+        run: npm run validate:data
+      - name: Build
+        run: npm run build
+      - name: Run time-engine unit regressions
+        run: |
+          npm install --no-save tsx@4
+          npx tsx scripts/verify-screening-time.ts
+      - name: Install Playwright
+        run: npm install --no-save playwright@1.55.0
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Start preview
+        run: |
+          npm run preview -- --host 127.0.0.1 > /tmp/preview.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/biff-timetable/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/preview.log
+          exit 1
+      - name: Browser regression
+        run: node scripts/verify-screening-time-browser.mjs
+      - name: Commit App refactor
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/App.tsx
+          if git diff --cached --quiet; then
+            echo 'No application changes to commit.'
+          else
+            git commit -m 'Use shared screening time engine in app'
+            git push origin HEAD:refactor/screening-time-engine
+          fi
