@@ -1,7 +1,7 @@
 import type { Film, Screening } from './components/film-types'
 
 export const START_HOUR = 8
-export const BASE_END_HOUR = 24
+export const BASE_END_HOUR = 27
 export const FALLBACK_RUNTIME = 120
 const MINUTES_PER_DAY = 24 * 60
 
