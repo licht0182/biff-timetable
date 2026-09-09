@@ -25,7 +25,7 @@ new = '''      .then((data: FilmData) => {
           Object.entries(current).filter(([id]) => validScreeningIds.has(id)),
         ) as TicketStatusMap)
         setTimetableDeleteSelection((current) => current.filter((id) => validScreeningIds.has(id)))
-        localStorage.setItem(DATA_VERSION_STORAGE_KEY, DATA_VERSION)
+        localStorage.setItem(DATA_VERSION_STORAGE_KEY, JSON.stringify(DATA_VERSION))
 
         setFilms(data.films)
         setDataNote(data.note ?? '')
