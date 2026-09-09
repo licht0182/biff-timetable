@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test'
 async function expectSettingsPageToScroll(page: Page) {
   await page.setViewportSize({ width: 390, height: 700 })
   await page.getByRole('button', { name: '설정' }).click()
-  await expect(page.getByRole('heading', { name: '설정' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '설정', exact: true })).toBeVisible()
 
   const metrics = await page.evaluate(() => ({
     scrollHeight: document.documentElement.scrollHeight,
