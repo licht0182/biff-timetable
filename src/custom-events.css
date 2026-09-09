@@ -1,5 +1,6 @@
 .custom-event-add-button{border-color:#cfcfcf!important;background:#fff!important;color:#555!important}
 .custom-event-add-button:hover{border-color:#bdbdbd!important;background:#fafafa!important}
+.timetable-empty-actions{display:flex;flex-wrap:wrap;gap:6px}
 
 .event-block.custom-event{border-left-color:rgba(64,64,64,.28);background:#eceff3;color:#3f4852}
 .event-block.custom-event.category-meal{background:#fff0d8;color:#76531f}
