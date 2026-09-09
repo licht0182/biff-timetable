@@ -14,6 +14,7 @@ export type Film = {
   englishTitle?: string
   director?: string
   country?: string
+  genre?: string
   section?: string
   runtime?: number
   url?: string
