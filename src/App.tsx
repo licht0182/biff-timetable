@@ -2,6 +2,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, ty
 import FilmList from './components/FilmList'
 import type { Film, Screening, TicketStatus, TicketStatusMap } from './components/film-types'
 import { VENUE_TRANSFER_SITES, getPreciseVenueTransfer, getVenueSiteTransferMinutes } from './venue-travel'
+import { BASE_END_HOUR, START_HOUR, clockMinutes, endLabel, screeningAbsoluteWindow, screeningEndOffsetMinutes, screeningsOverlap, timetableDate, timetableEndMinutes, timetableStartMinutes } from './screening-time'
 
 type FilmData = { films: Film[]; note?: string; source?: string }
 type BackupData = {
@@ -35,9 +36,6 @@ const DEFAULT_USER_SETTINGS: UserTimetableSettings = {
   showVenueInTimetable: true,
   showBookingStatusInTimetable: true,
 }
-const START_HOUR = 8
-const BASE_END_HOUR = 24
-const FALLBACK_RUNTIME = 120
 const DATA_VERSION = '2025-test-20260908-2'
 
 function readStorageValue(key: string): unknown {
@@ -78,30 +76,6 @@ function normalizeUserSettings(value: unknown): UserTimetableSettings {
     showVenueInTimetable: typeof source.showVenueInTimetable === 'boolean' ? source.showVenueInTimetable : DEFAULT_USER_SETTINGS.showVenueInTimetable,
     showBookingStatusInTimetable: typeof source.showBookingStatusInTimetable === 'boolean' ? source.showBookingStatusInTimetable : DEFAULT_USER_SETTINGS.showBookingStatusInTimetable,
   }
-}
-
-function toMinutes(time: string) {
-  const [h, m] = time.split(':').map(Number)
-  return h * 60 + m
-}
-
-function endMinutes(film: Film, screening: Screening) {
-  const start = toMinutes(screening.start)
-  if (screening.end) {
-    let end = toMinutes(screening.end)
-    if (end <= start) end += 24 * 60
-    return end
-  }
-  return start + (film.runtime ?? FALLBACK_RUNTIME)
-}
-
-function endLabel(film: Film, screening: Screening) {
-  const end = endMinutes(film, screening)
-  const normalized = end % (24 * 60)
-  const h = Math.floor(normalized / 60)
-  const m = normalized % 60
-  const label = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-  return screening.end ? label : `${label} 예상`
 }
 
 function formatDate(date: string, _compact = false) {
@@ -344,10 +318,10 @@ export default function App() {
     () => films.flatMap((film) => film.screenings.filter((screening) => selectedSet.has(screening.id)).map((screening) => ({ film, screening }))),
     [films, selectedSet],
   )
-  const dates = useMemo(() => Array.from(new Set(selectedItems.map(({ screening }) => screening.date))).sort(), [selectedItems])
+  const dates = useMemo(() => Array.from(new Set(selectedItems.map(({ screening }) => timetableDate(screening)))).sort(), [selectedItems])
   const timetableEndHour = useMemo(() => {
     const latestEndMinutes = selectedItems.reduce(
-      (latest, { film, screening }) => Math.max(latest, endMinutes(film, screening)),
+      (latest, { film, screening }) => Math.max(latest, timetableEndMinutes(film, screening)),
       BASE_END_HOUR * 60,
     )
     return Math.max(BASE_END_HOUR, Math.ceil(latestEndMinutes / 60))
@@ -370,14 +344,9 @@ export default function App() {
     return { axisWidth, headerHeight, hourHeight, gridHeight, dayWidth, dense, ultraDense }
   }, [viewport, dates.length, timetableEndHour])
 
-  const conflictingSelections = useCallback((film: Film, screening: Screening) => {
-    const start = toMinutes(screening.start)
-    const end = endMinutes(film, screening)
-    return selectedItems.filter(({ film: otherFilm, screening: other }) => {
-      if (other.id === screening.id || other.date !== screening.date) return false
-      return start < endMinutes(otherFilm, other) && toMinutes(other.start) < end
-    })
-  }, [selectedItems])
+  const conflictingSelections = useCallback((film: Film, screening: Screening) => (
+    selectedItems.filter(({ film: otherFilm, screening: other }) => screeningsOverlap(film, screening, otherFilm, other))
+  ), [selectedItems])
 
   const conflicts = useCallback((film: Film, screening: Screening) => (
     conflictingSelections(film, screening).length > 0
@@ -385,18 +354,16 @@ export default function App() {
 
   const transitionWarning = useCallback((film: Film, screening: Screening) => {
     if (!userSettings.showTransferWarnings) return null
-    const start = toMinutes(screening.start)
-    const end = endMinutes(film, screening)
+    const currentWindow = screeningAbsoluteWindow(film, screening)
 
     for (const { film: otherFilm, screening: other } of selectedItems) {
-      if (other.id === screening.id || other.date !== screening.date) continue
-      const otherStart = toMinutes(other.start)
-      const otherEnd = endMinutes(otherFilm, other)
+      if (other.id === screening.id) continue
+      const otherWindow = screeningAbsoluteWindow(otherFilm, other)
 
-      if (end <= otherStart) {
+      if (currentWindow.end <= otherWindow.start) {
         const transfer = transferBuffer(screening.venue, other.venue, userSettings)
         if (transfer.minutes === 0) continue
-        const gap = otherStart - end
+        const gap = otherWindow.start - currentWindow.end
         if (gap < transfer.minutes) return {
           otherFilm,
           other,
@@ -406,10 +373,10 @@ export default function App() {
           transferDetail: transfer.transferDetail,
           precise: transfer.precise,
         }
-      } else if (otherEnd <= start) {
+      } else if (otherWindow.end <= currentWindow.start) {
         const transfer = transferBuffer(other.venue, screening.venue, userSettings)
         if (transfer.minutes === 0) continue
-        const gap = start - otherEnd
+        const gap = currentWindow.start - otherWindow.end
         if (gap < transfer.minutes) return {
           otherFilm,
           other,
@@ -589,8 +556,8 @@ export default function App() {
     ]
 
     for (const { film, screening } of sorted) {
-      const start = toMinutes(screening.start)
-      const end = endMinutes(film, screening)
+      const start = clockMinutes(screening.start)
+      const end = screeningEndOffsetMinutes(film, screening)
       const status = ticketStatus[screening.id]
       const description = [screening.code ? `상영코드 ${screening.code}` : '', screening.gv ? 'GV' : '', screening.end ? '' : '종료시간은 예상값'].filter(Boolean).join(' · ')
       lines.push(
@@ -756,9 +723,9 @@ export default function App() {
               <div className="time-axis">{Array.from({ length: timetableEndHour - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((hour) => <div key={hour} style={{ top: `${(hour - START_HOUR) * timetableMetrics.hourHeight}px` }}>{`${hour < 24 ? String(hour).padStart(2, '0') : String(hour - 24).padStart(2, '0')}시`}</div>)}</div>
               {dates.map((date) => <div className="day-column" key={date}>
                 {Array.from({ length: timetableEndHour - START_HOUR + 1 }, (_, i) => <div className="hour-line" key={i} style={{ top: `${i * timetableMetrics.hourHeight}px` }} />)}
-                {selectedItems.filter(({ screening }) => screening.date === date).map(({ film, screening }) => {
-                  const start = toMinutes(screening.start)
-                  const end = endMinutes(film, screening)
+                {selectedItems.filter(({ screening }) => timetableDate(screening) === date).map(({ film, screening }) => {
+                  const start = timetableStartMinutes(screening)
+                  const end = timetableEndMinutes(film, screening)
                   const top = ((start - START_HOUR * 60) / 60) * timetableMetrics.hourHeight
                   const height = Math.max(((end - start) / 60) * timetableMetrics.hourHeight, timetableMetrics.ultraDense ? 16 : 22)
                   const travel = transitionWarning(film, screening)
