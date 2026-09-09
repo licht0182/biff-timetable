@@ -16,14 +16,14 @@
 .custom-event-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding-bottom:13px;border-bottom:1px solid #ececec}
 .custom-event-kicker{margin:0 0 4px;color:#aaa;font-size:9px;font-weight:800;letter-spacing:.08em}
 .custom-event-modal h2{margin:0;font-size:21px;letter-spacing:-.03em;word-break:keep-all}
-.custom-event-form{display:grid;gap:11px;padding-top:14px}
-.custom-event-form>label,.custom-event-form-row>label{display:grid;gap:5px;min-width:0}
+.custom-event-form{display:grid;gap:11px;padding-top:14px;min-width:0}
+.custom-event-form>label,.custom-event-form-row>label{display:grid;gap:5px;min-width:0;max-width:100%}
 .custom-event-form label>span{font-size:10px;font-weight:800;color:#777}
-.custom-event-form input,.custom-event-form select,.custom-event-form textarea{width:100%;min-width:0;border:1px solid #d7d7d7;border-radius:6px;background:#fafafa;color:#333;font:inherit;font-size:13px;outline:none}
+.custom-event-form input,.custom-event-form select,.custom-event-form textarea{box-sizing:border-box;display:block;width:100%;max-width:100%;min-width:0;border:1px solid #d7d7d7;border-radius:6px;background:#fafafa;color:#333;font:inherit;font-size:13px;outline:none}
 .custom-event-form input,.custom-event-form select{height:39px;padding:0 10px}
 .custom-event-form textarea{padding:9px 10px;resize:vertical;line-height:1.45}
 .custom-event-form input:focus,.custom-event-form select:focus,.custom-event-form textarea:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 2px rgba(198,41,23,.07)}
-.custom-event-form-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.custom-event-form-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;min-width:0;width:100%}
 .custom-event-form-error{margin:0;padding:8px 9px;border-radius:5px;background:#fff5f3;color:#a62c1d;font-size:10px;font-weight:700}
 .custom-event-form-actions,.custom-event-detail-actions{display:flex;justify-content:flex-end;gap:7px;padding-top:3px}
 .custom-event-form-actions button,.custom-event-detail-actions button{min-height:34px;border:1px solid #ddd;border-radius:5px;background:#fff;color:#666;font-size:11px;font-weight:800;padding:0 13px;cursor:pointer}
@@ -36,7 +36,7 @@
 .custom-event-note-value{white-space:pre-wrap;line-height:1.5}
 
 @media(max-width:700px){
-  .custom-event-modal{width:100%;max-height:calc(100dvh - 20px);border-radius:10px;padding:12px}
+  .custom-event-modal{box-sizing:border-box;width:100%;max-height:calc(100dvh - 20px);border-radius:10px;padding:12px}
   .custom-event-modal-head{gap:10px;padding-bottom:10px}
   .custom-event-kicker{margin-bottom:3px;font-size:8px}
   .custom-event-modal h2{font-size:17px}
@@ -47,7 +47,8 @@
   .custom-event-form input,.custom-event-form select,.custom-event-form textarea{font-size:16px}
   .custom-event-form input,.custom-event-form select{height:36px;padding:0 8px}
   .custom-event-form textarea{padding:7px 8px;line-height:1.35}
-  .custom-event-form-row{gap:6px}
+  .custom-event-form-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+  .custom-event-form-row>label,.custom-event-form-row input,.custom-event-form-row select{width:100%;max-width:100%;min-width:0}
   .custom-event-form-error{padding:7px 8px;font-size:9px}
   .custom-event-form-actions,.custom-event-detail-actions{gap:6px;padding-top:2px}
   .custom-event-form-actions button,.custom-event-detail-actions button{min-height:32px;padding:0 11px;font-size:10px}
