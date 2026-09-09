@@ -1,0 +1,56 @@
+.day-column>.event-block[data-runtime-lane]{
+  --runtime-lane-gap:2px;
+  left:calc(var(--runtime-lane-start) + var(--runtime-lane-gap))!important;
+  right:auto!important;
+  width:calc(var(--runtime-lane-width) - (var(--runtime-lane-gap) * 2))!important;
+}
+
+.timetable-scroll.dense .day-column>.event-block[data-runtime-lane]{--runtime-lane-gap:1px}
+.timetable-scroll.ultra-dense .day-column>.event-block[data-runtime-lane]{--runtime-lane-gap:.5px}
+
+.timetable.runtime-early-start{
+  grid-template-rows:var(--header-height) calc(var(--grid-height) + var(--runtime-timeline-shift));
+}
+.timetable.runtime-early-start .time-axis,
+.timetable.runtime-early-start .day-column{
+  height:calc(var(--grid-height) + var(--runtime-timeline-shift));
+}
+.timetable.runtime-early-start .time-axis>div:not(.runtime-pre-hour),
+.timetable.runtime-early-start .day-column>.hour-line:not(.runtime-pre-line),
+.timetable.runtime-early-start .day-column>.event-block{
+  transform:translateY(var(--runtime-timeline-shift))!important;
+}
+.timetable.runtime-early-start .runtime-pre-hour,
+.timetable.runtime-early-start .runtime-pre-line{
+  transform:none!important;
+}
+
+.png-export-day>.png-export-event[data-runtime-lane]{
+  --runtime-lane-gap:5px;
+  left:calc(var(--runtime-lane-start) + var(--runtime-lane-gap))!important;
+  right:auto!important;
+  width:calc(var(--runtime-lane-width) - (var(--runtime-lane-gap) * 2))!important;
+}
+.png-export-board.runtime-early-start .png-export-grid{
+  --png-body-height:calc(var(--png-edge-space) * 2 + var(--png-hour-height) * var(--png-hours) + var(--runtime-timeline-shift));
+}
+.png-export-board.runtime-early-start .png-export-axis>span:not(.runtime-pre-hour),
+.png-export-board.runtime-early-start .png-export-day>.png-export-hour-line:not(.runtime-pre-line),
+.png-export-board.runtime-early-start .png-export-day>.png-export-event{
+  transform:translateY(var(--runtime-timeline-shift))!important;
+}
+.png-export-board.runtime-early-start .runtime-pre-hour,
+.png-export-board.runtime-early-start .runtime-pre-line{
+  transform:none!important;
+}
+
+.custom-event-overnight-hint{
+  margin:-4px 0 1px;
+  color:#999;
+  font-size:9px;
+  line-height:1.35;
+}
+
+@media(max-width:700px){
+  .custom-event-overnight-hint{font-size:8px}
+}
