@@ -7,6 +7,10 @@ function setStyleProperty(element: HTMLElement, name: string, value: string) {
   if (element.style.getPropertyValue(name) !== value) element.style.setProperty(name, value)
 }
 
+function removeStyleProperty(element: HTMLElement, name: string) {
+  if (element.style.getPropertyValue(name)) element.style.removeProperty(name)
+}
+
 function setDataset(element: HTMLElement, key: string, value: string) {
   if (element.dataset[key] !== value) element.dataset[key] = value
 }
@@ -64,8 +68,8 @@ function applyLanes(container: ParentNode, blockSelector: string) {
   for (const block of blocks) {
     if (placed.has(block)) continue
     if (block.dataset.runtimeLane) delete block.dataset.runtimeLane
-    block.style.removeProperty('--runtime-lane-start')
-    block.style.removeProperty('--runtime-lane-width')
+    removeStyleProperty(block, '--runtime-lane-start')
+    removeStyleProperty(block, '--runtime-lane-width')
   }
 }
 
@@ -79,60 +83,159 @@ function earliestCustomStart(root: ParentNode, blockSelector: string, timeSelect
   return earliest === MINUTES_PER_DAY ? null : earliest
 }
 
-function updateExistingHourLabels(axis: HTMLElement, childSelector: string) {
-  const existing = Array.from(axis.querySelectorAll<HTMLElement>(childSelector))
+function existingAxisChildren(axis: HTMLElement, childSelector: string) {
+  return Array.from(axis.querySelectorAll<HTMLElement>(childSelector))
     .filter((element) => !element.classList.contains('runtime-pre-hour'))
-  existing.forEach((element, index) => {
+}
+
+function updateExistingHourLabels(axis: HTMLElement, childSelector: string) {
+  existingAxisChildren(axis, childSelector).forEach((element, index) => {
     const label = formatHour(BASE_START_HOUR + index)
     if (element.textContent !== label) element.textContent = label
   })
 }
 
-function clearEarlyStart(root: HTMLElement) {
-  if (!root.classList.contains('runtime-early-start')) return
-  root.classList.remove('runtime-early-start')
-  root.style.removeProperty('--runtime-timeline-shift')
-  delete root.dataset.runtimeStartHour
-  root.querySelectorAll('.runtime-pre-hour,.runtime-pre-line').forEach((element) => element.remove())
+function clearScreenVerticalLayout(timetable: HTMLElement) {
+  timetable.classList.remove('runtime-early-start')
+  delete timetable.dataset.runtimeStartHour
+  timetable.querySelectorAll('.runtime-pre-hour,.runtime-pre-line').forEach((element) => element.remove())
+  timetable.querySelectorAll<HTMLElement>('.time-axis>div,.day-column>.hour-line,.day-column>.event-block').forEach((element) => {
+    removeStyleProperty(element, '--runtime-vertical-top')
+    removeStyleProperty(element, '--runtime-vertical-height')
+  })
+}
+
+function ensureScreenPreHours(timetable: HTMLElement, startHour: number, hourHeight: number) {
+  const axis = timetable.querySelector<HTMLElement>('.time-axis')
+  if (!axis) return
+
+  const requiredHours = new Set(Array.from({ length: BASE_START_HOUR - startHour }, (_, index) => startHour + index))
+  axis.querySelectorAll<HTMLElement>(':scope > .runtime-pre-hour').forEach((label) => {
+    const hour = Number(label.dataset.runtimeHour)
+    if (!requiredHours.has(hour)) label.remove()
+  })
+
+  for (let hour = startHour; hour < BASE_START_HOUR; hour += 1) {
+    let label = axis.querySelector<HTMLElement>(`:scope > .runtime-pre-hour[data-runtime-hour="${hour}"]`)
+    if (!label) {
+      label = document.createElement('div')
+      label.className = 'runtime-pre-hour'
+      label.dataset.runtimeHour = String(hour)
+      axis.append(label)
+    }
+    label.textContent = formatHour(hour)
+    label.style.top = `${(hour - startHour) * hourHeight}px`
+  }
+
+  for (const column of timetable.querySelectorAll<HTMLElement>('.day-column')) {
+    column.querySelectorAll<HTMLElement>(':scope > .runtime-pre-line').forEach((line) => {
+      const hour = Number(line.dataset.runtimeHour)
+      if (!requiredHours.has(hour)) line.remove()
+    })
+    for (let hour = startHour; hour < BASE_START_HOUR; hour += 1) {
+      let line = column.querySelector<HTMLElement>(`:scope > .runtime-pre-line[data-runtime-hour="${hour}"]`)
+      if (!line) {
+        line = document.createElement('div')
+        line.className = 'hour-line runtime-pre-line'
+        line.dataset.runtimeHour = String(hour)
+        column.append(line)
+      }
+      line.style.top = `${(hour - startHour) * hourHeight}px`
+    }
+  }
 }
 
 function applyScreenEarlyStart(timetable: HTMLElement) {
-  const hourHeight = Number.parseFloat(getComputedStyle(timetable).getPropertyValue('--hour-height'))
-  if (!Number.isFinite(hourHeight) || hourHeight <= 0) return
+  const computed = getComputedStyle(timetable)
+  const originalHourHeight = Number.parseFloat(computed.getPropertyValue('--hour-height'))
+  const gridHeight = Number.parseFloat(computed.getPropertyValue('--grid-height'))
+  if (!Number.isFinite(originalHourHeight) || originalHourHeight <= 0 || !Number.isFinite(gridHeight) || gridHeight <= 0) return
+
   const earliest = earliestCustomStart(timetable, '.event-block.custom-event', '.event-time')
   const axis = timetable.querySelector<HTMLElement>('.time-axis')
   if (!axis) return
   updateExistingHourLabels(axis, ':scope > div')
 
   if (earliest == null || earliest >= BASE_START_HOUR * 60) {
-    clearEarlyStart(timetable)
+    clearScreenVerticalLayout(timetable)
     return
   }
 
   const startHour = Math.max(0, Math.floor(earliest / 60))
-  const shift = (BASE_START_HOUR - startHour) * hourHeight
+  const extraHours = BASE_START_HOUR - startHour
+  const originalHours = gridHeight / originalHourHeight
+  const fittedHourHeight = gridHeight / (originalHours + extraHours)
+  const scale = fittedHourHeight / originalHourHeight
+
   timetable.classList.add('runtime-early-start')
-  setStyleProperty(timetable, '--runtime-timeline-shift', `${shift}px`)
+  setDataset(timetable, 'runtimeStartHour', String(startHour))
+  ensureScreenPreHours(timetable, startHour, fittedHourHeight)
 
-  if (timetable.dataset.runtimeStartHour !== String(startHour)) {
-    timetable.querySelectorAll('.runtime-pre-hour,.runtime-pre-line').forEach((element) => element.remove())
-    setDataset(timetable, 'runtimeStartHour', String(startHour))
+  existingAxisChildren(axis, ':scope > div').forEach((label, index) => {
+    setStyleProperty(label, '--runtime-vertical-top', `${(extraHours + index) * fittedHourHeight}px`)
+  })
 
-    for (let hour = startHour; hour < BASE_START_HOUR; hour += 1) {
-      const label = document.createElement('div')
+  for (const column of timetable.querySelectorAll<HTMLElement>('.day-column')) {
+    const lines = Array.from(column.querySelectorAll<HTMLElement>(':scope > .hour-line'))
+      .filter((line) => !line.classList.contains('runtime-pre-line'))
+    lines.forEach((line, index) => {
+      setStyleProperty(line, '--runtime-vertical-top', `${(extraHours + index) * fittedHourHeight}px`)
+    })
+
+    for (const block of column.querySelectorAll<HTMLElement>(':scope > .event-block')) {
+      const rawTop = Number.parseFloat(block.style.top)
+      const rawHeight = Number.parseFloat(block.style.height)
+      if (!Number.isFinite(rawTop) || !Number.isFinite(rawHeight)) continue
+      const topHoursFromBase = rawTop / originalHourHeight
+      setStyleProperty(block, '--runtime-vertical-top', `${(extraHours + topHoursFromBase) * fittedHourHeight}px`)
+      setStyleProperty(block, '--runtime-vertical-height', `${Math.max(1, rawHeight * scale)}px`)
+    }
+  }
+}
+
+function clearPngEarlyStart(board: HTMLElement) {
+  if (!board.classList.contains('runtime-early-start')) return
+  board.classList.remove('runtime-early-start')
+  removeStyleProperty(board, '--runtime-timeline-shift')
+  delete board.dataset.runtimeStartHour
+  board.querySelectorAll('.runtime-pre-hour,.runtime-pre-line').forEach((element) => element.remove())
+}
+
+function ensurePngPreHours(board: HTMLElement, startHour: number, hourHeight: number, edgeSpace: number) {
+  const axis = board.querySelector<HTMLElement>('.png-export-axis')
+  if (!axis) return
+  const requiredHours = new Set(Array.from({ length: BASE_START_HOUR - startHour }, (_, index) => startHour + index))
+
+  axis.querySelectorAll<HTMLElement>(':scope > .runtime-pre-hour').forEach((label) => {
+    const hour = Number(label.dataset.runtimeHour)
+    if (!requiredHours.has(hour)) label.remove()
+  })
+  for (let hour = startHour; hour < BASE_START_HOUR; hour += 1) {
+    let label = axis.querySelector<HTMLElement>(`:scope > .runtime-pre-hour[data-runtime-hour="${hour}"]`)
+    if (!label) {
+      label = document.createElement('span')
       label.className = 'runtime-pre-hour'
-      label.style.top = `${(hour - startHour) * hourHeight}px`
-      label.textContent = formatHour(hour)
+      label.dataset.runtimeHour = String(hour)
       axis.append(label)
     }
+    label.textContent = formatHour(hour)
+    label.style.top = `${edgeSpace + (hour - startHour) * hourHeight}px`
+  }
 
-    for (const column of timetable.querySelectorAll<HTMLElement>('.day-column')) {
-      for (let hour = startHour; hour < BASE_START_HOUR; hour += 1) {
-        const line = document.createElement('div')
-        line.className = 'hour-line runtime-pre-line'
-        line.style.top = `${(hour - startHour) * hourHeight}px`
+  for (const column of board.querySelectorAll<HTMLElement>('.png-export-day')) {
+    column.querySelectorAll<HTMLElement>(':scope > .runtime-pre-line').forEach((line) => {
+      const hour = Number(line.dataset.runtimeHour)
+      if (!requiredHours.has(hour)) line.remove()
+    })
+    for (let hour = startHour; hour < BASE_START_HOUR; hour += 1) {
+      let line = column.querySelector<HTMLElement>(`:scope > .runtime-pre-line[data-runtime-hour="${hour}"]`)
+      if (!line) {
+        line = document.createElement('div')
+        line.className = 'png-export-hour-line runtime-pre-line'
+        line.dataset.runtimeHour = String(hour)
         column.append(line)
       }
+      line.style.top = `${edgeSpace + (hour - startHour) * hourHeight}px`
     }
   }
 }
@@ -147,7 +250,7 @@ function applyPngEarlyStart(board: HTMLElement) {
   updateExistingHourLabels(axis, ':scope > span')
 
   if (earliest == null || earliest >= BASE_START_HOUR * 60) {
-    clearEarlyStart(board)
+    clearPngEarlyStart(board)
     return
   }
 
@@ -155,28 +258,8 @@ function applyPngEarlyStart(board: HTMLElement) {
   const shift = (BASE_START_HOUR - startHour) * hourHeight
   board.classList.add('runtime-early-start')
   setStyleProperty(board, '--runtime-timeline-shift', `${shift}px`)
-
-  if (board.dataset.runtimeStartHour !== String(startHour)) {
-    board.querySelectorAll('.runtime-pre-hour,.runtime-pre-line').forEach((element) => element.remove())
-    setDataset(board, 'runtimeStartHour', String(startHour))
-
-    for (let hour = startHour; hour < BASE_START_HOUR; hour += 1) {
-      const label = document.createElement('span')
-      label.className = 'runtime-pre-hour'
-      label.style.top = `${edgeSpace + (hour - startHour) * hourHeight}px`
-      label.textContent = formatHour(hour)
-      axis.append(label)
-    }
-
-    for (const column of board.querySelectorAll<HTMLElement>('.png-export-day')) {
-      for (let hour = startHour; hour < BASE_START_HOUR; hour += 1) {
-        const line = document.createElement('div')
-        line.className = 'png-export-hour-line runtime-pre-line'
-        line.style.top = `${edgeSpace + (hour - startHour) * hourHeight}px`
-        column.append(line)
-      }
-    }
-  }
+  setDataset(board, 'runtimeStartHour', String(startHour))
+  ensurePngPreHours(board, startHour, hourHeight, edgeSpace)
 }
 
 function applyScreenLayout(timetable: HTMLElement) {
