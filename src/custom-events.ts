@@ -1,4 +1,4 @@
-import { START_HOUR, clockMinutes } from './screening-time'
+import { clockMinutes } from './screening-time'
 
 export type CustomEventCategory = 'personal' | 'meal' | 'travel' | 'rest' | 'other'
 
@@ -27,20 +27,13 @@ export const CUSTOM_EVENT_CATEGORIES: Array<{ value: CustomEventCategory; label:
 
 const MINUTES_PER_DAY = 24 * 60
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
-const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/
+const DISPLAY_TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/
+const STORED_END_PATTERN = /^(?:[0-3]\d|4[0-7]):[0-5]\d$/
 const CATEGORY_SET = new Set<CustomEventCategory>(CUSTOM_EVENT_CATEGORIES.map(({ value }) => value))
 
 function dateDayIndex(date: string) {
   const [year, month, day] = date.split('-').map(Number)
   return Math.floor(Date.UTC(year, month - 1, day) / 86_400_000)
-}
-
-function formatDateFromDayIndex(dayIndex: number) {
-  const value = new Date(dayIndex * 86_400_000)
-  const year = value.getUTCFullYear()
-  const month = String(value.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(value.getUTCDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
 }
 
 function optionalText(value: unknown) {
@@ -49,10 +42,58 @@ function optionalText(value: unknown) {
   return trimmed || undefined
 }
 
+function formatExtendedClock(minutes: number) {
+  const hour = Math.floor(minutes / 60)
+  const minute = minutes % 60
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+}
+
+function formatDisplayClock(minutes: number) {
+  const normalized = ((minutes % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY
+  return formatExtendedClock(normalized)
+}
+
+export function encodeCustomEventEnd(start: string, end: string) {
+  if (!DISPLAY_TIME_PATTERN.test(start) || !DISPLAY_TIME_PATTERN.test(end)) return end
+  const startMinutes = clockMinutes(start)
+  let endMinutes = clockMinutes(end)
+  if (endMinutes < startMinutes) endMinutes += MINUTES_PER_DAY
+  return formatExtendedClock(endMinutes)
+}
+
+export function customEventDisplayEnd(end: string) {
+  return formatDisplayClock(clockMinutes(end))
+}
+
+export function customEventEndsNextDay(event: Pick<CustomEvent, 'start' | 'end'>) {
+  return clockMinutes(event.end) >= MINUTES_PER_DAY
+}
+
+export function customEventDisplayRange(event: Pick<CustomEvent, 'start' | 'end'>) {
+  return `${event.start}–${customEventDisplayEnd(event.end)}${customEventEndsNextDay(event) ? ' (다음 날)' : ''}`
+}
+
 export function isValidCustomEventDraft(value: CustomEventDraft) {
   if (!value.title.trim()) return false
-  if (!DATE_PATTERN.test(value.date) || !TIME_PATTERN.test(value.start) || !TIME_PATTERN.test(value.end)) return false
-  return clockMinutes(value.end) > clockMinutes(value.start)
+  if (!DATE_PATTERN.test(value.date) || !DISPLAY_TIME_PATTERN.test(value.start)) return false
+  if (!STORED_END_PATTERN.test(value.end)) return false
+
+  const start = clockMinutes(value.start)
+  const end = clockMinutes(value.end)
+  if (end === start) return false
+  if (end < start) return DISPLAY_TIME_PATTERN.test(value.end)
+  return end - start <= MINUTES_PER_DAY
+}
+
+function normalizeStoredEnd(start: string, end: string) {
+  if (!DISPLAY_TIME_PATTERN.test(start) || !STORED_END_PATTERN.test(end)) return null
+  const startMinutes = clockMinutes(start)
+  let endMinutes = clockMinutes(end)
+
+  if (endMinutes === startMinutes) return null
+  if (endMinutes < startMinutes) endMinutes += MINUTES_PER_DAY
+  if (endMinutes - startMinutes > MINUTES_PER_DAY) return null
+  return formatExtendedClock(endMinutes)
 }
 
 export function normalizeCustomEvents(value: unknown): CustomEvent[] {
@@ -67,9 +108,12 @@ export function normalizeCustomEvents(value: unknown): CustomEvent[] {
     const title = typeof source.title === 'string' ? source.title.trim() : ''
     const date = typeof source.date === 'string' ? source.date : ''
     const start = typeof source.start === 'string' ? source.start : ''
-    const end = typeof source.end === 'string' ? source.end : ''
+    const rawEnd = typeof source.end === 'string' ? source.end : ''
+    const end = normalizeStoredEnd(start, rawEnd)
     const rawCategory = typeof source.category === 'string' ? source.category : 'personal'
     const category = CATEGORY_SET.has(rawCategory as CustomEventCategory) ? rawCategory as CustomEventCategory : 'personal'
+
+    if (!end) continue
     const draft: CustomEventDraft = {
       title,
       date,
@@ -98,7 +142,10 @@ export function createCustomEventId() {
 }
 
 export function customEventDurationMinutes(event: Pick<CustomEvent, 'start' | 'end'>) {
-  return clockMinutes(event.end) - clockMinutes(event.start)
+  const start = clockMinutes(event.start)
+  let end = clockMinutes(event.end)
+  while (end < start) end += MINUTES_PER_DAY
+  return end - start
 }
 
 export function customEventAbsoluteWindow(event: Pick<CustomEvent, 'date' | 'start' | 'end'>): TimeWindow {
@@ -106,14 +153,13 @@ export function customEventAbsoluteWindow(event: Pick<CustomEvent, 'date' | 'sta
   return { start, end: start + customEventDurationMinutes(event) }
 }
 
-export function customEventTimetableDate(event: Pick<CustomEvent, 'date' | 'start'>) {
-  const dayIndex = dateDayIndex(event.date)
-  return formatDateFromDayIndex(clockMinutes(event.start) < START_HOUR * 60 ? dayIndex - 1 : dayIndex)
+// 사용자 일정은 영화 회차와 달리 입력한 달력 날짜 자체를 유지합니다.
+export function customEventTimetableDate(event: Pick<CustomEvent, 'date'>) {
+  return event.date
 }
 
 export function customEventTimetableStartMinutes(event: Pick<CustomEvent, 'start'>) {
-  const start = clockMinutes(event.start)
-  return start < START_HOUR * 60 ? start + MINUTES_PER_DAY : start
+  return clockMinutes(event.start)
 }
 
 export function customEventTimetableEndMinutes(event: Pick<CustomEvent, 'start' | 'end'>) {
