@@ -85,7 +85,7 @@ test('marks a movie and custom event when their times overlap', async ({ page, r
   await dialog.getByRole('button', { name: '추가', exact: true }).click()
 
   await expect(page.locator('.event-block.custom-event')).toHaveClass(/has-time-conflict/)
-  await expect(page.locator('.event-block').not('.custom-event').first()).toHaveClass(/has-time-conflict/)
+  await expect(page.locator('.event-block:not(.custom-event)').first()).toHaveClass(/has-time-conflict/)
 })
 
 test('includes custom events in JSON backup and calendar export', async ({ page }) => {
