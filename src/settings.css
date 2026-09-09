@@ -3,6 +3,9 @@ body.biff-settings-open .biff-settings-panel{display:block}
 body.biff-settings-open .app-shell>main:not(.biff-settings-panel){display:none!important}
 body.biff-settings-open .app-shell>.notice{display:none!important}
 body.biff-settings-open .app-shell.timetable-mode{height:auto!important;min-height:100dvh;overflow:visible!important;padding-bottom:36px}
+/* React settings is rendered conditionally, so it must release any timetable viewport lock itself. */
+.app-shell:has(> .react-settings-panel){height:auto!important;min-height:100dvh;overflow:visible!important}
+body:has(.react-settings-panel){overflow-y:auto!important}
 body.biff-settings-open .tabs button.active:not(.settings-tab-trigger){color:#8a8a8a}
 body.biff-settings-open .tabs button.active:not(.settings-tab-trigger):after{display:none}
 .settings-tab-trigger.active{color:var(--accent)!important}
