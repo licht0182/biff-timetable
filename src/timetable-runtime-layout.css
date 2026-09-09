@@ -8,21 +8,13 @@
 .timetable-scroll.dense .day-column>.event-block[data-runtime-lane]{--runtime-lane-gap:1px}
 .timetable-scroll.ultra-dense .day-column>.event-block[data-runtime-lane]{--runtime-lane-gap:.5px}
 
-.timetable.runtime-early-start{
-  grid-template-rows:var(--header-height) calc(var(--grid-height) + var(--runtime-timeline-shift));
-}
-.timetable.runtime-early-start .time-axis,
-.timetable.runtime-early-start .day-column{
-  height:calc(var(--grid-height) + var(--runtime-timeline-shift));
-}
 .timetable.runtime-early-start .time-axis>div:not(.runtime-pre-hour),
 .timetable.runtime-early-start .day-column>.hour-line:not(.runtime-pre-line),
 .timetable.runtime-early-start .day-column>.event-block{
-  transform:translateY(var(--runtime-timeline-shift))!important;
+  top:var(--runtime-vertical-top)!important;
 }
-.timetable.runtime-early-start .runtime-pre-hour,
-.timetable.runtime-early-start .runtime-pre-line{
-  transform:none!important;
+.timetable.runtime-early-start .day-column>.event-block{
+  height:var(--runtime-vertical-height)!important;
 }
 
 .png-export-day>.png-export-event[data-runtime-lane]{
