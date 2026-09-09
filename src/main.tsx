@@ -16,6 +16,7 @@ import './desktop-notice.css'
 import './screening-action-size.css'
 import './film-modal-center.css'
 import './conflict-style.css'
+import './custom-events.css'
 import './timetable-display'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
