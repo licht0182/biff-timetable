@@ -9,20 +9,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <script>
-      (() => {
-        const originalFetch = window.fetch.bind(window)
-        window.fetch = (input, init = {}) => {
-          const rawUrl = typeof input === 'string' ? input : input.url
-          if (rawUrl.includes('screenings.json')) {
-            const separator = rawUrl.includes('?') ? '&' : '?'
-            const freshUrl = `${rawUrl}${separator}v=2025-test-20260908-1`
-            return originalFetch(freshUrl, { ...init, cache: 'no-store' })
-          }
-          return originalFetch(input, init)
-        }
-      })()
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
