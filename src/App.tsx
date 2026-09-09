@@ -26,6 +26,7 @@ const STORAGE_KEY = 'biff-timetable:selected-screenings:v1'
 const FAVORITES_KEY = 'biff-timetable:favorites:v1'
 const TICKET_STATUS_KEY = 'biff-timetable:ticket-status:v1'
 const USER_SETTINGS_KEY = 'biff-timetable:user-settings:v1'
+const DATA_VERSION_STORAGE_KEY = 'biff-timetable:data-version:v1'
 const DEFAULT_USER_SETTINGS: UserTimetableSettings = {
   sameVenueMinutes: 0,
   sameClusterMinutes: 10,
@@ -232,6 +233,17 @@ export default function App() {
         return res.json()
       })
       .then((data: FilmData) => {
+        const validFilmIds = new Set(data.films.map((film) => film.id))
+        const validScreeningIds = new Set(data.films.flatMap((film) => film.screenings.map((screening) => screening.id)))
+
+        setSelected((current) => current.filter((id) => validScreeningIds.has(id)))
+        setFavorites((current) => current.filter((id) => validFilmIds.has(id)))
+        setTicketStatus((current) => Object.fromEntries(
+          Object.entries(current).filter(([id]) => validScreeningIds.has(id)),
+        ) as TicketStatusMap)
+        setTimetableDeleteSelection((current) => current.filter((id) => validScreeningIds.has(id)))
+        localStorage.setItem(DATA_VERSION_STORAGE_KEY, JSON.stringify(DATA_VERSION))
+
         setFilms(data.films)
         setDataNote(data.note ?? '')
         setDataSource(data.source ?? '')
