@@ -47,15 +47,16 @@ test('keeps film-search and timetable header/navigation geometry identical', asy
   expect(Math.abs(after.timetableTab!.height - before.timetableTab!.height)).toBeLessThanOrEqual(1)
 })
 
-test('always shows the full 08:00-03:00 baseline without clipping edge labels', async ({ page }) => {
+test('shows the 08:00-00:00 baseline without clipping edge labels', async ({ page }) => {
   await seedSelected(page, ['biff2025-097'])
   await page.goto('./')
   await openTimetable(page)
 
   const timeAxis = page.locator('.time-axis')
   await expect(timeAxis.getByText('08시', { exact: true })).toBeVisible()
-  await expect(timeAxis.getByText('03시', { exact: true })).toBeVisible()
-  await expect(page.locator('.day-column').first().locator('.hour-line')).toHaveCount(20)
+  await expect(timeAxis.getByText('00시', { exact: true })).toBeVisible()
+  await expect(timeAxis.getByText('01시', { exact: true })).toHaveCount(0)
+  await expect(page.locator('.day-column').first().locator('.hour-line')).toHaveCount(17)
 
   const bounds = await timeAxis.evaluate((axis) => {
     const labels = Array.from(axis.querySelectorAll<HTMLElement>(':scope > div'))
