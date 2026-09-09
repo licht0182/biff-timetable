@@ -39,13 +39,26 @@ const BASE_END_HOUR = 24
 const FALLBACK_RUNTIME = 120
 const DATA_VERSION = '2025-test-20260908-2'
 
-function readStorage<T>(key: string, fallback: T): T {
+function readStorageValue(key: string): unknown {
   try {
     const raw = localStorage.getItem(key)
-    return raw ? JSON.parse(raw) as T : fallback
+    return raw ? JSON.parse(raw) : undefined
   } catch {
-    return fallback
+    return undefined
   }
+}
+
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return Array.from(new Set(value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)))
+}
+
+function normalizeTicketStatus(value: unknown): TicketStatusMap {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  const entries = Object.entries(value).filter(([id, status]) => (
+    id.trim().length > 0 && (status === 'planned' || status === 'booked')
+  ))
+  return Object.fromEntries(entries) as TicketStatusMap
 }
 
 function clampSetting(value: unknown, fallback: number, max: number) {
@@ -192,9 +205,9 @@ export default function App() {
   const [films, setFilms] = useState<Film[]>([])
   const [dataNote, setDataNote] = useState('')
   const [dataSource, setDataSource] = useState('')
-  const [selected, setSelected] = useState<string[]>(() => readStorage(STORAGE_KEY, [] as string[]))
-  const [favorites, setFavorites] = useState<string[]>(() => readStorage(FAVORITES_KEY, [] as string[]))
-  const [ticketStatus, setTicketStatus] = useState<TicketStatusMap>(() => readStorage(TICKET_STATUS_KEY, {} as TicketStatusMap))
+  const [selected, setSelected] = useState<string[]>(() => normalizeStringArray(readStorageValue(STORAGE_KEY)))
+  const [favorites, setFavorites] = useState<string[]>(() => normalizeStringArray(readStorageValue(FAVORITES_KEY)))
+  const [ticketStatus, setTicketStatus] = useState<TicketStatusMap>(() => normalizeTicketStatus(readStorageValue(TICKET_STATUS_KEY)))
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
   const [section, setSection] = useState('전체')
@@ -208,7 +221,7 @@ export default function App() {
   const [loadError, setLoadError] = useState('')
   const [toast, setToast] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [userSettings, setUserSettings] = useState<UserTimetableSettings>(() => normalizeUserSettings(readStorage(USER_SETTINGS_KEY, DEFAULT_USER_SETTINGS)))
+  const [userSettings, setUserSettings] = useState<UserTimetableSettings>(() => normalizeUserSettings(readStorageValue(USER_SETTINGS_KEY)))
   const [timetableSelectionMode, setTimetableSelectionMode] = useState(false)
   const [timetableDeleteSelection, setTimetableDeleteSelection] = useState<string[]>([])
 
