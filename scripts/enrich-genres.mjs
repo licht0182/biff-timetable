@@ -5,6 +5,7 @@ const CHECK_ONLY = process.argv.includes('--check')
 const CONCURRENCY = 6
 const REQUEST_TIMEOUT_MS = 15_000
 const MAX_ATTEMPTS = 3
+const DEBUG_FILM_ID = 'biff2025-82141'
 
 function decodeEntities(value) {
   const named = {
@@ -147,7 +148,7 @@ async function fetchHtml(url, expectedTexts = []) {
       const response = await fetch(url, {
         headers: {
           'accept-language': 'ko-KR,ko;q=0.9,en;q=0.7',
-          'user-agent': 'BIFF-Timetable-Genre-Collector/1.0',
+          'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/153.0 Safari/537.36',
         },
         redirect: 'follow',
         signal: controller.signal,
@@ -196,6 +197,18 @@ await mapLimit(candidates, CONCURRENCY, async (film, index) => {
     const html = await fetchHtml(film.url, [film.title, film.section, film.englishTitle])
     const genre = parseGenre(html, film)
     if (!genre) {
+      if (film.id === DEBUG_FILM_ID) {
+        const lines = htmlToLines(html)
+        const probes = lines.filter((line) => /8번 출구|Exit 8|미드나잇|국가|Japan|심리|미스터리|호러|Program Note/i.test(line))
+        console.log('\n[genre-debug]', JSON.stringify({
+          titlePresent: html.includes(film.title),
+          englishTitlePresent: html.includes(film.englishTitle ?? ''),
+          sectionPresent: html.includes(film.section ?? ''),
+          htmlLength: html.length,
+          probes: probes.slice(0, 40),
+          firstLines: lines.slice(0, 30),
+        }, null, 2))
+      }
       failed += 1
       failures.push(`${film.title}: 장르를 찾지 못함`)
       return
