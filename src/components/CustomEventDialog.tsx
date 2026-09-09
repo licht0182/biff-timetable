@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { CUSTOM_EVENT_CATEGORIES, customEventCategoryLabel, isValidCustomEventDraft, type CustomEvent, type CustomEventDraft } from '../custom-events'
+import { CUSTOM_EVENT_CATEGORIES, customEventCategoryLabel, customEventDisplayEnd, customEventDisplayRange, encodeCustomEventEnd, isValidCustomEventDraft, type CustomEvent, type CustomEventDraft } from '../custom-events'
 
 type CustomEventDialogProps = {
   mode: 'create' | 'detail' | 'edit'
@@ -40,7 +40,7 @@ export default function CustomEventDialog({
     title: event?.title ?? '',
     date: event?.date ?? defaultDate ?? todayLocal(),
     start: event?.start ?? '12:00',
-    end: event?.end ?? '13:00',
+    end: event ? customEventDisplayEnd(event.end) : '13:00',
     category: event?.category ?? 'personal',
     location: event?.location ?? '',
     note: event?.note ?? '',
@@ -59,21 +59,26 @@ export default function CustomEventDialog({
 
   const submit = (submitEvent: FormEvent) => {
     submitEvent.preventDefault()
-    const draft: CustomEventDraft = {
+    const displayDraft: CustomEventDraft = {
       ...form,
       title: form.title.trim(),
       location: form.location?.trim() || undefined,
       note: form.note?.trim() || undefined,
     }
-    if (!draft.title) {
+    if (!displayDraft.title) {
       setError('일정명을 입력해 주세요.')
       return
     }
-    if (!isValidCustomEventDraft(draft)) {
-      setError('종료 시간은 시작 시간보다 늦어야 합니다.')
+    if (!isValidCustomEventDraft(displayDraft)) {
+      setError('시작 시간과 종료 시간은 같을 수 없습니다.')
       return
     }
-    if (onSave(draft, mode === 'edit' ? event?.id : undefined)) setError('')
+
+    const storedDraft: CustomEventDraft = {
+      ...displayDraft,
+      end: encodeCustomEventEnd(displayDraft.start, displayDraft.end),
+    }
+    if (onSave(storedDraft, mode === 'edit' ? event?.id : undefined)) setError('')
   }
 
   const titleId = 'custom-event-dialog-title'
@@ -89,7 +94,7 @@ export default function CustomEventDialog({
         {hasConflict && <div className="custom-event-conflict-note">⚠ 다른 일정과 시간이 겹칩니다.</div>}
         <dl className="custom-event-detail-grid">
           <dt>날짜</dt><dd>{formatDate(event.date)}</dd>
-          <dt>시간</dt><dd>{event.start}–{event.end}</dd>
+          <dt>시간</dt><dd>{customEventDisplayRange(event)}</dd>
           <dt>종류</dt><dd>{customEventCategoryLabel(event.category)}</dd>
           {event.location && <><dt>장소</dt><dd>{event.location}</dd></>}
           {event.note && <><dt>메모</dt><dd className="custom-event-note-value">{event.note}</dd></>}
@@ -108,6 +113,7 @@ export default function CustomEventDialog({
           <label><span>시작 *</span><input type="time" value={form.start} onChange={(changeEvent) => update('start', changeEvent.target.value)} step="300" required /></label>
           <label><span>종료 *</span><input type="time" value={form.end} onChange={(changeEvent) => update('end', changeEvent.target.value)} step="300" required /></label>
         </div>
+        <p className="custom-event-overnight-hint">종료 시간이 시작 시간보다 이르면 다음 날 종료 일정으로 저장됩니다.</p>
         <label><span>장소</span><input type="text" value={form.location ?? ''} onChange={(changeEvent) => update('location', changeEvent.target.value)} maxLength={100} placeholder="선택 입력" /></label>
         <label><span>메모</span><textarea value={form.note ?? ''} onChange={(changeEvent) => update('note', changeEvent.target.value)} maxLength={300} rows={3} placeholder="선택 입력" /></label>
         {error && <p className="custom-event-form-error" role="alert">{error}</p>}
