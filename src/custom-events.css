@@ -36,13 +36,21 @@
 .custom-event-note-value{white-space:pre-wrap;line-height:1.5}
 
 @media(max-width:700px){
-  .custom-event-modal{width:100%;max-height:84dvh;border-radius:10px;padding:14px}
-  .custom-event-modal h2{font-size:18px}
-  .custom-event-form{gap:10px}
+  .custom-event-modal{width:100%;max-height:calc(100dvh - 20px);border-radius:10px;padding:12px}
+  .custom-event-modal-head{gap:10px;padding-bottom:10px}
+  .custom-event-kicker{margin-bottom:3px;font-size:8px}
+  .custom-event-modal h2{font-size:17px}
+  .custom-event-modal .modal-close{width:30px;height:30px;font-size:19px}
+  .custom-event-form{gap:8px;padding-top:11px}
+  .custom-event-form>label,.custom-event-form-row>label{gap:4px}
+  .custom-event-form label>span{font-size:9px}
   .custom-event-form input,.custom-event-form select,.custom-event-form textarea{font-size:16px}
-  .custom-event-form input,.custom-event-form select{height:44px}
-  .custom-event-form-row{gap:7px}
-  .custom-event-form-actions button,.custom-event-detail-actions button{min-height:38px;font-size:11px}
+  .custom-event-form input,.custom-event-form select{height:36px;padding:0 8px}
+  .custom-event-form textarea{padding:7px 8px;line-height:1.35}
+  .custom-event-form-row{gap:6px}
+  .custom-event-form-error{padding:7px 8px;font-size:9px}
+  .custom-event-form-actions,.custom-event-detail-actions{gap:6px;padding-top:2px}
+  .custom-event-form-actions button,.custom-event-detail-actions button{min-height:32px;padding:0 11px;font-size:10px}
   .custom-event-detail-grid{grid-template-columns:58px minmax(0,1fr);font-size:11px;padding:11px}
   .event-block.has-time-conflict:before{width:10px;height:10px;font-size:6px}
 }
