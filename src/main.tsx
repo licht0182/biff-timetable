@@ -17,7 +17,9 @@ import './screening-action-size.css'
 import './film-modal-center.css'
 import './conflict-style.css'
 import './custom-events.css'
+import './timetable-runtime-layout.css'
 import './timetable-display'
+import './timetable-runtime-layout'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
