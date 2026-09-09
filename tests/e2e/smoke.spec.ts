@@ -135,6 +135,34 @@ test('persists a selected screening across reload and opens its timetable detail
   await expect(page.getByRole('dialog')).toBeHidden()
 })
 
+test('changes booking status from a timetable detail and persists it', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: '+ 추가' }).first().click()
+  await page.getByRole('button', { name: '내 시간표' }).click()
+
+  const event = page.locator('.event-block').first()
+  await expect(event).toBeVisible()
+  await event.click()
+
+  const currentRow = page.locator('.modal-screenings>div.current-screening')
+  const statusSelect = currentRow.locator('.ticket-select')
+  await expect(statusSelect).toBeVisible()
+  await expect(statusSelect).toHaveValue('planned')
+  await statusSelect.selectOption('booked')
+  await expect(statusSelect).toHaveValue('booked')
+  await expect.poll(() => page.evaluate((key) => {
+    const statuses = JSON.parse(localStorage.getItem(key) ?? '{}') as Record<string, string>
+    return Object.values(statuses)[0]
+  }, STATUS_KEY)).toBe('booked')
+
+  await page.keyboard.press('Escape')
+  await expect(event).toHaveClass(/status-booked/)
+
+  await page.reload()
+  await page.getByRole('button', { name: '내 시간표' }).click()
+  await expect(page.locator('.event-block').first()).toHaveClass(/status-booked/)
+})
+
 test('blocks adding an overlapping screening and identifies the existing conflict', async ({ page, request }) => {
   const data = await screeningData(request)
   const pair = findOverlappingPair(data)
