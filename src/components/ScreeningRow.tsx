@@ -27,7 +27,7 @@ function ScreeningRow({
   onStatusChange,
 }: ScreeningRowProps) {
   const rowNote = hasConflict
-    ? '선택된 회차와 시간이 겹칩니다.'
+    ? '내 시간표의 다른 일정과 시간이 겹칩니다.'
     : travel
       ? `${travel.routeLabel ? `${travel.routeLabel} · ` : ''}이동 여유 ${travel.gap}분 · 필요 ${travel.buffer}분`
       : ''
