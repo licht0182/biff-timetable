@@ -3,11 +3,24 @@
 .screening-row>.screening-actions.selected-actions{width:var(--screening-action-width)}
 .screening-row>.screening-actions.selected-actions>.ticket-select,.screening-row>.screening-actions.selected-actions>button{width:var(--screening-action-width);min-width:var(--screening-action-width);max-width:var(--screening-action-width)}
 
-/* Keep every screening option in the detail modal the same size, regardless of selection or warnings. */
+/*
+ * Detail modal screening rows use the ordinary, unselected row as the geometry baseline.
+ * Selection/current/conflict/travel states may change decoration or controls, but never
+ * the row box, content origin, or text baselines.
+ */
 .modal-screenings>div{
   height:85px;
   min-height:85px;
-  padding:10px 8px;
+  margin:0!important;
+  padding:10px 8px!important;
+}
+.modal-screenings>div.current-screening,
+.modal-screenings>div.conflict,
+.modal-screenings>div.travel-warning{
+  width:100%;
+  margin:0!important;
+  padding-left:8px!important;
+  padding-right:8px!important;
 }
 .modal-screenings>div>div:first-child{
   height:64px;
@@ -22,6 +35,21 @@
   overflow:hidden!important;
   text-overflow:ellipsis!important;
   white-space:nowrap!important;
+}
+.modal-screenings>div>div:first-child>strong{
+  height:18px;
+  line-height:18px!important;
+}
+.modal-screenings>div>div:first-child>span{
+  height:16px;
+  line-height:16px!important;
+}
+.current-screening-badge{
+  height:14px;
+  padding-top:0!important;
+  padding-bottom:0!important;
+  line-height:14px!important;
+  vertical-align:1px!important;
 }
 .modal-screening-note{
   min-height:13px;
@@ -45,11 +73,35 @@
   .modal-screenings>div{
     height:79px;
     min-height:79px;
+    margin:0!important;
+    padding:10px 8px!important;
+  }
+  .modal-screenings>div.current-screening,
+  .modal-screenings>div.conflict,
+  .modal-screenings>div.travel-warning{
+    width:100%;
+    margin:0!important;
+    padding-left:8px!important;
+    padding-right:8px!important;
   }
   .modal-screenings>div>div:first-child{
     height:58px;
     min-height:58px;
     grid-template-rows:16px 14px 13px;
+    align-content:center;
+  }
+  .modal-screenings>div>div:first-child>strong{
+    height:16px;
+    line-height:16px!important;
+  }
+  .modal-screenings>div>div:first-child>span{
+    height:14px;
+    line-height:14px!important;
+  }
+  .current-screening-badge{
+    height:13px;
+    line-height:13px!important;
+    vertical-align:1px!important;
   }
   .modal-screening-actions{
     height:58px;
