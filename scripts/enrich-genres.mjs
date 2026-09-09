@@ -172,12 +172,13 @@ async function mapLimit(items, limit, worker) {
   return results
 }
 
+function isSupportedFilmPage(url) {
+  return /biff\.kr\/kor\/html\/(?:archive\/arc_history_view|program\/prog_view)\.asp/i.test(url)
+}
+
 const raw = await readFile(dataPath, 'utf8')
 const data = JSON.parse(raw)
-const candidates = data.films.filter((film) => (
-  typeof film.url === 'string'
-  && /biff\.kr\/kor\/html\/archive\/arc_history_view\.asp/i.test(film.url)
-))
+const candidates = data.films.filter((film) => typeof film.url === 'string' && isSupportedFilmPage(film.url))
 
 let collected = 0
 let unchanged = 0
