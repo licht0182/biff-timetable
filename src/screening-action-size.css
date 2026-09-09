@@ -2,7 +2,63 @@
 .screening-row>.screening-actions>button,.screening-row>.screening-actions>.ticket-select{width:var(--screening-action-width);min-width:var(--screening-action-width);max-width:var(--screening-action-width);height:30px}
 .screening-row>.screening-actions.selected-actions{width:var(--screening-action-width)}
 .screening-row>.screening-actions.selected-actions>.ticket-select,.screening-row>.screening-actions.selected-actions>button{width:var(--screening-action-width);min-width:var(--screening-action-width);max-width:var(--screening-action-width)}
+
+/* Keep every screening option in the detail modal the same size, regardless of selection or warnings. */
+.modal-screenings>div{
+  height:85px;
+  min-height:85px;
+  padding:10px 8px;
+}
+.modal-screenings>div>div:first-child{
+  height:64px;
+  min-height:64px;
+  grid-template-rows:18px 16px 13px;
+  align-content:center;
+}
+.modal-screenings>div>div:first-child>strong,
+.modal-screenings>div>div:first-child>span,
+.modal-screenings>div>div:first-child>.modal-screening-note{
+  min-width:0;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.modal-screening-note{
+  min-height:13px;
+  line-height:13px!important;
+}
+.modal-screening-actions{
+  height:64px;
+  min-height:64px;
+  justify-content:center;
+}
+.modal-screening-actions>.ticket-select,
+.modal-screening-actions>button{
+  height:30px;
+  min-height:30px;
+  max-height:30px;
+}
+
 @media(max-width:700px){
   .screening-row>.screening-actions{--screening-action-width:64px}
   .screening-row>.screening-actions>button,.screening-row>.screening-actions>.ticket-select{height:27px}
+  .modal-screenings>div{
+    height:79px;
+    min-height:79px;
+  }
+  .modal-screenings>div>div:first-child{
+    height:58px;
+    min-height:58px;
+    grid-template-rows:16px 14px 13px;
+  }
+  .modal-screening-actions{
+    height:58px;
+    min-height:58px;
+  }
+  .modal-screening-actions>.ticket-select,
+  .modal-screening-actions>button{
+    height:27px;
+    min-height:27px;
+    max-height:27px;
+  }
 }
