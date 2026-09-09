@@ -1,0 +1,47 @@
+.custom-event-add-button{border-color:#cfcfcf!important;background:#fff!important;color:#555!important}
+.custom-event-add-button:hover{border-color:#bdbdbd!important;background:#fafafa!important}
+
+.event-block.custom-event{border-left-color:rgba(64,64,64,.28);background:#eceff3;color:#3f4852}
+.event-block.custom-event.category-meal{background:#fff0d8;color:#76531f}
+.event-block.custom-event.category-travel{background:#e2eef8;color:#345c7b}
+.event-block.custom-event.category-rest{background:#e7f1e9;color:#3d6746}
+.event-block.custom-event.category-other{background:#eee8f4;color:#5f4a73}
+.event-block.has-time-conflict{box-shadow:inset 0 0 0 2px rgba(198,41,23,.75)}
+.event-block.has-time-conflict:before{content:"!";position:absolute;right:2px;bottom:2px;display:flex;align-items:center;justify-content:center;width:11px;height:11px;border-radius:50%;background:var(--accent);color:#fff;font-size:7px;font-weight:900;line-height:1}
+.timetable-selection-mode .event-block.has-time-conflict:before{display:none}
+
+.custom-event-backdrop{z-index:940}
+.custom-event-modal{width:min(500px,100%);max-height:min(720px,calc(100dvh - 40px));overflow:auto;background:#fff;border:1px solid #ddd;border-radius:9px;box-shadow:0 16px 50px rgba(0,0,0,.24);padding:18px}
+.custom-event-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding-bottom:13px;border-bottom:1px solid #ececec}
+.custom-event-kicker{margin:0 0 4px;color:#aaa;font-size:9px;font-weight:800;letter-spacing:.08em}
+.custom-event-modal h2{margin:0;font-size:21px;letter-spacing:-.03em;word-break:keep-all}
+.custom-event-form{display:grid;gap:11px;padding-top:14px}
+.custom-event-form>label,.custom-event-form-row>label{display:grid;gap:5px;min-width:0}
+.custom-event-form label>span{font-size:10px;font-weight:800;color:#777}
+.custom-event-form input,.custom-event-form select,.custom-event-form textarea{width:100%;min-width:0;border:1px solid #d7d7d7;border-radius:6px;background:#fafafa;color:#333;font:inherit;font-size:13px;outline:none}
+.custom-event-form input,.custom-event-form select{height:39px;padding:0 10px}
+.custom-event-form textarea{padding:9px 10px;resize:vertical;line-height:1.45}
+.custom-event-form input:focus,.custom-event-form select:focus,.custom-event-form textarea:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 2px rgba(198,41,23,.07)}
+.custom-event-form-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.custom-event-form-error{margin:0;padding:8px 9px;border-radius:5px;background:#fff5f3;color:#a62c1d;font-size:10px;font-weight:700}
+.custom-event-form-actions,.custom-event-detail-actions{display:flex;justify-content:flex-end;gap:7px;padding-top:3px}
+.custom-event-form-actions button,.custom-event-detail-actions button{min-height:34px;border:1px solid #ddd;border-radius:5px;background:#fff;color:#666;font-size:11px;font-weight:800;padding:0 13px;cursor:pointer}
+.custom-event-form-actions .custom-event-save,.custom-event-detail-actions .custom-event-edit{border-color:var(--accent);background:var(--accent);color:#fff}
+.custom-event-detail-actions .custom-event-delete{margin-right:auto;border-color:#e6b5af;background:#fff8f7;color:#a92a1b}
+.custom-event-conflict-note{margin-top:13px;padding:9px 10px;border:1px solid #efc4be;border-radius:6px;background:#fff8f7;color:#a52a1b;font-size:11px;font-weight:800}
+.custom-event-detail-grid{display:grid;grid-template-columns:70px minmax(0,1fr);gap:9px 12px;margin:14px 0;padding:13px;background:#fafafa;border:1px solid #eee;border-radius:6px;font-size:12px}
+.custom-event-detail-grid dt{color:#999;font-weight:700}
+.custom-event-detail-grid dd{margin:0;color:#444;font-weight:700;min-width:0;overflow-wrap:anywhere}
+.custom-event-note-value{white-space:pre-wrap;line-height:1.5}
+
+@media(max-width:700px){
+  .custom-event-modal{width:100%;max-height:84dvh;border-radius:10px;padding:14px}
+  .custom-event-modal h2{font-size:18px}
+  .custom-event-form{gap:10px}
+  .custom-event-form input,.custom-event-form select,.custom-event-form textarea{font-size:16px}
+  .custom-event-form input,.custom-event-form select{height:44px}
+  .custom-event-form-row{gap:7px}
+  .custom-event-form-actions button,.custom-event-detail-actions button{min-height:38px;font-size:11px}
+  .custom-event-detail-grid{grid-template-columns:58px minmax(0,1fr);font-size:11px;padding:11px}
+  .event-block.has-time-conflict:before{width:10px;height:10px;font-size:6px}
+}
