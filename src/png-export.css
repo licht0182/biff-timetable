@@ -42,10 +42,11 @@
 .png-export-title-group h1{margin:0;font-size:30px;line-height:1.15;letter-spacing:-.7px}
 .png-export-period{margin:3px 0 0;font-size:14px;color:#777}
 
-.png-export-legend{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;max-width:510px;padding-top:5px}
+.png-export-legend{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;max-width:570px;padding-top:5px}
 .png-export-legend span{padding:7px 10px;border:1px solid #e5e5e5;border-radius:8px;background:#fafafa;font-size:11px;font-weight:700;color:#666}
 .png-export-legend .booked{color:#237a4b;background:#f0faf5;border-color:#cdebdc}
 .png-export-legend .planned{color:#9a6414;background:#fff9eb;border-color:#f1dfb4}
+.png-export-legend .custom{color:#4b5560;background:#eef1f4;border-color:#d6dbe0}
 .png-export-legend .warning{color:#b53a2d;background:#fff3f1;border-color:#f0cbc5}
 
 .png-export-grid{
@@ -139,7 +140,14 @@
 .png-export-event.palette-7{background:#f4f3e7;border-left-color:#9d9b55}
 .png-export-event.status-booked,
 .png-export-event.status-planned{box-shadow:none}
-.png-export-event.transfer-warning::after{
+.png-export-event.custom-event{background:#edf0f3;border-left-color:#6d7781;color:#3f4852}
+.png-export-event.custom-event.category-meal{background:#fff1dc;border-left-color:#c58a37;color:#72521f}
+.png-export-event.custom-event.category-travel{background:#e6f0f8;border-left-color:#5d8db1;color:#345c7b}
+.png-export-event.custom-event.category-rest{background:#e8f2ea;border-left-color:#6f9d78;color:#3d6746}
+.png-export-event.custom-event.category-other{background:#f0ebf5;border-left-color:#8e73a5;color:#5f4a73}
+.png-export-event.time-conflict{box-shadow:inset 0 0 0 2px rgba(198,41,23,.7)}
+.png-export-event.transfer-warning::after,
+.png-export-event.time-conflict::after{
   content:"!";position:absolute;right:5px;top:5px;width:16px;height:16px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;background:#c94b3c;color:#fff;font-size:10px;font-weight:900;
 }
