@@ -1,5 +1,6 @@
 import { toBlob } from 'html-to-image'
 import type { Film, Screening, TicketStatusMap } from './components/film-types'
+import { customEventAbsoluteWindow, customEventCategoryLabel, customEventTimetableDate, customEventTimetableEndMinutes, customEventTimetableStartMinutes, windowsOverlap, type CustomEvent } from './custom-events'
 import { BASE_END_HOUR, START_HOUR, screeningAbsoluteWindow, timetableDate, timetableEndMinutes, timetableStartMinutes } from './screening-time'
 import { getTransferBuffer, type TransferSettings } from './transfer-buffer'
 
@@ -15,12 +16,16 @@ const EXPORT_HOUR_HEIGHT = 58
 const EXPORT_EDGE_SPACE = 16
 const EXPORT_FILENAME = 'BIFF-timetable.png'
 
-function exportEndHour(items: ExportItem[]) {
-  const latestEndMinutes = items.reduce(
+function exportEndHour(items: ExportItem[], customEvents: readonly CustomEvent[]) {
+  const screeningEnd = items.reduce(
     (latest, { film, screening }) => Math.max(latest, timetableEndMinutes(film, screening)),
     BASE_END_HOUR * 60,
   )
-  return Math.max(BASE_END_HOUR, Math.ceil(latestEndMinutes / 60))
+  const customEnd = customEvents.reduce(
+    (latest, event) => Math.max(latest, customEventTimetableEndMinutes(event)),
+    screeningEnd,
+  )
+  return Math.max(BASE_END_HOUR, Math.ceil(customEnd / 60))
 }
 
 function formatDate(date: string) {
@@ -61,6 +66,17 @@ function hasTransferWarning(item: ExportItem, items: ExportItem[], settings: Png
   })
 }
 
+function screeningHasCustomConflict(item: ExportItem, customEvents: readonly CustomEvent[]) {
+  const current = screeningAbsoluteWindow(item.film, item.screening)
+  return customEvents.some((event) => windowsOverlap(current, customEventAbsoluteWindow(event)))
+}
+
+function customEventHasConflict(event: CustomEvent, items: ExportItem[], customEvents: readonly CustomEvent[]) {
+  const current = customEventAbsoluteWindow(event)
+  if (items.some((item) => windowsOverlap(current, screeningAbsoluteWindow(item.film, item.screening)))) return true
+  return customEvents.some((other) => other.id !== event.id && windowsOverlap(current, customEventAbsoluteWindow(other)))
+}
+
 function paletteIndex(id: string) {
   let hash = 0
   for (let i = 0; i < id.length; i += 1) hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0
@@ -74,9 +90,12 @@ function element<K extends keyof HTMLElementTagNameMap>(tag: K, className?: stri
   return node
 }
 
-function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap, settings: PngExportSettings) {
-  const dates = Array.from(new Set(items.map(({ screening }) => timetableDate(screening)))).sort()
-  const endHour = exportEndHour(items)
+function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap, settings: PngExportSettings, customEvents: readonly CustomEvent[]) {
+  const dates = Array.from(new Set([
+    ...items.map(({ screening }) => timetableDate(screening)),
+    ...customEvents.map((event) => customEventTimetableDate(event)),
+  ])).sort()
+  const endHour = exportEndHour(items, customEvents)
   const board = element('section', 'png-export-board')
   board.style.setProperty('--png-days', String(Math.max(dates.length, 1)))
   board.style.setProperty('--png-axis-width', `${EXPORT_AXIS_WIDTH}px`)
@@ -95,7 +114,7 @@ function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap, se
   const period = dates.length
     ? `${formatDate(dates[0])}${dates.length > 1 ? ` – ${formatDate(dates[dates.length - 1])}` : ''}`
     : ''
-  titleGroup.append(element('p', 'png-export-period', `${period} · 총 ${items.length}개 선택`))
+  titleGroup.append(element('p', 'png-export-period', `${period} · 총 ${items.length + customEvents.length}개 일정`))
   brand.append(titleGroup)
   head.append(brand)
 
@@ -103,7 +122,8 @@ function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap, se
   legend.append(element('span', 'booked', '✓ 예매 완료'))
   legend.append(element('span', 'planned', '○ 예매 예정'))
   legend.append(element('span', '', 'GV 게스트 방문'))
-  legend.append(element('span', 'warning', '! 이동 여유 확인'))
+  legend.append(element('span', 'custom', '◆ 사용자 일정'))
+  legend.append(element('span', 'warning', '! 충돌/이동 확인'))
   head.append(legend)
   board.append(head)
 
@@ -137,7 +157,7 @@ function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap, se
         const height = Math.max(((end - start) / 60) * EXPORT_HOUR_HEIGHT, 34)
         const status = ticketStatus[screening.id]
         const statusPrefix = status === 'booked' ? '✓ ' : status === 'planned' ? '○ ' : ''
-        const event = element('div', `png-export-event palette-${paletteIndex(film.id)}${status ? ` status-${status}` : ''}${hasTransferWarning(item, items, settings) ? ' transfer-warning' : ''}`)
+        const event = element('div', `png-export-event palette-${paletteIndex(film.id)}${status ? ` status-${status}` : ''}${hasTransferWarning(item, items, settings) ? ' transfer-warning' : ''}${screeningHasCustomConflict(item, customEvents) ? ' time-conflict' : ''}`)
         event.style.top = `${top}px`
         event.style.height = `${height}px`
 
@@ -145,6 +165,25 @@ function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap, se
         const time = element('span', 'png-export-event-time', `${screening.start}–${formatClock(end)}${screening.gv ? ' · GV' : ''}`)
         const venue = element('span', 'png-export-event-venue', screening.venue)
         event.append(title, time, venue)
+        column.append(event)
+      })
+
+    customEvents
+      .filter((customEvent) => customEventTimetableDate(customEvent) === date)
+      .forEach((customEvent) => {
+        const start = customEventTimetableStartMinutes(customEvent)
+        const end = customEventTimetableEndMinutes(customEvent)
+        const top = EXPORT_EDGE_SPACE + ((start - START_HOUR * 60) / 60) * EXPORT_HOUR_HEIGHT
+        const height = Math.max(((end - start) / 60) * EXPORT_HOUR_HEIGHT, 34)
+        const conflict = customEventHasConflict(customEvent, items, customEvents)
+        const event = element('div', `png-export-event custom-event category-${customEvent.category}${conflict ? ' time-conflict' : ''}`)
+        event.style.top = `${top}px`
+        event.style.height = `${height}px`
+        event.append(
+          element('strong', 'png-export-event-title', `◆ ${customEvent.title}`),
+          element('span', 'png-export-event-time', `${customEvent.start}–${customEvent.end} · ${customEventCategoryLabel(customEvent.category)}`),
+        )
+        if (customEvent.location) event.append(element('span', 'png-export-event-venue', customEvent.location))
         column.append(event)
       })
 
@@ -282,16 +321,18 @@ export async function exportTimetablePng(
   sourceItems: readonly ExportItem[],
   ticketStatus: TicketStatusMap,
   settings: PngExportSettings,
+  customEvents: readonly CustomEvent[] = [],
 ): Promise<'apple-ready' | 'downloaded'> {
-  if (!sourceItems.length) throw new Error('저장할 시간표가 없습니다.')
+  if (!sourceItems.length && !customEvents.length) throw new Error('저장할 시간표가 없습니다.')
 
   const items = [...sourceItems].sort((a, b) => (
     screeningAbsoluteWindow(a.film, a.screening).start - screeningAbsoluteWindow(b.film, b.screening).start
   ))
+  const sortedCustomEvents = [...customEvents].sort((a, b) => customEventAbsoluteWindow(a).start - customEventAbsoluteWindow(b).start)
   let host: HTMLElement | null = null
 
   try {
-    const board = buildExportBoard(items, ticketStatus, settings)
+    const board = buildExportBoard(items, ticketStatus, settings, sortedCustomEvents)
     host = element('div', 'png-export-host')
     host.append(board)
     document.body.append(host)
