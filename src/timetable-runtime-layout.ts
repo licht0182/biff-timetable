@@ -33,11 +33,17 @@ function parseClock(text: string) {
   return hour * 60 + minute
 }
 
+function eventTimeSource(element: HTMLElement, timeSelector: string) {
+  return element.querySelector<HTMLElement>(timeSelector)?.textContent
+    ?? element.getAttribute('title')
+    ?? element.getAttribute('aria-label')
+    ?? ''
+}
+
 function displayExtendedRange(element: HTMLElement, timeSelector: string) {
   const time = element.querySelector<HTMLElement>(timeSelector)
-  if (!time) return
-  const text = time.textContent ?? ''
-  const match = text.match(/(\d{2}:\d{2})–(\d{2,}:\d{2})/)
+  const source = eventTimeSource(element, timeSelector)
+  const match = source.match(/(\d{2}:\d{2})–(\d{2,}:\d{2})/)
   if (!match) return
 
   const [rawHour, rawMinute] = match[2].split(':').map(Number)
@@ -45,11 +51,12 @@ function displayExtendedRange(element: HTMLElement, timeSelector: string) {
   const normalizedHour = rawHour % 24
   const normalizedEnd = `${String(normalizedHour).padStart(2, '0')}:${String(rawMinute).padStart(2, '0')}`
   const displayRange = `${match[1]}–${normalizedEnd} (다음 날)`
-  const nextText = text.replace(match[0], displayRange)
-  setText(time, nextText)
 
+  if (time) setText(time, (time.textContent ?? '').replace(match[0], displayRange))
   const title = element.getAttribute('title')
   if (title?.includes(match[0])) element.setAttribute('title', title.replace(match[0], displayRange))
+  const ariaLabel = element.getAttribute('aria-label')
+  if (ariaLabel?.includes(match[0])) element.setAttribute('aria-label', ariaLabel.replace(match[0], displayRange))
 }
 
 function applyLanes(container: ParentNode, blockSelector: string) {
@@ -80,8 +87,7 @@ function applyLanes(container: ParentNode, blockSelector: string) {
 function earliestCustomStart(root: ParentNode, blockSelector: string, timeSelector: string) {
   let earliest = MINUTES_PER_DAY
   for (const block of root.querySelectorAll<HTMLElement>(blockSelector)) {
-    const text = block.querySelector<HTMLElement>(timeSelector)?.textContent ?? ''
-    const minutes = parseClock(text)
+    const minutes = parseClock(eventTimeSource(block, timeSelector))
     if (minutes != null) earliest = Math.min(earliest, minutes)
   }
   return earliest === MINUTES_PER_DAY ? null : earliest
@@ -296,7 +302,7 @@ observer.observe(document.documentElement, {
   subtree: true,
   childList: true,
   attributes: true,
-  attributeFilter: ['class', 'style', 'title'],
+  attributeFilter: ['class', 'style', 'title', 'aria-label'],
 })
 
 scheduleLayout()
