@@ -1,0 +1,34 @@
+name: Apply stage 6 accessibility patch
+
+on:
+  push:
+    branches: [refactor/accessibility-cleanup-v2]
+    paths: [.github/workflows/stage6-patch.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/accessibility-cleanup-v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply focused App patch
+        run: node scripts/stage6-patch.mjs
+      - name: Verify build
+        run: |
+          npm ci
+          npm run validate:data
+          npm run build
+      - name: Commit clean result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Improve modal accessibility and remove legacy hooks"
+          git push origin HEAD:refactor/accessibility-cleanup-v2
