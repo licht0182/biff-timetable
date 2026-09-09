@@ -108,7 +108,37 @@ function parseGenre(html, film) {
   return null
 }
 
-async function fetchHtml(url) {
+function normalizeCharset(value) {
+  const charset = normalize(value).toLowerCase().replace(/["']/g, '')
+  if (!charset) return null
+  if (/^(?:euc-kr|ks_c_5601-1987|ks-c-5601|cp949|ms949|windows-949|x-windows-949)$/.test(charset)) return 'euc-kr'
+  if (/^(?:utf-8|utf8)$/.test(charset)) return 'utf-8'
+  return charset
+}
+
+function decodeHtmlBytes(bytes, contentType, expectedTexts) {
+  const latinPreview = new TextDecoder('windows-1252').decode(bytes.subarray(0, Math.min(bytes.length, 16_384)))
+  const headerCharset = normalizeCharset(contentType.match(/charset\s*=\s*([^;\s]+)/i)?.[1])
+  const metaCharset = normalizeCharset(
+    latinPreview.match(/<meta[^>]+charset\s*=\s*["']?([^"'\s/>]+)/i)?.[1]
+      ?? latinPreview.match(/<meta[^>]+content\s*=\s*["'][^"']*charset\s*=\s*([^;"'\s]+)/i)?.[1],
+  )
+
+  const candidates = Array.from(new Set([headerCharset, metaCharset, 'utf-8', 'euc-kr'].filter(Boolean)))
+  let fallback = null
+  for (const charset of candidates) {
+    try {
+      const decoded = new TextDecoder(charset).decode(bytes)
+      fallback ??= decoded
+      if (expectedTexts.some((text) => text && decoded.includes(text))) return decoded
+    } catch {
+      // Unsupported charset: try the next candidate.
+    }
+  }
+  return fallback ?? new TextDecoder('utf-8').decode(bytes)
+}
+
+async function fetchHtml(url, expectedTexts = []) {
   let lastError
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     const controller = new AbortController()
@@ -123,7 +153,8 @@ async function fetchHtml(url) {
         signal: controller.signal,
       })
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
-      return await response.text()
+      const bytes = new Uint8Array(await response.arrayBuffer())
+      return decodeHtmlBytes(bytes, response.headers.get('content-type') ?? '', expectedTexts)
     } catch (error) {
       lastError = error
       if (attempt < MAX_ATTEMPTS) await new Promise((resolve) => setTimeout(resolve, attempt * 500))
@@ -162,7 +193,7 @@ const failures = []
 
 await mapLimit(candidates, CONCURRENCY, async (film, index) => {
   try {
-    const html = await fetchHtml(film.url)
+    const html = await fetchHtml(film.url, [film.title, film.section, film.englishTitle])
     const genre = parseGenre(html, film)
     if (!genre) {
       failed += 1
