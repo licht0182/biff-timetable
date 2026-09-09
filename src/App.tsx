@@ -1,7 +1,9 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
 import FilmList from './components/FilmList'
 import type { Film, Screening, TicketStatus, TicketStatusMap } from './components/film-types'
-import { VENUE_TRANSFER_SITES, getPreciseVenueTransfer, getVenueSiteTransferMinutes } from './venue-travel'
+import { VENUE_TRANSFER_SITES, getVenueSiteTransferMinutes } from './venue-travel'
+import { getTransferBuffer } from './transfer-buffer'
+import { exportTimetablePng } from './png-export'
 import { BASE_END_HOUR, START_HOUR, clockMinutes, endLabel, screeningAbsoluteWindow, screeningEndOffsetMinutes, screeningsOverlap, timetableDate, timetableEndMinutes, timetableStartMinutes } from './screening-time'
 
 type FilmData = { films: Film[]; note?: string; source?: string }
@@ -84,45 +86,6 @@ function formatDate(date: string, _compact = false) {
   return `${value.getMonth() + 1}월 ${value.getDate()}일 ${weekdays[value.getDay()]}`
 }
 
-function venueCluster(venue: string) {
-  if (venue.startsWith('영화의전당')) return '영화의전당'
-  if (venue.startsWith('CGV센텀시티') || venue.startsWith('CGV 센텀시티')) return 'CGV센텀시티'
-  if (venue.startsWith('롯데시네마 센텀')) return '롯데시네마 센텀시티'
-  if (venue.includes('소향씨어터') || venue.startsWith('동서대학교-경남정보대학교')) return '동서대 센텀캠퍼스'
-  if (venue.includes('영화진흥위원회')) return '영화진흥위원회'
-  if (venue.includes('시청자미디어센터')) return '시청자미디어센터'
-  return venue
-}
-
-function transferBuffer(fromVenue: string, toVenue: string, settings: UserTimetableSettings) {
-  if (fromVenue === toVenue) {
-    return {
-      minutes: settings.sameVenueMinutes,
-      routeLabel: '동일 상영관',
-      transferDetail: `같은 상영관 연속 관람 기본 여유 ${settings.sameVenueMinutes}분`,
-      precise: false,
-    }
-  }
-
-  const precise = getPreciseVenueTransfer(fromVenue, toVenue)
-  if (precise) {
-    return {
-      minutes: precise.minutes,
-      routeLabel: precise.routeLabel,
-      transferDetail: precise.detail,
-      precise: true,
-    }
-  }
-
-  const sameCluster = venueCluster(fromVenue) === venueCluster(toVenue)
-  const minutes = sameCluster ? settings.sameClusterMinutes : settings.differentVenueMinutes
-  return {
-    minutes,
-    routeLabel: `${fromVenue} → ${toVenue}`,
-    transferDetail: `정밀 이동시간 미등록 조합 · ${sameCluster ? '같은 시설' : '다른 시설'} 기본값 ${minutes}분 적용`,
-    precise: false,
-  }
-}
 
 function downloadText(filename: string, content: string, type: string) {
   const blob = new Blob([content], { type })
@@ -195,6 +158,7 @@ export default function App() {
   const [detailScreeningId, setDetailScreeningId] = useState<string | null>(null)
   const [loadError, setLoadError] = useState('')
   const [toast, setToast] = useState('')
+  const [pngExportState, setPngExportState] = useState<'idle' | 'working' | 'ready' | 'done' | 'error'>('idle')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [userSettings, setUserSettings] = useState<UserTimetableSettings>(() => normalizeUserSettings(readStorageValue(USER_SETTINGS_KEY)))
   const [timetableSelectionMode, setTimetableSelectionMode] = useState(false)
@@ -361,7 +325,7 @@ export default function App() {
       const otherWindow = screeningAbsoluteWindow(otherFilm, other)
 
       if (currentWindow.end <= otherWindow.start) {
-        const transfer = transferBuffer(screening.venue, other.venue, userSettings)
+        const transfer = getTransferBuffer(screening.venue, other.venue, userSettings)
         if (transfer.minutes === 0) continue
         const gap = otherWindow.start - currentWindow.end
         if (gap < transfer.minutes) return {
@@ -374,7 +338,7 @@ export default function App() {
           precise: transfer.precise,
         }
       } else if (otherWindow.end <= currentWindow.start) {
-        const transfer = transferBuffer(other.venue, screening.venue, userSettings)
+        const transfer = getTransferBuffer(other.venue, screening.venue, userSettings)
         if (transfer.minutes === 0) continue
         const gap = currentWindow.start - otherWindow.end
         if (gap < transfer.minutes) return {
@@ -539,6 +503,22 @@ export default function App() {
       setToast('백업한 시간표를 가져왔습니다.')
     } catch {
       setToast('가져오기 파일을 확인해 주세요.')
+    }
+  }
+
+  async function savePng() {
+    if (pngExportState === 'working' || !selectedItems.length) return
+    setPngExportState('working')
+    try {
+      const result = await exportTimetablePng(selectedItems, ticketStatus, userSettings)
+      setPngExportState(result === 'apple-ready' ? 'ready' : 'done')
+      if (result === 'downloaded') setToast('시간표 PNG를 저장했습니다.')
+    } catch (error) {
+      console.error(error)
+      setPngExportState('error')
+      setToast(error instanceof Error ? error.message : 'PNG 저장에 실패했습니다.')
+    } finally {
+      window.setTimeout(() => setPngExportState('idle'), 1300)
     }
   }
 
@@ -708,6 +688,13 @@ export default function App() {
           <div className="timetable-actions enhanced-timetable-actions">
             <div><span className="booking-summary">{timetableSelectionMode ? `삭제할 회차 ${timetableDeleteSelection.length}개 선택` : `예매 완료 ${bookedCount} · 예정 ${plannedCount}`}</span></div>
             <div className="timetable-action-buttons">
+              <button
+                type="button"
+                className="png-export-trigger"
+                title="현재 화면 크기와 무관한 고정 레이아웃으로 시간표 PNG를 저장합니다."
+                onClick={() => void savePng()}
+                disabled={pngExportState === 'working'}
+              >{pngExportState === 'working' ? 'PNG 생성 중…' : pngExportState === 'ready' ? 'PNG 준비 완료' : pngExportState === 'done' ? '저장 완료' : pngExportState === 'error' ? '저장 실패' : 'PNG 저장'}</button>
               <button onClick={exportIcs}>캘린더</button>
               <details className="backup-menu"><summary>백업</summary><div><button onClick={exportBackup}>JSON 저장</button><button onClick={() => importInputRef.current?.click()}>가져오기</button></div></details>
               <button type="button" className={`timetable-selection-button ${timetableSelectionMode ? 'active' : ''}`} onClick={toggleTimetableSelectionMode}>{timetableSelectionMode ? '선택 취소' : '선택'}</button>
