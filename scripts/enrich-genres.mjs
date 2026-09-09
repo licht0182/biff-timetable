@@ -1,0 +1,185 @@
+import { readFile, writeFile } from 'node:fs/promises'
+
+const dataPath = new URL('../public/screenings.json', import.meta.url)
+const CHECK_ONLY = process.argv.includes('--check')
+const CONCURRENCY = 6
+const REQUEST_TIMEOUT_MS = 15_000
+const MAX_ATTEMPTS = 3
+
+function decodeEntities(value) {
+  const named = {
+    amp: '&',
+    apos: "'",
+    gt: '>',
+    lt: '<',
+    nbsp: ' ',
+    quot: '"',
+  }
+  return value.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (match, entity) => {
+    const lower = entity.toLowerCase()
+    if (lower in named) return named[lower]
+    if (lower.startsWith('#x')) {
+      const code = Number.parseInt(lower.slice(2), 16)
+      return Number.isFinite(code) ? String.fromCodePoint(code) : match
+    }
+    if (lower.startsWith('#')) {
+      const code = Number.parseInt(lower.slice(1), 10)
+      return Number.isFinite(code) ? String.fromCodePoint(code) : match
+    }
+    return match
+  })
+}
+
+function htmlToLines(html) {
+  return decodeEntities(
+    html
+      .replace(/<!--[\s\S]*?-->/g, ' ')
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(?:div|li|p|dd|dt|h[1-6]|section|article|ul|ol)>/gi, '\n')
+      .replace(/<[^>]+>/g, ' '),
+  )
+    .split(/\n+/)
+    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+}
+
+function normalize(value) {
+  return String(value ?? '').replace(/\s+/g, ' ').trim()
+}
+
+function parseGenre(html, film) {
+  const lines = htmlToLines(html)
+  const infoStart = lines.findIndex((line) => line === '영화 정보')
+  if (infoStart < 0) return null
+
+  const programNote = lines.findIndex((line, index) => index > infoStart && /^(?:Program Note|프로그램 노트)$/i.test(line))
+  const info = lines.slice(infoStart + 1, programNote > infoStart ? programNote : Math.min(lines.length, infoStart + 30))
+  const countryIndex = info.findIndex((line) => /^국가(?:\s|$)/.test(line))
+  if (countryIndex < 0) return null
+
+  let sectionIndex = -1
+  const section = normalize(film.section)
+  if (section) sectionIndex = info.findIndex((line, index) => index < countryIndex && normalize(line) === section)
+
+  if (sectionIndex < 0) {
+    const title = normalize(film.title)
+    const englishTitle = normalize(film.englishTitle)
+    const titleIndex = info.findIndex((line, index) => {
+      if (index >= countryIndex) return false
+      const normalized = normalize(line)
+      return normalized === title || (englishTitle && normalized.includes(title) && normalized.includes(englishTitle))
+    })
+    if (titleIndex >= 0) sectionIndex = titleIndex + 1
+  }
+
+  if (sectionIndex < 0 || sectionIndex >= countryIndex - 1) return null
+
+  const excluded = new Set([
+    normalize(film.title),
+    normalize(film.englishTitle),
+    section,
+  ].filter(Boolean))
+
+  const candidates = info
+    .slice(sectionIndex + 1, countryIndex)
+    .map(normalize)
+    .filter((line) => line && !excluded.has(line))
+    .filter((line) => !/^(?:국가|제작연도|러닝타임|상영포맷|컬러)(?:\s|$)/.test(line))
+    .filter((line) => line.length <= 180)
+
+  return candidates.length ? candidates.join(' · ') : null
+}
+
+async function fetchHtml(url) {
+  let lastError
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'accept-language': 'ko-KR,ko;q=0.9,en;q=0.7',
+          'user-agent': 'BIFF-Timetable-Genre-Collector/1.0',
+        },
+        redirect: 'follow',
+        signal: controller.signal,
+      })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      return await response.text()
+    } catch (error) {
+      lastError = error
+      if (attempt < MAX_ATTEMPTS) await new Promise((resolve) => setTimeout(resolve, attempt * 500))
+    } finally {
+      clearTimeout(timeout)
+    }
+  }
+  throw lastError
+}
+
+async function mapLimit(items, limit, worker) {
+  const results = new Array(items.length)
+  let cursor = 0
+  async function run() {
+    while (cursor < items.length) {
+      const index = cursor
+      cursor += 1
+      results[index] = await worker(items[index], index)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run))
+  return results
+}
+
+const raw = await readFile(dataPath, 'utf8')
+const data = JSON.parse(raw)
+const candidates = data.films.filter((film) => (
+  typeof film.url === 'string'
+  && /biff\.kr\/kor\/html\/archive\/arc_history_view\.asp/i.test(film.url)
+))
+
+let collected = 0
+let unchanged = 0
+let failed = 0
+const failures = []
+
+await mapLimit(candidates, CONCURRENCY, async (film, index) => {
+  try {
+    const html = await fetchHtml(film.url)
+    const genre = parseGenre(html, film)
+    if (!genre) {
+      failed += 1
+      failures.push(`${film.title}: 장르를 찾지 못함`)
+      return
+    }
+    if (film.genre === genre) unchanged += 1
+    else {
+      film.genre = genre
+      collected += 1
+    }
+    process.stdout.write(`\r장르 수집 ${index + 1}/${candidates.length}`)
+  } catch (error) {
+    failed += 1
+    failures.push(`${film.title}: ${error instanceof Error ? error.message : String(error)}`)
+  }
+})
+
+process.stdout.write('\n')
+console.log(`장르 수집 결과: 신규/변경 ${collected}, 동일 ${unchanged}, 실패 ${failed}, 대상 ${candidates.length}`)
+if (failures.length) {
+  for (const failure of failures.slice(0, 20)) console.warn(`- ${failure}`)
+  if (failures.length > 20) console.warn(`- 그 외 ${failures.length - 20}건`)
+}
+
+const genreCount = data.films.filter((film) => typeof film.genre === 'string' && film.genre.trim()).length
+if (genreCount === 0) {
+  console.error('장르를 한 건도 수집하지 못했습니다.')
+  process.exit(1)
+}
+
+if (!CHECK_ONLY && collected > 0) {
+  await writeFile(dataPath, `${JSON.stringify(data, null, 2)}\n`, 'utf8')
+}
+
+console.log(`DB 장르 보유 작품: ${genreCount}/${data.films.length}`)
