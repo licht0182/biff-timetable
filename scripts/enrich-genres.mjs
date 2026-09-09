@@ -36,9 +36,7 @@ function htmlToLines(html) {
       .replace(/<!--[\s\S]*?-->/g, ' ')
       .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
       .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/(?:div|li|p|dd|dt|h[1-6]|section|article|ul|ol)>/gi, '\n')
-      .replace(/<[^>]+>/g, ' '),
+      .replace(/<[^>]+>/g, '\n'),
   )
     .split(/\n+/)
     .map((line) => line.replace(/\s+/g, ' ').trim())
@@ -49,47 +47,65 @@ function normalize(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim()
 }
 
-function parseGenre(html, film) {
-  const lines = htmlToLines(html)
-  const infoStart = lines.findIndex((line) => line === '영화 정보')
-  if (infoStart < 0) return null
-
-  const programNote = lines.findIndex((line, index) => index > infoStart && /^(?:Program Note|프로그램 노트)$/i.test(line))
-  const info = lines.slice(infoStart + 1, programNote > infoStart ? programNote : Math.min(lines.length, infoStart + 30))
-  const countryIndex = info.findIndex((line) => /^국가(?:\s|$)/.test(line))
-  if (countryIndex < 0) return null
-
-  let sectionIndex = -1
-  const section = normalize(film.section)
-  if (section) sectionIndex = info.findIndex((line, index) => index < countryIndex && normalize(line) === section)
-
-  if (sectionIndex < 0) {
-    const title = normalize(film.title)
-    const englishTitle = normalize(film.englishTitle)
-    const titleIndex = info.findIndex((line, index) => {
-      if (index >= countryIndex) return false
-      const normalized = normalize(line)
-      return normalized === title || (englishTitle && normalized.includes(title) && normalized.includes(englishTitle))
-    })
-    if (titleIndex >= 0) sectionIndex = titleIndex + 1
-  }
-
-  if (sectionIndex < 0 || sectionIndex >= countryIndex - 1) return null
-
+function cleanGenreParts(parts, film) {
   const excluded = new Set([
     normalize(film.title),
     normalize(film.englishTitle),
-    section,
+    normalize(film.section),
+    '영화 정보',
+    '영화정보',
   ].filter(Boolean))
 
-  const candidates = info
-    .slice(sectionIndex + 1, countryIndex)
+  const cleaned = parts
     .map(normalize)
     .filter((line) => line && !excluded.has(line))
-    .filter((line) => !/^(?:국가|제작연도|러닝타임|상영포맷|컬러)(?:\s|$)/.test(line))
+    .filter((line) => !/^(?:국가|제작연도|러닝타임|상영포맷|컬러|Country|Year|Running Time|Format|Color)(?:\s|$)/i.test(line))
     .filter((line) => line.length <= 180)
 
-  return candidates.length ? candidates.join(' · ') : null
+  if (!cleaned.length) return null
+  return cleaned
+    .join(' ')
+    .replace(/\s*·\s*/g, ' · ')
+    .replace(/\s*\/\s*/g, '/')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function findCountryIndex(lines, fromIndex, maxDistance = 18) {
+  const limit = Math.min(lines.length, fromIndex + maxDistance + 1)
+  for (let index = fromIndex + 1; index < limit; index += 1) {
+    if (/^(?:국가|Country)(?:\s|$)/i.test(lines[index])) return index
+  }
+  return -1
+}
+
+function parseGenre(html, film) {
+  const lines = htmlToLines(html)
+  const section = normalize(film.section)
+
+  if (section) {
+    for (let index = 0; index < lines.length; index += 1) {
+      if (normalize(lines[index]) !== section) continue
+      const countryIndex = findCountryIndex(lines, index)
+      if (countryIndex < 0) continue
+      const genre = cleanGenreParts(lines.slice(index + 1, countryIndex), film)
+      if (genre) return genre
+    }
+  }
+
+  const title = normalize(film.title)
+  const englishTitle = normalize(film.englishTitle)
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = normalize(lines[index])
+    const titleMatch = line === title || (englishTitle && line.includes(title) && line.includes(englishTitle))
+    if (!titleMatch) continue
+    const countryIndex = findCountryIndex(lines, index, 24)
+    if (countryIndex < 0) continue
+    const genre = cleanGenreParts(lines.slice(index + 1, countryIndex), film)
+    if (genre) return genre
+  }
+
+  return null
 }
 
 async function fetchHtml(url) {
