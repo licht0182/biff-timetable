@@ -140,6 +140,9 @@ export default function App() {
   const viewport = useViewport()
   const importInputRef = useRef<HTMLInputElement>(null)
   const filmScrollPositionRef = useRef(0)
+  const detailDialogRef = useRef<HTMLElement>(null)
+  const detailCloseRef = useRef<HTMLButtonElement>(null)
+  const detailReturnFocusRef = useRef<HTMLElement | null>(null)
   const [films, setFilms] = useState<Film[]>([])
   const [dataNote, setDataNote] = useState('')
   const [dataSource, setDataSource] = useState('')
@@ -216,13 +219,51 @@ export default function App() {
 
   useEffect(() => {
     if (!detailFilm) return
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      setDetailFilm(null)
-      setDetailScreeningId(null)
+
+    const dialog = detailDialogRef.current
+    const activeBeforeOpen = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    if (activeBeforeOpen && !dialog?.contains(activeBeforeOpen)) detailReturnFocusRef.current = activeBeforeOpen
+
+    detailCloseRef.current?.focus()
+
+    const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    const handleDialogKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setDetailFilm(null)
+        setDetailScreeningId(null)
+        return
+      }
+      if (event.key !== 'Tab' || !dialog) return
+
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector)).filter((element) => (
+        element.getAttribute('aria-hidden') !== 'true' && element.offsetParent !== null
+      ))
+      if (focusable.length === 0) {
+        event.preventDefault()
+        dialog.focus()
+        return
+      }
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const active = document.activeElement
+      if (event.shiftKey && (active === first || !(active instanceof Node) || !dialog.contains(active))) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
-    window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
+
+    window.addEventListener('keydown', handleDialogKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleDialogKeyDown)
+      const returnTarget = detailReturnFocusRef.current
+      detailReturnFocusRef.current = null
+      if (returnTarget?.isConnected) window.requestAnimationFrame(() => returnTarget.focus())
+    }
   }, [detailFilm])
 
   useEffect(() => {
@@ -752,8 +793,8 @@ export default function App() {
       </main>)}
 
       {detailFilm && <div className={`modal-backdrop ${detailScreeningId ? 'timetable-detail-backdrop' : ''}`} onMouseDown={() => { setDetailFilm(null); setDetailScreeningId(null) }}>
-        <section className={`film-modal ${detailScreeningId ? 'timetable-detail-modal' : ''}`} role="dialog" aria-modal="true" aria-labelledby="film-detail-title" onMouseDown={(event) => event.stopPropagation()}>
-          <div className="modal-head"><div><span className="section-label">{detailFilm.section ?? '섹션 미정'}</span><h2 id="film-detail-title">{detailFilm.title}</h2>{detailFilm.englishTitle && <p>{detailFilm.englishTitle}</p>}</div><button className="modal-close" onClick={() => { setDetailFilm(null); setDetailScreeningId(null) }} aria-label="상세보기 닫기">×</button></div>
+        <section ref={detailDialogRef} className={`film-modal ${detailScreeningId ? 'timetable-detail-modal' : ''}`} role="dialog" aria-modal="true" aria-labelledby="film-detail-title" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
+          <div className="modal-head"><div><span className="section-label">{detailFilm.section ?? '섹션 미정'}</span><h2 id="film-detail-title">{detailFilm.title}</h2>{detailFilm.englishTitle && <p>{detailFilm.englishTitle}</p>}</div><button ref={detailCloseRef} className="modal-close" onClick={() => { setDetailFilm(null); setDetailScreeningId(null) }} aria-label="상세보기 닫기">×</button></div>
           <dl className="film-detail-grid">
             {detailFilm.director && <><dt>감독</dt><dd>{detailFilm.director}</dd></>}
             {detailFilm.country && <><dt>국가</dt><dd>{detailFilm.country}</dd></>}

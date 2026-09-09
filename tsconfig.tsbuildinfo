@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/png-export.ts","./src/screening-time.ts","./src/timetable-display.ts","./src/transfer-buffer.ts","./src/venue-travel.ts","./src/vite-env.d.ts","./src/components/FilmCard.tsx","./src/components/FilmList.tsx","./src/components/ScreeningRow.tsx","./src/components/film-types.ts"],"version":"5.9.3"}
