@@ -1,12 +1,106 @@
+/*
+ * Film finder screening rows use the conflict-warning row as the geometry baseline.
+ * Every state keeps the same outer box, content origin, text baselines, and action area.
+ */
+.screening-row {
+  height: 84px;
+  min-height: 84px;
+  margin: 0;
+  padding: 10px 8px;
+  align-items: center;
+}
+
 .screening-row.conflict {
   margin: 0;
   background: #fff8f7;
   box-shadow: inset 3px 0 0 var(--accent);
-  padding-left: 8px;
-  padding-right: 8px;
+  padding: 10px 8px;
+}
+
+.screening-row.travel-warning {
+  padding: 10px 8px;
+}
+
+.screening-row > div:first-child {
+  height: 64px;
+  min-height: 64px;
+  grid-template-rows: 18px 18px 15px;
+  align-content: center;
+}
+
+.screening-row > div:first-child > strong,
+.screening-row > div:first-child > span,
+.screening-row > div:first-child > .screening-note {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.screening-row > div:first-child > strong {
+  height: 18px;
+  line-height: 18px !important;
+}
+
+.screening-row > div:first-child > span {
+  height: 18px;
+  line-height: 18px !important;
+}
+
+.screening-row > div:first-child > .screening-note {
+  height: 15px;
+  min-height: 15px;
+  line-height: 15px !important;
+}
+
+.screening-row > .screening-actions {
+  height: 64px;
+  min-height: 64px;
+  justify-content: center;
 }
 
 .screening-row.conflict .screening-note,
 .modal-screenings > div.conflict .modal-screening-note {
   color: var(--accent) !important;
+}
+
+@media (max-width: 700px) {
+  .screening-row,
+  .screening-row.conflict,
+  .screening-row.travel-warning {
+    height: 76px;
+    min-height: 76px;
+    margin: 0;
+    padding: 9px 8px;
+  }
+
+  .screening-row > div:first-child {
+    height: 58px;
+    min-height: 58px;
+    grid-template-rows: 16px 16px 14px;
+    align-content: center;
+  }
+
+  .screening-row > div:first-child > strong {
+    height: 16px;
+    line-height: 16px !important;
+  }
+
+  .screening-row > div:first-child > span {
+    height: 16px;
+    line-height: 16px !important;
+  }
+
+  .screening-row > div:first-child > .screening-note {
+    height: 14px;
+    min-height: 14px;
+    line-height: 14px !important;
+  }
+
+  .screening-row > .screening-actions {
+    height: 58px;
+    min-height: 58px;
+    justify-content: center;
+  }
 }
