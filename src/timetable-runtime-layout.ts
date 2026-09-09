@@ -105,7 +105,7 @@ function updateExistingHourLabels(axis: HTMLElement, childSelector: string) {
 }
 
 function clearScreenVerticalLayout(timetable: HTMLElement) {
-  timetable.classList.remove('runtime-early-start')
+  if (timetable.classList.contains('runtime-early-start')) timetable.classList.remove('runtime-early-start')
   if (timetable.dataset.runtimeStartHour) delete timetable.dataset.runtimeStartHour
   timetable.querySelectorAll('.runtime-pre-hour,.runtime-pre-line').forEach((element) => element.remove())
   timetable.querySelectorAll<HTMLElement>('.time-axis>div,.day-column>.hour-line,.day-column>.event-block').forEach((element) => {
@@ -176,7 +176,7 @@ function applyScreenEarlyStart(timetable: HTMLElement) {
   const fittedHourHeight = gridHeight / (originalHours + extraHours)
   const scale = fittedHourHeight / originalHourHeight
 
-  timetable.classList.add('runtime-early-start')
+  if (!timetable.classList.contains('runtime-early-start')) timetable.classList.add('runtime-early-start')
   setDataset(timetable, 'runtimeStartHour', String(startHour))
   ensureScreenPreHours(timetable, startHour, fittedHourHeight)
 
@@ -203,7 +203,7 @@ function applyScreenEarlyStart(timetable: HTMLElement) {
 }
 
 function clearPngEarlyStart(board: HTMLElement) {
-  board.classList.remove('runtime-early-start')
+  if (board.classList.contains('runtime-early-start')) board.classList.remove('runtime-early-start')
   removeStyleProperty(board, '--runtime-timeline-shift')
   if (board.dataset.runtimeStartHour) delete board.dataset.runtimeStartHour
   board.querySelectorAll('.runtime-pre-hour,.runtime-pre-line').forEach((element) => element.remove())
@@ -264,7 +264,7 @@ function applyPngEarlyStart(board: HTMLElement) {
 
   const startHour = Math.max(0, Math.floor(earliest / 60))
   const shift = (BASE_START_HOUR - startHour) * hourHeight
-  board.classList.add('runtime-early-start')
+  if (!board.classList.contains('runtime-early-start')) board.classList.add('runtime-early-start')
   setStyleProperty(board, '--runtime-timeline-shift', `${shift}px`)
   setDataset(board, 'runtimeStartHour', String(startHour))
   ensurePngPreHours(board, startHour, hourHeight, edgeSpace)
@@ -302,7 +302,7 @@ observer.observe(document.documentElement, {
   subtree: true,
   childList: true,
   attributes: true,
-  attributeFilter: ['class', 'style', 'title', 'aria-label'],
+  attributeFilter: ['style', 'title', 'aria-label'],
 })
 
 scheduleLayout()
