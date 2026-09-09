@@ -5,17 +5,9 @@ const CHECK_ONLY = process.argv.includes('--check')
 const CONCURRENCY = 6
 const REQUEST_TIMEOUT_MS = 15_000
 const MAX_ATTEMPTS = 3
-const DEBUG_FILM_ID = 'biff2025-82141'
 
 function decodeEntities(value) {
-  const named = {
-    amp: '&',
-    apos: "'",
-    gt: '>',
-    lt: '<',
-    nbsp: ' ',
-    quot: '"',
-  }
+  const named = { amp: '&', apos: "'", gt: '>', lt: '<', nbsp: ' ', quot: '"' }
   return value.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (match, entity) => {
     const lower = entity.toLowerCase()
     if (lower in named) return named[lower]
@@ -60,7 +52,7 @@ function cleanGenreParts(parts, film) {
   const cleaned = parts
     .map(normalize)
     .filter((line) => line && !excluded.has(line))
-    .filter((line) => !/^(?:국가|제작연도|러닝타임|상영포맷|컬러|Country|Year|Running Time|Format|Color)(?:\s|$)/i.test(line))
+    .filter((line) => !/^(?:국가(?:\/지역)?|제작연도|러닝타임|상영포맷|컬러|Country|Year|Running Time|Format|Color)(?:\s|$)/i.test(line))
     .filter((line) => line.length <= 180)
 
   if (!cleaned.length) return null
@@ -75,7 +67,7 @@ function cleanGenreParts(parts, film) {
 function findCountryIndex(lines, fromIndex, maxDistance = 18) {
   const limit = Math.min(lines.length, fromIndex + maxDistance + 1)
   for (let index = fromIndex + 1; index < limit; index += 1) {
-    if (/^(?:국가|Country)(?:\s|$)/i.test(lines[index])) return index
+    if (/^(?:국가(?:\/지역)?|Country)(?:\s|$)/i.test(lines[index])) return index
   }
   return -1
 }
@@ -197,18 +189,6 @@ await mapLimit(candidates, CONCURRENCY, async (film, index) => {
     const html = await fetchHtml(film.url, [film.title, film.section, film.englishTitle])
     const genre = parseGenre(html, film)
     if (!genre) {
-      if (film.id === DEBUG_FILM_ID) {
-        const lines = htmlToLines(html)
-        const probes = lines.filter((line) => /8번 출구|Exit 8|미드나잇|국가|Japan|심리|미스터리|호러|Program Note/i.test(line))
-        console.log('\n[genre-debug]', JSON.stringify({
-          titlePresent: html.includes(film.title),
-          englishTitlePresent: html.includes(film.englishTitle ?? ''),
-          sectionPresent: html.includes(film.section ?? ''),
-          htmlLength: html.length,
-          probes: probes.slice(0, 40),
-          firstLines: lines.slice(0, 30),
-        }, null, 2))
-      }
       failed += 1
       failures.push(`${film.title}: 장르를 찾지 못함`)
       return
