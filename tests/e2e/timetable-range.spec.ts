@@ -20,7 +20,7 @@ function duration(film: Film, screening: Screening) {
   return end - start
 }
 
-test('uses 08:00–03:00 as the fixed baseline and expands only beyond 03:00 when needed', async ({ page, request }) => {
+test('uses 08:00–00:00 by default and expands only when a selected screening needs it', async ({ page, request }) => {
   const response = await request.get('./screenings.json')
   expect(response.ok()).toBeTruthy()
   const data = await response.json() as FilmData
@@ -40,8 +40,7 @@ test('uses 08:00–03:00 as the fixed baseline and expands only beyond 03:00 whe
   await page.getByRole('button', { name: '내 시간표' }).click()
   const axis = page.locator('.time-axis')
   await expect(axis).toContainText('00시')
-  await expect(axis).toContainText('01시')
-  await expect(axis).toContainText('02시')
-  await expect(axis).toContainText('03시')
-  await expect(axis).not.toContainText('04시')
+  await expect(axis).not.toContainText('01시')
+  await expect(axis).not.toContainText('02시')
+  await expect(axis).not.toContainText('03시')
 })
