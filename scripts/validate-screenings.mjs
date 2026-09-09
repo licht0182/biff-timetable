@@ -24,6 +24,7 @@ if (!data || !Array.isArray(data.films)) {
     else filmIds.add(film.id)
 
     if (typeof film.title !== 'string' || !film.title.trim()) errors.push(`${prefix}.title is required`)
+    if (film.genre != null && (typeof film.genre !== 'string' || !film.genre.trim())) errors.push(`${prefix}.genre must be a non-empty string when present`)
     if (film.runtime != null && (!Number.isFinite(film.runtime) || film.runtime <= 0)) errors.push(`${prefix}.runtime must be a positive number`)
     if (!Array.isArray(film.screenings) || film.screenings.length === 0) {
       errors.push(`${prefix}.screenings must be a non-empty array`)

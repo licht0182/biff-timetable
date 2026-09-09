@@ -40,6 +40,7 @@ function FilmCard({
           <span className="section-label">{film.section ?? '섹션 미정'}</span>
           <h2>{film.title}</h2>
           {film.englishTitle && <p className="english-title">{film.englishTitle}</p>}
+          {film.genre && <p className="genre-meta">{film.genre}</p>}
           <p className="meta">{[film.director, film.country, film.runtime ? `${film.runtime}분` : undefined].filter(Boolean).join(' · ')}</p>
         </div>
         <div className="film-actions">

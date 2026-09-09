@@ -265,7 +265,7 @@ export default function App() {
   const filteredFilms = useMemo(() => {
     const q = deferredQuery.trim().toLowerCase()
     return films.filter((film) => {
-      const haystack = [film.title, film.englishTitle, film.director, film.country, film.section].filter(Boolean).join(' ').toLowerCase()
+      const haystack = [film.title, film.englishTitle, film.director, film.country, film.genre, film.section].filter(Boolean).join(' ').toLowerCase()
       if (section !== '전체' && film.section !== section) return false
       if (favoritesOnly && !favoriteSet.has(film.id)) return false
       if (q && !haystack.includes(q)) return false
@@ -655,7 +655,7 @@ export default function App() {
 
       {!settingsOpen && (activeTab === 'films' ? <main>
         <section className="controls enhanced-controls">
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="제목, 감독, 국가 검색" aria-label="영화 검색" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="제목, 감독, 국가, 장르 검색" aria-label="영화 검색" />
           <div className="filter-row">
             <label><span>날짜</span><select value={dateFilter} onChange={(event) => setDateFilter(event.target.value)}><option value="전체">전체 날짜</option>{allDates.map((date) => <option key={date} value={date}>{formatDate(date)}</option>)}</select></label>
             <label><span>상영관</span><select value={venueFilter} onChange={(event) => setVenueFilter(event.target.value)}><option value="전체">전체 상영관</option>{allVenues.map((venue) => <option key={venue} value={venue}>{venue}</option>)}</select></label>
@@ -757,6 +757,7 @@ export default function App() {
           <dl className="film-detail-grid">
             {detailFilm.director && <><dt>감독</dt><dd>{detailFilm.director}</dd></>}
             {detailFilm.country && <><dt>국가</dt><dd>{detailFilm.country}</dd></>}
+            {detailFilm.genre && <><dt>장르</dt><dd className="film-detail-genre">{detailFilm.genre}</dd></>}
             {detailFilm.year && <><dt>연도</dt><dd>{detailFilm.year}</dd></>}
             {detailFilm.runtime && <><dt>러닝타임</dt><dd>{detailFilm.runtime}분</dd></>}
             {detailFilm.language && <><dt>언어</dt><dd>{detailFilm.language}</dd></>}
