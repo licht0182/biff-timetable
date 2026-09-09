@@ -15,6 +15,10 @@ function setDataset(element: HTMLElement, key: string, value: string) {
   if (element.dataset[key] !== value) element.dataset[key] = value
 }
 
+function setText(element: HTMLElement, value: string) {
+  if (element.textContent !== value) element.textContent = value
+}
+
 function formatHour(hour: number) {
   const normalized = ((hour % 24) + 24) % 24
   return `${String(normalized).padStart(2, '0')}시`
@@ -42,7 +46,7 @@ function displayExtendedRange(element: HTMLElement, timeSelector: string) {
   const normalizedEnd = `${String(normalizedHour).padStart(2, '0')}:${String(rawMinute).padStart(2, '0')}`
   const displayRange = `${match[1]}–${normalizedEnd} (다음 날)`
   const nextText = text.replace(match[0], displayRange)
-  if (time.textContent !== nextText) time.textContent = nextText
+  setText(time, nextText)
 
   const title = element.getAttribute('title')
   if (title?.includes(match[0])) element.setAttribute('title', title.replace(match[0], displayRange))
@@ -90,14 +94,13 @@ function existingAxisChildren(axis: HTMLElement, childSelector: string) {
 
 function updateExistingHourLabels(axis: HTMLElement, childSelector: string) {
   existingAxisChildren(axis, childSelector).forEach((element, index) => {
-    const label = formatHour(BASE_START_HOUR + index)
-    if (element.textContent !== label) element.textContent = label
+    setText(element, formatHour(BASE_START_HOUR + index))
   })
 }
 
 function clearScreenVerticalLayout(timetable: HTMLElement) {
   timetable.classList.remove('runtime-early-start')
-  delete timetable.dataset.runtimeStartHour
+  if (timetable.dataset.runtimeStartHour) delete timetable.dataset.runtimeStartHour
   timetable.querySelectorAll('.runtime-pre-hour,.runtime-pre-line').forEach((element) => element.remove())
   timetable.querySelectorAll<HTMLElement>('.time-axis>div,.day-column>.hour-line,.day-column>.event-block').forEach((element) => {
     removeStyleProperty(element, '--runtime-vertical-top')
@@ -123,8 +126,8 @@ function ensureScreenPreHours(timetable: HTMLElement, startHour: number, hourHei
       label.dataset.runtimeHour = String(hour)
       axis.append(label)
     }
-    label.textContent = formatHour(hour)
-    label.style.top = `${(hour - startHour) * hourHeight}px`
+    setText(label, formatHour(hour))
+    setStyleProperty(label, 'top', `${(hour - startHour) * hourHeight}px`)
   }
 
   for (const column of timetable.querySelectorAll<HTMLElement>('.day-column')) {
@@ -140,7 +143,7 @@ function ensureScreenPreHours(timetable: HTMLElement, startHour: number, hourHei
         line.dataset.runtimeHour = String(hour)
         column.append(line)
       }
-      line.style.top = `${(hour - startHour) * hourHeight}px`
+      setStyleProperty(line, 'top', `${(hour - startHour) * hourHeight}px`)
     }
   }
 }
@@ -194,10 +197,9 @@ function applyScreenEarlyStart(timetable: HTMLElement) {
 }
 
 function clearPngEarlyStart(board: HTMLElement) {
-  if (!board.classList.contains('runtime-early-start')) return
   board.classList.remove('runtime-early-start')
   removeStyleProperty(board, '--runtime-timeline-shift')
-  delete board.dataset.runtimeStartHour
+  if (board.dataset.runtimeStartHour) delete board.dataset.runtimeStartHour
   board.querySelectorAll('.runtime-pre-hour,.runtime-pre-line').forEach((element) => element.remove())
 }
 
@@ -218,8 +220,8 @@ function ensurePngPreHours(board: HTMLElement, startHour: number, hourHeight: nu
       label.dataset.runtimeHour = String(hour)
       axis.append(label)
     }
-    label.textContent = formatHour(hour)
-    label.style.top = `${edgeSpace + (hour - startHour) * hourHeight}px`
+    setText(label, formatHour(hour))
+    setStyleProperty(label, 'top', `${edgeSpace + (hour - startHour) * hourHeight}px`)
   }
 
   for (const column of board.querySelectorAll<HTMLElement>('.png-export-day')) {
@@ -235,7 +237,7 @@ function ensurePngPreHours(board: HTMLElement, startHour: number, hourHeight: nu
         line.dataset.runtimeHour = String(hour)
         column.append(line)
       }
-      line.style.top = `${edgeSpace + (hour - startHour) * hourHeight}px`
+      setStyleProperty(line, 'top', `${edgeSpace + (hour - startHour) * hourHeight}px`)
     }
   }
 }
