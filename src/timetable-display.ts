@@ -1,6 +1,7 @@
 export {}
 
 let frame = 0
+let lastViewportWidth = window.innerWidth
 
 function fitEventTitle(block: HTMLElement) {
   const title = block.querySelector<HTMLElement>('strong')
@@ -29,10 +30,17 @@ function scheduleApply() {
   })
 }
 
+function handleResize() {
+  const width = window.innerWidth
+  if (Math.abs(width - lastViewportWidth) <= 2) return
+  lastViewportWidth = width
+  scheduleApply()
+}
+
 const root = document.getElementById('root')
 if (root) {
   new MutationObserver(scheduleApply).observe(root, { childList: true, subtree: true })
-  window.addEventListener('resize', scheduleApply)
+  window.addEventListener('resize', handleResize)
   window.addEventListener('orientationchange', scheduleApply)
   scheduleApply()
 }
