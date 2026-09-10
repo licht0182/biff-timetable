@@ -16,7 +16,7 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     {
       name: 'webkit-iphone',
-      testMatch: /custom-event-mobile-width\.spec\.ts/,
+      testMatch: /(?:custom-event-mobile-width|timetable-viewport-stability)\.spec\.ts/,
       use: { ...devices['iPhone 13'] },
     },
   ],
