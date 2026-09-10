@@ -27,9 +27,9 @@
 .custom-event-form input[type="text"]:focus,.custom-event-form textarea:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 2px rgba(198,41,23,.07)}
 
 /*
- * iOS WebKit can paint date/time controls wider than their CSS grid track when the
- * native control itself owns padding/borders. Keep the grid geometry on this shell,
- * clip native painting to it, and leave the native control padding-free.
+ * The shell owns all geometry. On mobile, date/time controls are kept as transparent
+ * native hit targets and a separate value layer is vertically centered by us. This
+ * avoids iOS WebKit's native date/time baseline moving independently of the shell.
  */
 .custom-event-control-shell{box-sizing:border-box;position:relative;display:block;width:100%;max-width:100%;min-width:0;height:39px;overflow:hidden;isolation:isolate;border:1px solid #d7d7d7;border-radius:6px;background:#fafafa;padding:0 10px;outline:none}
 .custom-event-control-shell:focus-within{border-color:var(--accent);background:#fff;box-shadow:0 0 0 2px rgba(198,41,23,.07)}
@@ -37,6 +37,7 @@
 .custom-event-control-shell>input:focus,.custom-event-control-shell>select:focus{border:0;background:transparent;box-shadow:none;outline:0}
 .custom-event-control-shell input[type="date"]::-webkit-date-and-time-value,.custom-event-control-shell input[type="time"]::-webkit-date-and-time-value{box-sizing:border-box;min-width:0;margin:0;padding:0;text-align:center}
 .custom-event-control-shell input[type="date"]::-webkit-datetime-edit,.custom-event-control-shell input[type="time"]::-webkit-datetime-edit{min-width:0;padding:0}
+.custom-event-native-display{display:none}
 
 .custom-event-form-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;min-width:0;width:100%}
 .custom-event-form-error{margin:0;padding:8px 9px;border-radius:5px;background:#fff5f3;color:#a62c1d;font-size:10px;font-weight:700}
@@ -63,6 +64,11 @@
   .custom-event-form input[type="text"]{height:36px;padding:0 8px}
   .custom-event-form textarea{padding:7px 8px;line-height:1.35}
   .custom-event-control-shell{height:36px;padding:0 8px}
+  .custom-event-date-shell,.custom-event-time-shell{padding:0}
+  .custom-event-native-display{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;min-width:0;padding:0 8px;color:#333;font:inherit;font-size:16px;font-weight:400;line-height:1;letter-spacing:0;white-space:nowrap;pointer-events:none}
+  .custom-event-date-shell>input,.custom-event-time-shell>input{position:absolute;inset:0;z-index:2;inline-size:100%;width:100%;max-inline-size:100%;max-width:100%;block-size:100%;height:100%;margin:0;padding:0;border:0;opacity:0;background:transparent;color:transparent;cursor:pointer}
+  .custom-event-select-shell{display:flex;align-items:center}
+  .custom-event-select-shell>select{height:100%;line-height:1.2}
   .custom-event-form-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
   .custom-event-form-row>label,.custom-event-control-shell{width:100%;max-width:100%;min-width:0}
   .custom-event-form-error{padding:7px 8px;font-size:9px}
