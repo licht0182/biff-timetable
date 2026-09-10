@@ -1,6 +1,7 @@
 export {}
 
 const MENU_SELECTOR = '.timetable-action-buttons > .backup-menu'
+const ADD_BUTTON_SELECTOR = '.timetable-action-buttons > .custom-event-add-button'
 
 function updateSummary(details: HTMLDetailsElement) {
   details.classList.add('timetable-more-menu')
@@ -11,8 +12,13 @@ function updateSummary(details: HTMLDetailsElement) {
   if (summary.getAttribute('aria-label') !== label) summary.setAttribute('aria-label', label)
 }
 
+function updateAddButton(button: HTMLButtonElement) {
+  if (button.textContent !== '일정 추가') button.textContent = '일정 추가'
+}
+
 function enhanceMenus() {
   document.querySelectorAll<HTMLDetailsElement>(MENU_SELECTOR).forEach(updateSummary)
+  document.querySelectorAll<HTMLButtonElement>(ADD_BUTTON_SELECTOR).forEach(updateAddButton)
 }
 
 function closeOwningMenu(target: Element) {
