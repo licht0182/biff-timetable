@@ -135,6 +135,7 @@ test('stores an overnight custom event as next-day end and exports the correct I
   await expect(page.getByRole('dialog')).toContainText('23:30–00:30 (다음 날)')
   await page.getByRole('button', { name: '일정 창 닫기' }).click()
 
+  await page.locator('.backup-menu > summary').click()
   const calendarPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: '캘린더' }).click()
   const calendarDownload = await calendarPromise
@@ -235,6 +236,7 @@ test('includes custom events in JSON backup and calendar export', async ({ page 
   expect(backup.version).toBe(2)
   expect(backup.customEvents.some((event) => event.title === '백업할 일정')).toBeTruthy()
 
+  await page.locator('.backup-menu > summary').click()
   const calendarPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: '캘린더' }).click()
   const calendarDownload = await calendarPromise
