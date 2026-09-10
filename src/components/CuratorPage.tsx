@@ -5,10 +5,6 @@ type Props = {
   onOpenFilms: () => void
 }
 
-function formatPublishedDate(value: string) {
-  const date = new Date(`${value}T00:00:00`)
-  return `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(2, '0')}. ${String(date.getDate()).padStart(2, '0')}.`
-}
 
 function ArticleDetail({ article, onBack, onOpenFilms }: { article: CuratorArticle; onBack: () => void; onOpenFilms: () => void }) {
   return (
@@ -22,7 +18,6 @@ function ArticleDetail({ article, onBack, onOpenFilms }: { article: CuratorArtic
             <p className="curator-deck">{article.deck}</p>
             <div className="curator-meta">
               <span>AI 큐레이터 편집부</span>
-              <span>{formatPublishedDate(article.publishedAt)}</span>
               <span>약 {article.readingMinutes}분</span>
             </div>
             <div className="curator-tags">{article.tags.map((tag) => <span key={tag}>#{tag}</span>)}</div>
@@ -87,7 +82,7 @@ export default function CuratorPage({ onOpenFilms }: Props) {
           <span className="curator-category">{featured.category}</span>
           <h3>{featured.title}</h3>
           <p>{featured.deck}</p>
-          <div className="curator-card-meta"><span>{formatPublishedDate(featured.publishedAt)}</span><span>약 {featured.readingMinutes}분</span></div>
+          <div className="curator-card-meta"><span>약 {featured.readingMinutes}분</span></div>
           <strong>칼럼 읽기 →</strong>
         </button>
       </section>
@@ -103,7 +98,7 @@ export default function CuratorPage({ onOpenFilms }: Props) {
               <h3>{article.title}</h3>
               <p>{article.deck}</p>
               <div className="curator-card-tags">{article.tags.slice(0, 2).map((tag) => <span key={tag}>#{tag}</span>)}</div>
-              <div className="curator-card-meta"><span>{formatPublishedDate(article.publishedAt)}</span><span>약 {article.readingMinutes}분</span></div>
+              <div className="curator-card-meta"><span>약 {article.readingMinutes}분</span></div>
             </button>
           ))}
         </div>
