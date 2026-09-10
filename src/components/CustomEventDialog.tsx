@@ -26,6 +26,22 @@ function formatDate(date: string) {
   return `${value.getMonth() + 1}월 ${value.getDate()}일 ${weekdays[value.getDay()]}`
 }
 
+function formatDateControlValue(date: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date)
+  if (!match) return date
+  return `${Number(match[1])}. ${Number(match[2])}. ${Number(match[3])}.`
+}
+
+function formatTimeControlValue(time: string) {
+  const match = /^(\d{2}):(\d{2})$/.exec(time)
+  if (!match) return time
+  const hour = Number(match[1])
+  const minute = match[2]
+  const period = hour < 12 ? '오전' : '오후'
+  const displayHour = hour % 12 || 12
+  return `${period} ${displayHour}:${minute}`
+}
+
 export default function CustomEventDialog({
   mode,
   event,
@@ -109,6 +125,7 @@ export default function CustomEventDialog({
           <label>
             <span>날짜 *</span>
             <div className="custom-event-control-shell custom-event-date-shell">
+              <span className="custom-event-native-display" aria-hidden="true">{formatDateControlValue(form.date)}</span>
               <input type="date" value={form.date} onChange={(changeEvent) => update('date', changeEvent.target.value)} required />
             </div>
           </label>
@@ -123,12 +140,14 @@ export default function CustomEventDialog({
           <label>
             <span>시작 *</span>
             <div className="custom-event-control-shell custom-event-time-shell">
+              <span className="custom-event-native-display" aria-hidden="true">{formatTimeControlValue(form.start)}</span>
               <input type="time" value={form.start} onChange={(changeEvent) => update('start', changeEvent.target.value)} step="300" required />
             </div>
           </label>
           <label>
             <span>종료 *</span>
             <div className="custom-event-control-shell custom-event-time-shell">
+              <span className="custom-event-native-display" aria-hidden="true">{formatTimeControlValue(form.end)}</span>
               <input type="time" value={form.end} onChange={(changeEvent) => update('end', changeEvent.target.value)} step="300" required />
             </div>
           </label>
