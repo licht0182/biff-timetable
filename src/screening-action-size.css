@@ -114,3 +114,18 @@
     max-height:27px;
   }
 }
+
+/*
+ * A detail row without conflict/travel text has only two visible information lines.
+ * Remove the reserved warning track so those two lines are centered as a group.
+ * Current-screening decoration does not change this unless an actual warning exists.
+ */
+.modal-screenings>div:not(.conflict):not(.travel-warning)>div:first-child{
+  grid-template-rows:18px 16px;
+}
+
+@media(max-width:700px){
+  .modal-screenings>div:not(.conflict):not(.travel-warning)>div:first-child{
+    grid-template-rows:16px 14px;
+  }
+}
