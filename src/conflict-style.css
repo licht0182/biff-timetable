@@ -104,3 +104,25 @@
     justify-content: center;
   }
 }
+
+/*
+ * Keep the established fixed screening-row geometry, but center each text line's
+ * natural line box inside its reserved grid track. This avoids the optical top bias
+ * caused by forcing the text element itself to be as tall as the track.
+ */
+.screening-row > div:first-child,
+.modal-screenings > div > div:first-child {
+  align-items: center;
+}
+
+.screening-row > div:first-child > strong,
+.screening-row > div:first-child > span,
+.screening-row > div:first-child > .screening-note,
+.modal-screenings > div > div:first-child > strong,
+.modal-screenings > div > div:first-child > span,
+.modal-screenings > div > div:first-child > .modal-screening-note {
+  height: auto !important;
+  min-height: 0 !important;
+  align-self: center;
+  line-height: 1.2 !important;
+}
