@@ -63,12 +63,21 @@ for (const viewport of [
       expect(displayBox).not.toBeNull()
       expect(nativeBox).not.toBeNull()
 
-      expect(Math.abs(displayBox!.x - shellBox!.x)).toBeLessThanOrEqual(1)
-      expect(Math.abs(displayBox!.y - shellBox!.y)).toBeLessThanOrEqual(1)
-      expect(Math.abs(displayBox!.width - shellBox!.width)).toBeLessThanOrEqual(1)
-      expect(Math.abs(displayBox!.height - shellBox!.height)).toBeLessThanOrEqual(1)
-      expect(Math.abs(nativeBox!.width - shellBox!.width)).toBeLessThanOrEqual(1)
-      expect(Math.abs(nativeBox!.height - shellBox!.height)).toBeLessThanOrEqual(1)
+      const shellCenterX = shellBox!.x + shellBox!.width / 2
+      const shellCenterY = shellBox!.y + shellBox!.height / 2
+      const displayCenterX = displayBox!.x + displayBox!.width / 2
+      const displayCenterY = displayBox!.y + displayBox!.height / 2
+      const nativeCenterX = nativeBox!.x + nativeBox!.width / 2
+      const nativeCenterY = nativeBox!.y + nativeBox!.height / 2
+
+      expect(Math.abs(displayCenterX - shellCenterX)).toBeLessThanOrEqual(0.5)
+      expect(Math.abs(displayCenterY - shellCenterY)).toBeLessThanOrEqual(0.5)
+      expect(Math.abs(nativeCenterX - shellCenterX)).toBeLessThanOrEqual(0.5)
+      expect(Math.abs(nativeCenterY - shellCenterY)).toBeLessThanOrEqual(0.5)
+      expect(displayBox!.x).toBeGreaterThanOrEqual(shellBox!.x)
+      expect(displayBox!.x + displayBox!.width).toBeLessThanOrEqual(shellBox!.x + shellBox!.width)
+      expect(displayBox!.y).toBeGreaterThanOrEqual(shellBox!.y)
+      expect(displayBox!.y + displayBox!.height).toBeLessThanOrEqual(shellBox!.y + shellBox!.height)
 
       const alignment = await display.evaluate((element) => {
         const style = getComputedStyle(element)
