@@ -126,3 +126,22 @@
   align-self: center;
   line-height: 1.2 !important;
 }
+
+/*
+ * Ordinary rows have no warning text. Do not reserve the third warning track for
+ * them; center the two visible information lines as one group. Warning rows keep
+ * the established three-line geometry so conflict/travel text does not shift.
+ */
+.screening-row:not(.conflict):not(.travel-warning) > div:first-child {
+  grid-template-rows: 18px 18px;
+}
+
+.screening-row:not(.conflict):not(.travel-warning) > div:first-child > .screening-note:empty {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .screening-row:not(.conflict):not(.travel-warning) > div:first-child {
+    grid-template-rows: 16px 16px;
+  }
+}
