@@ -32,8 +32,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Install Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
 
-      - name: Run Chromium E2E smoke tests
+      - name: Run Chromium and WebKit E2E tests
         run: npm run test:e2e
