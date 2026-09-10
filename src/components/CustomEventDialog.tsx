@@ -106,12 +106,32 @@ export default function CustomEventDialog({
       </> : <form className="custom-event-form" onSubmit={submit}>
         <label><span>일정명 *</span><input autoFocus type="text" value={form.title} onChange={(changeEvent) => update('title', changeEvent.target.value)} maxLength={80} placeholder="예: 점심 식사" /></label>
         <div className="custom-event-form-row">
-          <label><span>날짜 *</span><input type="date" value={form.date} onChange={(changeEvent) => update('date', changeEvent.target.value)} required /></label>
-          <label><span>종류</span><select value={form.category} onChange={(changeEvent) => update('category', changeEvent.target.value as CustomEventDraft['category'])}>{CUSTOM_EVENT_CATEGORIES.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}</select></label>
+          <label>
+            <span>날짜 *</span>
+            <div className="custom-event-control-shell custom-event-date-shell">
+              <input type="date" value={form.date} onChange={(changeEvent) => update('date', changeEvent.target.value)} required />
+            </div>
+          </label>
+          <label>
+            <span>종류</span>
+            <div className="custom-event-control-shell custom-event-select-shell">
+              <select value={form.category} onChange={(changeEvent) => update('category', changeEvent.target.value as CustomEventDraft['category'])}>{CUSTOM_EVENT_CATEGORIES.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}</select>
+            </div>
+          </label>
         </div>
         <div className="custom-event-form-row custom-event-time-row">
-          <label><span>시작 *</span><input type="time" value={form.start} onChange={(changeEvent) => update('start', changeEvent.target.value)} step="300" required /></label>
-          <label><span>종료 *</span><input type="time" value={form.end} onChange={(changeEvent) => update('end', changeEvent.target.value)} step="300" required /></label>
+          <label>
+            <span>시작 *</span>
+            <div className="custom-event-control-shell custom-event-time-shell">
+              <input type="time" value={form.start} onChange={(changeEvent) => update('start', changeEvent.target.value)} step="300" required />
+            </div>
+          </label>
+          <label>
+            <span>종료 *</span>
+            <div className="custom-event-control-shell custom-event-time-shell">
+              <input type="time" value={form.end} onChange={(changeEvent) => update('end', changeEvent.target.value)} step="300" required />
+            </div>
+          </label>
         </div>
         <p className="custom-event-overnight-hint">종료 시간이 시작 시간보다 이르면 다음 날 종료 일정으로 저장됩니다.</p>
         <label><span>장소</span><input type="text" value={form.location ?? ''} onChange={(changeEvent) => update('location', changeEvent.target.value)} maxLength={100} placeholder="선택 입력" /></label>
