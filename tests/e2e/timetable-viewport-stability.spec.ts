@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
 const SELECTED_KEY = 'biff-timetable:selected-screenings:v1'
 const STATUS_KEY = 'biff-timetable:ticket-status:v1'
@@ -12,7 +12,7 @@ async function seedOneScreening(page: Page, id: string) {
   }, { selectedKey: SELECTED_KEY, statusKey: STATUS_KEY, screeningId: id })
 }
 
-async function firstScreeningId(request: Parameters<typeof test>[0] extends never ? never : any) {
+async function firstScreeningId(request: APIRequestContext) {
   const response = await request.get('./screenings.json')
   expect(response.ok()).toBeTruthy()
   const data = await response.json() as FilmData
