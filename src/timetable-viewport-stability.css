@@ -1,0 +1,64 @@
+/*
+ * Keep the timetable geometry stable while mobile Safari expands/collapses browser chrome.
+ * `svh` is the stable small viewport: unlike `dvh`, it does not change during ordinary scroll.
+ */
+html.timetable-viewport-locked,
+body.timetable-viewport-locked{
+  overflow:hidden!important;
+  overscroll-behavior:none!important;
+}
+
+body.timetable-viewport-locked{
+  position:fixed!important;
+  inset:0!important;
+  width:100%!important;
+  height:100svh!important;
+  max-height:100svh!important;
+}
+
+.app-shell.timetable-viewport-stable{
+  display:flex!important;
+  flex-direction:column;
+  height:100svh!important;
+  min-height:0!important;
+  max-height:100svh!important;
+  overflow:hidden!important;
+}
+
+.app-shell.timetable-viewport-stable>.topbar,
+.app-shell.timetable-viewport-stable>.tabs{
+  flex:0 0 auto;
+}
+
+.app-shell.timetable-viewport-stable>.timetable-page{
+  display:flex;
+  flex:1 1 auto;
+  min-height:0;
+  overflow:hidden;
+  flex-direction:column;
+}
+
+.app-shell.timetable-viewport-stable .enhanced-timetable-actions,
+.app-shell.timetable-viewport-stable .transfer-note{
+  flex:0 0 auto;
+}
+
+.app-shell.timetable-viewport-stable .timetable-scroll{
+  flex:1 1 auto;
+  min-height:0;
+  height:auto!important;
+}
+
+/* JS measures the real remaining timetable area and writes stable variables here. */
+.timetable[data-stable-viewport="true"]{
+  --hour-height:var(--stable-hour-height)!important;
+  --grid-height:var(--stable-grid-height)!important;
+}
+
+@supports not (height:100svh){
+  body.timetable-viewport-locked,
+  .app-shell.timetable-viewport-stable{
+    height:100vh!important;
+    max-height:100vh!important;
+  }
+}
