@@ -1,0 +1,140 @@
+/* Compact overflow menu for secondary timetable actions.
+ * The existing backup <details> is used as the toggle so opening the menu never
+ * changes the toolbar height or timetable geometry.
+ */
+.timetable-action-buttons{
+  position:relative;
+  overflow:visible;
+}
+
+.timetable-action-buttons>.custom-event-add-button{order:1}
+.timetable-action-buttons>.png-export-trigger{order:2}
+.timetable-action-buttons>.timetable-selection-button{order:3}
+.timetable-action-buttons>.timetable-delete-button{order:4}
+.timetable-action-buttons>.backup-menu{order:5}
+
+/* Calendar and clear-all stay as the original React-owned buttons, but are only
+ * exposed while the more menu is open. */
+.timetable-action-buttons>.png-export-trigger+button,
+.timetable-action-buttons>button:last-child{
+  display:none;
+}
+
+.backup-menu.timetable-more-menu{
+  position:relative;
+  z-index:45;
+}
+
+.backup-menu.timetable-more-menu>summary{
+  min-width:58px;
+}
+
+.backup-menu.timetable-more-menu[open]>summary{
+  border-color:#c9c9c9;
+  background:#fafafa;
+  color:#555;
+}
+
+/* This is the visual more-menu box. The calendar and clear-all buttons are
+ * positioned over its reserved top/bottom rows; the backup controls remain the
+ * real children of the details element. */
+.backup-menu.timetable-more-menu>div{
+  right:0;
+  top:calc(100% + 6px);
+  z-index:40;
+  width:184px;
+  min-width:184px;
+  min-height:146px;
+  padding:44px 8px 44px;
+  border:1px solid #d8d8d8;
+  border-radius:7px;
+  background:#fff;
+  box-shadow:0 8px 24px rgba(0,0,0,.14);
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:5px;
+  align-content:start;
+}
+
+.backup-menu.timetable-more-menu>div::before{
+  content:"백업";
+  grid-column:1/-1;
+  display:block;
+  margin:0 1px 1px;
+  color:#999;
+  font-size:9px;
+  font-weight:800;
+  line-height:1.2;
+}
+
+.backup-menu.timetable-more-menu>div button{
+  min-width:0;
+  min-height:29px;
+  padding:0 7px;
+  border:1px solid #e1e1e1;
+  border-radius:5px;
+  background:#fff;
+  color:#666;
+  font-size:9px;
+  font-weight:700;
+  line-height:1;
+  text-align:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.timetable-action-buttons:has(.backup-menu.timetable-more-menu[open])>.png-export-trigger+button,
+.timetable-action-buttons:has(.backup-menu.timetable-more-menu[open])>button:last-child{
+  position:absolute;
+  right:8px;
+  z-index:47;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:168px;
+  min-width:168px;
+  height:30px;
+  min-height:30px;
+  margin:0;
+  padding:0 9px;
+  border-radius:5px;
+  background:#fff;
+  font-size:10px!important;
+  font-weight:700;
+  line-height:1;
+  white-space:nowrap;
+}
+
+.timetable-action-buttons:has(.backup-menu.timetable-more-menu[open])>.png-export-trigger+button{
+  top:calc(100% + 13px);
+  border-color:#e1e1e1;
+  color:#666;
+}
+
+.timetable-action-buttons:has(.backup-menu.timetable-more-menu[open])>button:last-child{
+  top:calc(100% + 119px);
+  border-color:#edc6c1;
+  background:#fff8f7;
+  color:#a92a1b;
+}
+
+@media(max-width:700px){
+  .backup-menu.timetable-more-menu>summary{min-width:54px}
+  .backup-menu.timetable-more-menu>div{
+    width:176px;
+    min-width:176px;
+    min-height:142px;
+    padding:42px 7px 42px;
+  }
+  .timetable-action-buttons:has(.backup-menu.timetable-more-menu[open])>.png-export-trigger+button,
+  .timetable-action-buttons:has(.backup-menu.timetable-more-menu[open])>button:last-child{
+    right:7px;
+    width:162px;
+    min-width:162px;
+    height:29px;
+    min-height:29px;
+    font-size:9px!important;
+  }
+  .timetable-action-buttons:has(.backup-menu.timetable-more-menu[open])>.png-export-trigger+button{top:calc(100% + 12px)}
+  .timetable-action-buttons:has(.backup-menu.timetable-more-menu[open])>button:last-child{top:calc(100% + 115px)}
+}
