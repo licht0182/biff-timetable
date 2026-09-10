@@ -35,7 +35,9 @@ test('toggles calendar, backup, and clear-all inside the timetable more menu wit
   await expect(summary).toHaveAttribute('aria-label', '더보기 메뉴 열기')
   await expect(calendar).toBeHidden()
   await expect(clearAll).toBeHidden()
-  await expect(backupActions).toBeHidden()
+  await expect(backupActions).toHaveCount(2)
+  await expect(backupActions.nth(0)).toBeHidden()
+  await expect(backupActions.nth(1)).toBeHidden()
 
   const beforeHeight = (await timetable.boundingBox())?.height ?? 0
   await summary.click()
@@ -44,7 +46,6 @@ test('toggles calendar, backup, and clear-all inside the timetable more menu wit
   await expect(summary).toHaveAttribute('aria-label', '더보기 메뉴 닫기')
   await expect(calendar).toBeVisible()
   await expect(clearAll).toBeVisible()
-  await expect(backupActions).toHaveCount(2)
   await expect(backupActions.nth(0)).toBeVisible()
   await expect(backupActions.nth(0)).toHaveText('JSON 저장')
   await expect(backupActions.nth(1)).toBeVisible()
@@ -58,7 +59,8 @@ test('toggles calendar, backup, and clear-all inside the timetable more menu wit
   await expect(summary).toHaveAttribute('aria-label', '더보기 메뉴 열기')
   await expect(calendar).toBeHidden()
   await expect(clearAll).toBeHidden()
-  await expect(backupActions).toBeHidden()
+  await expect(backupActions.nth(0)).toBeHidden()
+  await expect(backupActions.nth(1)).toBeHidden()
 
   const afterCloseHeight = (await timetable.boundingBox())?.height ?? 0
   expect(Math.abs(afterCloseHeight - beforeHeight)).toBeLessThanOrEqual(1)
