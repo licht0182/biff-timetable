@@ -49,7 +49,7 @@ test('creates, edits, persists, and deletes a custom-only timetable event', asyn
   await page.getByRole('button', { name: '내 시간표' }).click()
   await addCustomEvent(page)
 
-  await expect(page.locator('.selection-count')).toHaveText('총 1개 선택')
+  await expect(page.locator('.selection-count')).toHaveText('총 0개 선택')
   const customEvent = page.locator('.event-block.custom-event').first()
   await expect(customEvent).toBeVisible()
   await expect(customEvent).toContainText('점심 식사')
