@@ -159,7 +159,7 @@ test('marks a movie and custom event when their times overlap and gives both sep
   await page.addInitScript(({ key, id }) => localStorage.setItem(key, JSON.stringify([id])), { key: SELECTED_KEY, id: candidate!.screening.id })
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
-  await page.getByRole('button', { name: '+ 일정' }).click()
+  await page.getByRole('button', { name: '일정 추가' }).click()
 
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('일정명 *').fill('겹치는 약속')
