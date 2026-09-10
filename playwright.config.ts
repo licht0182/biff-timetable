@@ -14,6 +14,11 @@ export default defineConfig({
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'webkit-iphone',
+      testMatch: /custom-event-mobile-width\.spec\.ts/,
+      use: { ...devices['iPhone 13'] },
+    },
   ],
   webServer: {
     command: 'npm run preview -- --host 127.0.0.1 --port 4173',
