@@ -37,7 +37,7 @@ PREMIERE_LABELS = ["World Premiere", "International Premiere", "Korean Premiere"
 
 
 def clean(value: Any) -> str:
-    return re.sub(r"\s+", " ", str(value or "")).strip()
+    return re.sub(r"\s+", " ", str(value or "").replace("\ufeff", "")).strip()
 
 
 def fetch(url: str, attempts: int = 4) -> str:
@@ -379,7 +379,9 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
     program_note_parts = string_segment(strings, "Program Note", "Director")
     director_parts = string_segment(strings, "Director", "Credit")
     credit_parts = string_segment(strings, "Credit", "Photo")
-    photo_parts = string_segment(strings, "Photo", "BIFF NEWSLETTER")
+    photo_end = "Screening" if "Screening" in strings else "BIFF NEWSLETTER"
+    photo_parts = string_segment(strings, "Photo", photo_end)
+    screening_parts = string_segment(strings, "Screening", "BIFF NEWSLETTER") if "Screening" in strings else []
 
     title_ko, title_en, title_display, themes = derive_title_and_themes(
         info_segment, record.get("listTitle", "")
@@ -480,6 +482,7 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
             "director": director_parts,
             "credit": credit_parts,
             "photo": photo_parts,
+            "screening": screening_parts,
         },
         "source": {
             "url": record["url"],
@@ -615,7 +618,7 @@ def main() -> int:
             "withThemes": sum(bool(film["classification"]["themes"]) for film in films),
         },
         "databaseFile": str(OUT_PATH),
-        "schemaVersion": 4,
+        "schemaVersion": 5,
     }
     META_PATH.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(meta, ensure_ascii=False, indent=2))
