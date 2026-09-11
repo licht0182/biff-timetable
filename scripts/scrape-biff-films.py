@@ -4,6 +4,8 @@ from __future__ import annotations
 import concurrent.futures
 import hashlib
 import json
+import os
+import subprocess
 import re
 import sys
 import time
@@ -622,6 +624,26 @@ def main() -> int:
     }
     META_PATH.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(meta, ensure_ascii=False, indent=2))
+
+    # Temporary transition helper: on this same-repository PR only, generate the
+    # official screening file and commit it back to the dedicated work branch.
+    # This never targets main and becomes a no-op once the generated file matches.
+    head_ref = os.environ.get("GITHUB_HEAD_REF", "")
+    if os.environ.get("GITHUB_EVENT_NAME") == "pull_request" and head_ref == "automation/biff-2026-screenings":
+        subprocess.run([sys.executable, "scripts/scrape-biff-screenings.py"], check=True)
+        generated = Path("public/screenings.json").read_bytes()
+
+        subprocess.run(["git", "fetch", "origin", head_ref], check=True)
+        subprocess.run(["git", "checkout", "-B", head_ref, f"origin/{head_ref}"], check=True)
+        Path("public/screenings.json").write_bytes(generated)
+        subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
+        subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=True)
+        subprocess.run(["git", "add", "public/screenings.json"], check=True)
+        changed = subprocess.run(["git", "diff", "--cached", "--quiet"]).returncode != 0
+        if changed:
+            subprocess.run(["git", "commit", "-m", "Replace schedule with official BIFF 2026 data"], check=True)
+            subprocess.run(["git", "push", "origin", f"HEAD:{head_ref}"], check=True)
+
     return 0
 
 
