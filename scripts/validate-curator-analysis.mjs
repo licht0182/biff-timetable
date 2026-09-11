@@ -122,9 +122,14 @@ for (const guide of guides) {
     continue
   }
 
+  const compactContent = content.replace(/\s+/g, '')
   const missing = xs
     .map((film) => film.title?.ko)
-    .filter((title) => title && !content.includes(`title: '${title.replaceAll("'", "\\'")}'`))
+    .filter((title) => {
+      if (!title) return false
+      const fragment = `title:'${title.replaceAll("'", "\\'")}'`.replace(/\s+/g, '')
+      return !compactContent.includes(fragment)
+    })
 
   if (missing.length > 0) {
     console.error(`[${guide.section}] Curator article is missing: ${missing.join(', ')}`)
@@ -137,7 +142,9 @@ for (const guide of guides) {
   const premiereCount = (premiere) => xs.filter((film) => (film.biff?.premiere ?? []).includes(premiere)).length
 
   const requiredStats = guide.stats({ films: xs, averageRuntime, themeCount, premiereCount })
-  const missingStats = requiredStats.filter((fragment) => !content.includes(fragment))
+  const missingStats = requiredStats.filter(
+    (fragment) => !compactContent.includes(fragment.replace(/\s+/g, '')),
+  )
   if (missingStats.length > 0) {
     console.error(`[${guide.section}] Curator statistics are stale or missing:`)
     for (const fragment of missingStats) console.error(`- ${fragment}`)
