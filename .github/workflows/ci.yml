@@ -29,6 +29,9 @@ jobs:
       - name: Validate screening data
         run: npm run validate:data
 
+      - name: Validate 2026 film database
+        run: npm run validate:films
+
       - name: Build
         run: npm run build
 
