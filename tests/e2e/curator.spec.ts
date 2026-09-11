@@ -1,28 +1,42 @@
 import { expect, test } from '@playwright/test'
 
-test('opens the AI curator and reads a column like an editorial page', async ({ page }) => {
+test('opens the AI docent, groups columns, and keeps article navigation anchored at the top', async ({ page }) => {
   await page.goto('./')
-  await page.getByRole('button', { name: 'AI 큐레이터' }).click()
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
 
   await expect(page.getByRole('heading', { name: '영화 고르기 전에 읽는 BIFF 분석' })).toBeVisible()
-  await expect(page.locator('.curator-featured-card')).toBeVisible()
-  await expect(page.locator('.curator-featured-card')).toContainText('예상 읽는 시간 : 약 7분')
+  await expect(page.getByRole('heading', { name: 'AI 도슨트 칼럼' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '2026 섹션 가이드' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '선택 전략' })).toBeVisible()
+  await expect(page.getByText('먼저 읽을 글')).toHaveCount(0)
+  await expect(page.locator('.curator-featured-card')).toHaveCount(0)
   await expect(page.getByText('2026. 09. 11.')).toHaveCount(0)
 
-  await page.locator('.curator-featured-card').click()
+  const fourDayCard = page.getByRole('button', { name: /10월 9일부터 12일까지 BIFF에 간다면/ })
+  await fourDayCard.scrollIntoViewIfNeeded()
+  await fourDayCard.click()
+
   await expect(page.getByRole('heading', { name: '10월 9일부터 12일까지 BIFF에 간다면: 4일을 가장 강하게 쓰는 법' })).toBeVisible()
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
+  await expect(page.locator('.curator-meta')).toContainText('AI 도슨트 편집부')
   await expect(page.locator('.curator-meta')).toContainText('예상 읽는 시간 : 약 7분')
   await expect(page.locator('.curator-body')).toContainText('기간 내 회차 희소성')
   await expect(page.getByRole('button', { name: '영화 찾기로 이동' })).toBeVisible()
 
-  await page.getByRole('button', { name: '← 목록으로' }).click()
-  await expect(page.getByRole('heading', { name: '큐레이터 칼럼' })).toBeVisible()
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+  await page.getByRole('button', { name: '↑ 맨 위로' }).click()
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThanOrEqual(2)
+
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
+  await expect(page.getByRole('heading', { name: 'AI 도슨트 칼럼' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '10월 9일부터 12일까지 BIFF에 간다면: 4일을 가장 강하게 쓰는 법' })).toHaveCount(0)
 })
 
 test('keeps the curator within a narrow mobile viewport', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 760 })
   await page.goto('./')
-  await page.getByRole('button', { name: 'AI 큐레이터' }).click()
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
 
   const metrics = await page.evaluate(() => ({
     viewport: window.innerWidth,
@@ -37,7 +51,7 @@ test('keeps the curator within a narrow mobile viewport', async ({ page }) => {
 
 test('shows the complete 2026 competition section analysis', async ({ page }) => {
   await page.goto('./')
-  await page.getByRole('button', { name: 'AI 큐레이터' }).click()
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
 
   const competitionCard = page.getByRole('button', { name: /경쟁 13편 전작 분석/ })
   await expect(competitionCard).toBeVisible()
@@ -57,7 +71,7 @@ test('shows the complete 2026 competition section analysis', async ({ page }) =>
 
 test('shows complete film-analysis guides for the next four sections', async ({ page }) => {
   await page.goto('./')
-  await page.getByRole('button', { name: 'AI 큐레이터' }).click()
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
 
   const guides = [
     { card: /아이콘 35편 전작 분석/, count: 35, first: 'zi', last: '피오르' },
@@ -79,7 +93,7 @@ test('shows complete film-analysis guides for the next four sections', async ({ 
 
 test('shows complete World, Flash Forward and Korean Cinema Today guides', async ({ page }) => {
   await page.goto('./')
-  await page.getByRole('button', { name: 'AI 큐레이터' }).click()
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
 
   const guides = [
     { card: /월드 시네마 29편 전작 분석/, count: 29, first: '15/18', last: '프레셔' },
@@ -101,7 +115,7 @@ test('shows complete World, Flash Forward and Korean Cinema Today guides', async
 
 test('shows complete Wide Angle, Gala, Open Cinema and Midnight Passion guides', async ({ page }) => {
   await page.goto('./')
-  await page.getByRole('button', { name: 'AI 큐레이터' }).click()
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
 
   const guides = [
     { card: /와이드 앵글 47편 전작 분석/, count: 47, first: '58번째', last: '흐르는 세월' },
@@ -123,7 +137,7 @@ test('shows complete Wide Angle, Gala, Open Cinema and Midnight Passion guides',
 
 test('shows complete On Screen, special program, special screening and opening-film analyses', async ({ page }) => {
   await page.goto('./')
-  await page.getByRole('button', { name: 'AI 큐레이터' }).click()
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
 
   const guides = [
     { card: /온 스크린 3편 분석/, count: 3, first: '꿀알바', last: '푸른길' },
