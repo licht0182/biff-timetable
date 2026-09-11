@@ -313,11 +313,6 @@ export default function App() {
     () => Array.from(new Set(films.flatMap((film) => film.screenings.map((screening) => screening.venue)))).sort((a, b) => a.localeCompare(b, 'ko')),
     [films],
   )
-  const allStartTimes = useMemo(
-    () => Array.from(new Set(films.flatMap((film) => film.screenings.map((screening) => screening.start))))
-      .sort((a, b) => clockMinutes(a) - clockMinutes(b)),
-    [films],
-  )
   const sections = useMemo(
     () => ['전체', ...Array.from(new Set(films.map((film) => film.section).filter(Boolean) as string[]))],
     [films],
@@ -862,15 +857,9 @@ export default function App() {
             <div className="time-range-filter">
               <span>회차 시간대</span>
               <div className="time-range-inputs">
-                <select value={startTimeFilter} onChange={(event) => setStartTimeFilter(event.target.value)} aria-label="회차 시작 시간부터">
-                  <option value="">시작 시간</option>
-                  {allStartTimes.map((time) => <option key={"from-" + time} value={time}>{time}</option>)}
-                </select>
+                <input type="time" step="300" value={startTimeFilter} onChange={(event) => setStartTimeFilter(event.target.value)} aria-label="회차 시작 시간부터" />
                 <span className="time-range-separator" aria-hidden="true">~</span>
-                <select value={endTimeFilter} onChange={(event) => setEndTimeFilter(event.target.value)} aria-label="회차 시작 시간까지">
-                  <option value="">끝 시간</option>
-                  {allStartTimes.map((time) => <option key={"to-" + time} value={time}>{time}</option>)}
-                </select>
+                <input type="time" step="300" value={endTimeFilter} onChange={(event) => setEndTimeFilter(event.target.value)} aria-label="회차 시작 시간까지" />
               </div>
             </div>
             <button className={`filter-toggle ${gvOnly ? 'active' : ''}`} onClick={() => setGvOnly((value) => !value)} aria-pressed={gvOnly}>GV만</button>
