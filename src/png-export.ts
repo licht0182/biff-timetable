@@ -1,6 +1,6 @@
 import { toBlob } from 'html-to-image'
 import type { Film, Screening, TicketStatusMap } from './components/film-types'
-import { customEventAbsoluteWindow, customEventCategoryLabel, customEventTimetableDate, customEventTimetableEndMinutes, customEventTimetableStartMinutes, windowsOverlap, type CustomEvent } from './custom-events'
+import { customEventAbsoluteWindow, customEventCategoryLabel, customEventPaletteIndex, customEventTimetableDate, customEventTimetableEndMinutes, customEventTimetableStartMinutes, windowsOverlap, type CustomEvent } from './custom-events'
 import { BASE_END_HOUR, START_HOUR, screeningAbsoluteWindow, timetableDate, timetableEndMinutes, timetableStartMinutes } from './screening-time'
 import { getTransferBuffer, type TransferSettings } from './transfer-buffer'
 
@@ -241,7 +241,7 @@ function buildExportBoard(
         const top = profile.edgeSpace + ((start - START_HOUR * 60) / 60) * profile.hourHeight
         const height = Math.max(((end - start) / 60) * profile.hourHeight, profile.minimumEventHeight)
         const conflict = customEventHasConflict(customEvent, items, customEvents)
-        const event = element('div', `png-export-event custom-event category-${customEvent.category}${conflict ? ' time-conflict' : ''}`)
+        const event = element('div', `png-export-event custom-event category-${customEvent.category} custom-palette-${customEventPaletteIndex(customEvent.id)}${conflict ? ' time-conflict' : ''}`)
         event.style.top = `${top}px`
         event.style.height = `${height}px`
         event.append(

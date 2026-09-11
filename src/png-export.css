@@ -141,6 +141,14 @@
 .png-export-event.status-booked,
 .png-export-event.status-planned{box-shadow:none}
 .png-export-event.custom-event{background:#edf0f3;border-left-color:#6d7781;color:#3f4852}
+.png-export-event.custom-event.category-personal.custom-palette-0{background:#fdecea;border-left-color:#d86e63;color:#70413b}
+.png-export-event.custom-event.category-personal.custom-palette-1{background:#eaf3fd;border-left-color:#6c9bd2;color:#315a84}
+.png-export-event.custom-event.category-personal.custom-palette-2{background:#eaf8ef;border-left-color:#62a979;color:#3d6d4c}
+.png-export-event.custom-event.category-personal.custom-palette-3{background:#f2ecfb;border-left-color:#9271c4;color:#674b84}
+.png-export-event.custom-event.category-personal.custom-palette-4{background:#fff1e5;border-left-color:#d98b50;color:#82542f}
+.png-export-event.custom-event.category-personal.custom-palette-5{background:#e9f7f6;border-left-color:#5ca6a1;color:#386c69}
+.png-export-event.custom-event.category-personal.custom-palette-6{background:#f9edf5;border-left-color:#bd729f;color:#784a68}
+.png-export-event.custom-event.category-personal.custom-palette-7{background:#f4f3e7;border-left-color:#9d9b55;color:#67662f}
 .png-export-event.custom-event.category-meal{background:#fff1dc;border-left-color:#c58a37;color:#72521f}
 .png-export-event.custom-event.category-travel{background:#e6f0f8;border-left-color:#5d8db1;color:#345c7b}
 .png-export-event.custom-event.category-rest{background:#e8f2ea;border-left-color:#6f9d78;color:#3d6746}

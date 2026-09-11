@@ -170,6 +170,12 @@ export function windowsOverlap(first: TimeWindow, second: TimeWindow) {
   return first.start < second.end && second.start < first.end
 }
 
+export function customEventPaletteIndex(id: string) {
+  let hash = 0
+  for (let i = 0; i < id.length; i += 1) hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0
+  return Math.abs(hash) % 8
+}
+
 export function customEventCategoryLabel(category: CustomEventCategory) {
   return CUSTOM_EVENT_CATEGORIES.find((item) => item.value === category)?.label ?? '개인 일정'
 }

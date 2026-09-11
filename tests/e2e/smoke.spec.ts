@@ -8,6 +8,7 @@ type Item = { film: Film; screening: Screening }
 const SELECTED_KEY = 'biff-timetable:selected-screenings:v1'
 const FAVORITES_KEY = 'biff-timetable:favorites:v1'
 const STATUS_KEY = 'biff-timetable:ticket-status:v1'
+const CUSTOM_EVENTS_KEY = 'biff-timetable:custom-events:v1'
 
 function clockMinutes(time: string) {
   const [hour, minute] = time.split(':').map(Number)
@@ -151,6 +152,61 @@ test('extends mobile PNG height when the last timetable hour runs past midnight'
   const mobile = await pngPreviewSize(page)
   expect(mobile.width).toBe(1440)
   expect(mobile.height).toBeGreaterThan(1920)
+})
+
+test('keeps distinct personal-event colors in the timetable and PNG export', async ({ page }) => {
+  const customEvents = [
+    {
+      id: 'custom-alpha',
+      title: '개인 일정 A',
+      date: '2026-10-10',
+      start: '10:00',
+      end: '11:00',
+      category: 'personal',
+      createdAt: '2026-09-11T00:00:00.000Z',
+    },
+    {
+      id: 'custom-beta',
+      title: '개인 일정 B',
+      date: '2026-10-10',
+      start: '12:00',
+      end: '13:00',
+      category: 'personal',
+      createdAt: '2026-09-11T00:00:00.000Z',
+    },
+  ]
+
+  await emulateAppleSaveSheet(page)
+  await page.addInitScript(({ customEventsKey, customEvents }) => {
+    localStorage.setItem(customEventsKey, JSON.stringify(customEvents))
+
+    const originalRemove = Element.prototype.remove
+    Element.prototype.remove = function remove() {
+      if (this instanceof HTMLElement && this.classList.contains('png-export-host')) {
+        this.dataset.testPreserved = 'true'
+        return
+      }
+      originalRemove.call(this)
+    }
+  }, { customEventsKey: CUSTOM_EVENTS_KEY, customEvents })
+
+  await page.setViewportSize({ width: 393, height: 852 })
+  await page.goto('./')
+  await page.getByRole('button', { name: '내 시간표' }).click()
+
+  const screenEvents = page.locator('.event-block.custom-event.category-personal')
+  await expect(screenEvents).toHaveCount(2)
+  const screenColors = await screenEvents.evaluateAll((events) => events.map((event) => getComputedStyle(event).backgroundColor))
+  expect(new Set(screenColors).size).toBe(2)
+
+  await page.getByRole('button', { name: 'PNG 저장' }).click()
+  await pngPreviewSize(page)
+
+  const exportEvents = page.locator('.png-export-host .png-export-event.custom-event.category-personal')
+  await expect(exportEvents).toHaveCount(2)
+  const exportColors = await exportEvents.evaluateAll((events) => events.map((event) => getComputedStyle(event).backgroundColor))
+  expect(new Set(exportColors).size).toBe(2)
+  expect(exportColors).toEqual(screenColors)
 })
 
 test('loads, opens a centered detail dialog, and closes it from the backdrop', async ({ page }) => {
