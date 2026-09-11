@@ -28,6 +28,7 @@ export type CuratorArticle = {
   deck: string
   readingMinutes: number
   tags: string[]
+  analysisOnly?: boolean
   lead: string
   highlight?: string
   sections: CuratorSection[]
