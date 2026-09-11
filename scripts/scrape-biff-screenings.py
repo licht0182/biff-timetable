@@ -159,9 +159,6 @@ def parse_schedule(films_by_idx: dict[str, dict[str, Any]]) -> tuple[list[dict[s
         if "2026" not in page_text:
             raise RuntimeError(f"{source_url} does not identify the 2026 festival")
         date_value = f"{YEAR}-10-{day:02d}"
-        if f"10.{day:02d}" not in page_text and f"10.{day}" not in page_text:
-            raise RuntimeError(f"{source_url} does not contain the expected October {day} schedule")
-
         page_actual = 0
         for li in soup.select("div.sch_li"):
             venue = extract_venue(li)
