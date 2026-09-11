@@ -49,7 +49,7 @@ const DEFAULT_USER_SETTINGS: UserTimetableSettings = {
   showVenueInTimetable: true,
   showBookingStatusInTimetable: true,
 }
-const DATA_VERSION = '2025-test-20260908-2'
+const DATA_VERSION = '2026-official-20260911-1'
 
 function readStorageValue(key: string): unknown {
   try {
