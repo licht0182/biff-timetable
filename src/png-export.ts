@@ -49,7 +49,9 @@ const MOBILE_EXPORT_PROFILE: PngExportProfile = {
   headerHeight: 38,
   hourHeight: 25,
   edgeSpace: 10,
-  pixelRatio: 3,
+  // Render the fixed 3:4 mobile share canvas at 4x so small timetable
+  // type and thin grid lines stay crisp after saving/sharing.
+  pixelRatio: 4,
   minimumHeight: 640,
   minimumEventHeight: 24,
   eventInset: 3,

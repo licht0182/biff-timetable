@@ -132,8 +132,8 @@ test('exports desktop and mobile timetable PNGs with separate high-resolution pr
   await page.getByRole('button', { name: 'PNG 저장' }).click()
 
   const mobile = await pngPreviewSize(page)
-  expect(mobile.width).toBe(1440)
-  expect(mobile.height).toBeGreaterThanOrEqual(1920)
+  expect(mobile.width).toBe(1920)
+  expect(mobile.height).toBeGreaterThanOrEqual(2560)
   expect(mobile.width / mobile.height).toBeLessThanOrEqual(0.75)
 })
 
@@ -150,8 +150,8 @@ test('extends mobile PNG height when the last timetable hour runs past midnight'
   await page.getByRole('button', { name: 'PNG 저장' }).click()
 
   const mobile = await pngPreviewSize(page)
-  expect(mobile.width).toBe(1440)
-  expect(mobile.height).toBeGreaterThan(1920)
+  expect(mobile.width).toBe(1920)
+  expect(mobile.height).toBeGreaterThan(2560)
 })
 
 test('keeps distinct personal-event colors in the timetable and PNG export', async ({ page }) => {
