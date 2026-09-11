@@ -104,6 +104,28 @@ test('loads, opens a centered detail dialog, and closes it from the backdrop', a
   expect(errors).toEqual([])
 })
 
+test('filters movie finder screenings by start-time range and resets it', async ({ page, request }) => {
+  const data = await screeningData(request)
+  const item = flatten(data).find(({ screening }) => /^\d{2}:\d{2}$/.test(screening.start))
+  test.skip(!item, '시간대 필터 회귀 테스트에 사용할 회차가 없습니다.')
+
+  await page.goto('./')
+  const fromInput = page.getByLabel('회차 시작 시간부터')
+  const toInput = page.getByLabel('회차 시작 시간까지')
+  await fromInput.fill(item!.screening.start)
+  await toInput.fill(item!.screening.start)
+
+  const rows = page.locator('.screening-row')
+  await expect(rows.first()).toBeVisible()
+  const rowTexts = await rows.locator('strong').allTextContents()
+  expect(rowTexts.length).toBeGreaterThan(0)
+  expect(rowTexts.every((text) => text.includes(item!.screening.start))).toBeTruthy()
+
+  await page.getByRole('button', { name: '초기화' }).click()
+  await expect(fromInput).toHaveValue('')
+  await expect(toInput).toHaveValue('')
+})
+
 test('repairs malformed persisted state instead of crashing', async ({ page }) => {
   const errors: Error[] = []
   page.on('pageerror', (error) => errors.push(error))
