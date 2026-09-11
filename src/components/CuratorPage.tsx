@@ -30,7 +30,38 @@ function ArticleDetail({ article, onBack, onOpenFilms }: { article: CuratorArtic
               <section key={section.heading}>
                 <h3>{section.heading}</h3>
                 {section.paragraphs?.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+                {section.stats && (
+                  <div className="curator-stats" aria-label={`${section.heading} 통계`}>
+                    {section.stats.map((stat) => (
+                      <div className="curator-stat" key={`${stat.label}-${stat.value}`}>
+                        <strong>{stat.value}</strong>
+                        <span>{stat.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {section.bullets && <ul>{section.bullets.map((item) => <li key={item}>{item}</li>)}</ul>}
+                {section.films && (
+                  <div className="curator-film-guides">
+                    {section.films.map((film) => (
+                      <article className="curator-film-guide" key={`${film.title}-${film.englishTitle ?? ''}`}>
+                        <div className="curator-film-guide-heading">
+                          <div>
+                            <h4>{film.title}</h4>
+                            {film.englishTitle && <span>{film.englishTitle}</span>}
+                          </div>
+                          {film.meta && <p>{film.meta}</p>}
+                        </div>
+                        <p>{film.description}</p>
+                        {film.tags && (
+                          <div className="curator-film-guide-tags">
+                            {film.tags.map((tag) => <span key={tag}>#{tag}</span>)}
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                )}
               </section>
             ))}
           </div>
@@ -116,7 +147,7 @@ export default function CuratorPage({ onOpenFilms }: Props) {
         </ol>
       </section>
 
-      <p className="curator-disclaimer">현재 첫 공개 칼럼은 영화제 선택법을 다루는 편집 가이드입니다. 2026 공식 작품·상영 정보가 확정되는 대로 작품별·섹션별 분석 칼럼을 같은 형식으로 추가할 수 있습니다.</p>
+      <p className="curator-disclaimer">2026 공식 작품 데이터베이스를 바탕으로 섹션별 분석 칼럼을 순차적으로 추가합니다. 상영시간표가 연결된 뒤에는 회차 희소성·GV·동시간대 충돌까지 반영해 예매 우선순위를 별도로 갱신합니다.</p>
     </main>
   )
 }
