@@ -135,6 +135,45 @@ const guides = [
     ],
   },
   {
+    section: '온 스크린',
+    file: '../src/curator-section-guides-final.ts',
+    expectedCount: 3,
+    stats: ({ films: xs, averageRuntime, premiereCount, themeCount }) => [
+      `{ value: '${xs.length}편', label: '전체 작품' }`,
+      `{ value: '${premiereCount('World Premiere')}편', label: 'World Premiere' }`,
+      `{ value: '약 ${averageRuntime}분', label: '평균 상영분량' }`,
+      `{ value: '${themeCount('리메이크/원작있음')}편', label: '원작 기반' }`,
+    ],
+  },
+  {
+    section: '특별기획 프로그램',
+    file: '../src/curator-section-guides-final.ts',
+    expectedCount: 23,
+    stats: ({ films: xs, themeCount }) => [
+      `{ value: '${xs.length}편', label: '전체 작품' }`,
+      `{ value: '${themeCount('애니메이션')}편', label: '애니메이션' }`,
+    ],
+  },
+  {
+    section: '특별상영',
+    file: '../src/curator-section-guides-final.ts',
+    expectedCount: 8,
+    stats: ({ films: xs, averageRuntime, premiereCount }) => [
+      `{ value: '${xs.length}편', label: '전체 작품' }`,
+      `{ value: '약 ${averageRuntime}분', label: '평균 러닝타임' }`,
+      `{ value: '${premiereCount('World Premiere')}편', label: 'World Premiere' }`,
+    ],
+  },
+  {
+    section: '개막작',
+    file: '../src/curator-section-guides-final.ts',
+    expectedCount: 1,
+    requireFilmCards: false,
+    stats: ({ premiereCount }) => [
+      `{ value: 'World Premiere', label: '프리미어' }`,
+    ],
+  },
+  {
     section: '아시아영화의 창',
     file: '../src/curator-section-guide-asian-window.ts',
     expectedCount: 27,
@@ -166,13 +205,15 @@ for (const guide of guides) {
   }
 
   const compactContent = content.replace(/\s+/g, '')
-  const missing = xs
-    .map((film) => film.title?.ko)
-    .filter((title) => {
-      if (!title) return false
-      const fragment = `title:'${title.replaceAll("'", "\\'")}'`.replace(/\s+/g, '')
-      return !compactContent.includes(fragment)
-    })
+  const missing = guide.requireFilmCards === false
+    ? []
+    : xs
+      .map((film) => film.title?.ko)
+      .filter((title) => {
+        if (!title) return false
+        const fragment = `title:'${title.replaceAll("'", "\\'")}'`.replace(/\s+/g, '')
+        return !compactContent.includes(fragment)
+      })
 
   if (missing.length > 0) {
     console.error(`[${guide.section}] Curator article is missing: ${missing.join(', ')}`)
