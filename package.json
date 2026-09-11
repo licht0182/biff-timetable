@@ -8,6 +8,7 @@
     "validate:data": "node scripts/validate-screenings.mjs",
     "validate:films": "node scripts/validate-films.mjs",
     "analyze:sections": "node scripts/analyze-curator-sections.mjs",
+    "validate:curator": "node scripts/validate-curator-analysis.mjs",
     "enrich:genres": "node scripts/enrich-genres.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
