@@ -1,7 +1,24 @@
+import { COMPETITION_2026_ARTICLE } from './curator-section-content'
+
+export type CuratorStat = {
+  value: string
+  label: string
+}
+
+export type CuratorFilmGuide = {
+  title: string
+  englishTitle?: string
+  meta?: string
+  description: string
+  tags?: string[]
+}
+
 export type CuratorSection = {
   heading: string
   paragraphs?: string[]
   bullets?: string[]
+  stats?: CuratorStat[]
+  films?: CuratorFilmGuide[]
 }
 
 export type CuratorArticle = {
@@ -96,6 +113,7 @@ export const CURATOR_ARTICLES: CuratorArticle[] = [
       },
     ],
   },
+  COMPETITION_2026_ARTICLE,
   {
     slug: 'before-you-pick-three-rules',
     category: '선택 전략',
