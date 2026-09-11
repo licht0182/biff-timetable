@@ -63,5 +63,7 @@ jobs:
             echo "Film database is already current."
           else
             git commit -m "Update 2026 BIFF film database"
+            git fetch origin "${{ github.ref_name }}"
+            git rebase "origin/${{ github.ref_name }}"
             git push origin HEAD:${{ github.ref_name }}
           fi
