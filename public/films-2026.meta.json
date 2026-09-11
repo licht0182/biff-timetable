@@ -3,7 +3,7 @@
   "source": "https://www.biff.kr/kor/html/program/prog_all_list.asp?allYear=2026",
   "expectedOfficialCount": 246,
   "filmCount": 246,
-  "collectedAtUtc": "2026-09-11T05:37:51+00:00",
+  "collectedAtUtc": "2026-09-11T05:51:19+00:00",
   "catalogueRowCount": 254,
   "primarySectionCounts": {
     "갈라 프레젠테이션": 6,
@@ -53,5 +53,5 @@
     "withThemes": 239
   },
   "databaseFile": "public/films-2026.json",
-  "schemaVersion": 4
+  "schemaVersion": 5
 }
