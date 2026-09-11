@@ -3,3 +3,50 @@
 .curator-groups{display:grid;gap:28px}.curator-group{display:grid;gap:12px}.curator-group+.curator-group{padding-top:24px;border-top:1px solid #ededed}.curator-group-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.curator-group-heading h4{margin:0;font-size:15px;letter-spacing:-.03em}.curator-group-heading span{color:#999;font-size:10px}.curator-detail-actions{display:flex;justify-content:center;padding:16px 0 2px}.curator-top-button{border:1px solid #dedede;border-radius:999px;background:#fff;color:#666;padding:9px 16px;font-size:11px;font-weight:800;cursor:pointer;transition:border-color .15s,color .15s,transform .15s}.curator-top-button:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}@media(max-width:700px){.curator-groups{gap:22px}.curator-group+.curator-group{padding-top:20px}.curator-group-heading h4{font-size:14px}.curator-detail-actions{padding-top:12px}.curator-top-button{width:100%}}
 
 .curator-filter-chips{display:flex;gap:7px;overflow-x:auto;margin:-1px -2px 16px;padding:2px 2px 7px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}.curator-filter-chips button{flex:0 0 auto;border:1px solid #e1e1e1;border-radius:999px;background:#fff;color:#666;padding:8px 11px;font-size:11px;font-weight:800;white-space:nowrap;cursor:pointer;transition:border-color .15s,background .15s,color .15s}.curator-filter-chips button:hover{border-color:#d2b0ac;color:var(--accent)}.curator-filter-chips button.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}.curator-filter-chips button span{margin-left:4px;color:#aaa;font-size:9px}.curator-filter-chips button.active span{color:inherit}.curator-filter-result{display:grid;gap:12px}.curator-filter-result .curator-card h3{margin-top:10px}@media(max-width:700px){.curator-filter-chips{margin-left:-12px;margin-right:-12px;padding-left:12px;padding-right:12px}.curator-filter-chips button{padding:7px 10px;font-size:10px}.curator-filter-result{gap:10px}}
+
+/* Keep horizontal category scrolling local to the filter instead of widening the page. */
+.curator-page,
+.curator-page>section,
+.curator-hero,
+.curator-hero>div,
+.curator-latest,
+.curator-filter-result,
+.curator-grid,
+.curator-card{
+  min-width:0;
+  max-width:100%;
+}
+.curator-hero,
+.curator-latest{
+  width:100%;
+  overflow:hidden;
+}
+.curator-filter-chips{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overscroll-behavior-x:contain;
+}
+.curator-card{
+  overflow:hidden;
+}
+.curator-card h3,
+.curator-card>p,
+.curator-hero h2,
+.curator-hero>div>p{
+  overflow-wrap:anywhere;
+}
+@media(max-width:700px){
+  .curator-hero{
+    display:block;
+  }
+  .curator-edition{
+    display:none;
+  }
+  .curator-filter-chips{
+    margin-left:0;
+    margin-right:0;
+    padding-left:0;
+    padding-right:0;
+  }
+}
