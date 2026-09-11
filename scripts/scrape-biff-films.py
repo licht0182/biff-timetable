@@ -286,8 +286,18 @@ def media_from_page(soup: BeautifulSoup) -> dict[str, Any]:
         seen_images.add(src)
         parent_text = clean(img.parent.get_text(" ", strip=True)) if img.parent else ""
         copyright_match = re.search(r"©\s*[^|]{1,120}", parent_text)
+        if "/DIRECTOR_PHOTO/" in src:
+            role = "directorPhoto"
+        elif "/FILM_PHOTO/" in src and "/thumb/" in src:
+            role = "relatedFilmThumbnail"
+        elif "/FILM_PHOTO/" in src:
+            role = "filmPhoto"
+        else:
+            role = "other"
+
         images.append({
             "url": src,
+            "role": role,
             "alt": clean(img.get("alt", "")),
             "title": clean(img.get("title", "")),
             "copyrightOrCaption": clean(copyright_match.group(0)) if copyright_match else "",
@@ -307,7 +317,43 @@ def media_from_page(soup: BeautifulSoup) -> dict[str, Any]:
                     if sig not in seen_refs:
                         seen_refs.add(sig)
                         media_refs.append(ref)
-    return {"images": images, "mediaReferences": media_refs}
+    return {
+        "images": images,
+        "filmImages": [item["url"] for item in images if item["role"] == "filmPhoto"],
+        "directorImages": [item["url"] for item in images if item["role"] == "directorPhoto"],
+        "relatedFilmThumbnails": [item["url"] for item in images if item["role"] == "relatedFilmThumbnail"],
+        "mediaReferences": media_refs,
+    }
+
+
+def parse_related_films(photo_parts: list[str]) -> dict[str, Any]:
+    if "MORE" not in photo_parts:
+        return {"sectionLabel": "", "films": []}
+
+    more_index = photo_parts.index("MORE")
+    section_label = clean(photo_parts[more_index - 1]) if more_index > 0 else ""
+    remaining = [clean(value) for value in photo_parts[more_index + 1:] if clean(value)]
+    films = []
+    for i in range(0, len(remaining) - 1, 2):
+        films.append({
+            "titleKo": remaining[i],
+            "titleEn": remaining[i + 1],
+        })
+    return {"sectionLabel": section_label, "films": films}
+
+
+def director_photo_credit(parts: list[str], name_ko: str) -> str:
+    if not name_ko:
+        return ""
+    try:
+        name_index = parts.index(name_ko)
+    except ValueError:
+        return ""
+    credit_parts = [
+        clean(value) for value in parts[:name_index]
+        if clean(value) and not clean(value).startswith("©")
+    ]
+    return clean(" ".join(credit_parts))
 
 
 def data_attributes(soup: BeautifulSoup) -> list[dict[str, Any]]:
@@ -341,6 +387,7 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
     director_ko, director_en, director_display = derive_director_names(
         director_parts, record.get("listDirector", "")
     )
+    director_credit = director_photo_credit(director_parts, director_ko)
 
     country_raw = read_labeled_value(info_segment, "국가") or record.get("listCountries", "")
     year_raw = read_labeled_value(info_segment, "제작연도")
@@ -372,8 +419,13 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
         if "©" in value or re.search(r"\(c\)\s*\d{4}", value, re.I)
     ))
     media["copyrightNotices"] = copyright_notices
+    media["photoCopyrightNotices"] = list(dict.fromkeys(
+        clean(value) for value in photo_parts
+        if "©" in value or re.search(r"\(c\)\s*\d{4}", value, re.I)
+    ))
     media["photoSectionText"] = clean(" ".join(photo_parts))
     media["rawMediaReferences"] = media.pop("mediaReferences", [])
+    related = parse_related_films(photo_parts)
 
     parsed = {
         "id": f"biff-{YEAR}-{record['idx']}",
@@ -413,12 +465,15 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
             "nameEn": director_en,
             "display": director_display,
             "sectionText": clean(" ".join(director_parts)),
+            "photoCredit": director_credit,
         },
         "credits": {
             "sectionText": clean(" ".join(credit_parts)),
             "labeledPairs": all_pairs,
+            "hasStaticContent": bool(credit_parts or all_pairs),
         },
         "media": media,
+        "related": related,
         "rawSections": {
             "filmInfo": info_segment,
             "programNote": program_note_parts,
@@ -560,7 +615,7 @@ def main() -> int:
             "withThemes": sum(bool(film["classification"]["themes"]) for film in films),
         },
         "databaseFile": str(OUT_PATH),
-        "schemaVersion": 3,
+        "schemaVersion": 4,
     }
     META_PATH.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(meta, ensure_ascii=False, indent=2))
