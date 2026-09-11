@@ -66,13 +66,15 @@ function ArticleDetail({ article, onBack, onOpenFilms }: { article: CuratorArtic
             ))}
           </div>
 
-          <footer className="curator-article-footer">
-            <div>
-              <strong>이제 실제 회차에 적용해 보세요.</strong>
-              <p>후보작을 영화 찾기에서 확인하고, 겹침과 이동시간까지 포함해 내 시간표에서 검증할 수 있습니다.</p>
-            </div>
-            <button type="button" onClick={onOpenFilms}>영화 찾기로 이동</button>
-          </footer>
+          {!article.analysisOnly && (
+            <footer className="curator-article-footer">
+              <div>
+                <strong>이제 실제 회차에 적용해 보세요.</strong>
+                <p>후보작을 영화 찾기에서 확인하고, 겹침과 이동시간까지 포함해 내 시간표에서 검증할 수 있습니다.</p>
+              </div>
+              <button type="button" onClick={onOpenFilms}>영화 찾기로 이동</button>
+            </footer>
+          )}
         </article>
         <p className="curator-disclaimer">AI 큐레이터의 글은 작품 선택을 돕기 위한 편집 분석이며 BIFF 공식 안내가 아닙니다. 작품·상영 정보는 BIFF 공식 정보를 우선 확인해 주세요.</p>
       </div>
@@ -99,7 +101,7 @@ export default function CuratorPage({ onOpenFilms }: Props) {
         <div>
           <p className="curator-kicker">AI CURATOR · BIFF EDITORIAL</p>
           <h2>영화 고르기 전에 읽는 BIFF 분석</h2>
-          <p>작품의 유명세만 나열하지 않고, 회차 희소성·GV·동선·관람 경험까지 함께 보면서 영화제에서 무엇을 우선할지 정리합니다.</p>
+          <p>공식 작품 데이터와 프로그램 노트를 바탕으로 각 섹션의 흐름, 감독의 시선, 주제와 형식을 비교해 상영작을 깊이 있게 읽습니다.</p>
         </div>
         <span className="curator-edition">2026</span>
       </section>
@@ -141,13 +143,13 @@ export default function CuratorPage({ onOpenFilms }: Props) {
           <h3>AI 큐레이터는 이렇게 글을 만듭니다</h3>
         </div>
         <ol>
-          <li><strong>공식 정보 확인</strong><span>작품·섹션·상영 회차처럼 변할 수 있는 사실은 공식 정보를 기준으로 정리합니다.</span></li>
-          <li><strong>선택 가치 분석</strong><span>작품성뿐 아니라 희소성, GV, 회차 대체 가능성, 동선을 함께 봅니다.</span></li>
+          <li><strong>공식 정보 확인</strong><span>작품·섹션·감독·프로그램 노트처럼 변할 수 있는 사실은 공식 정보를 기준으로 정리합니다.</span></li>
+          <li><strong>섹션 내부 비교</strong><span>국가, 주제, 러닝타임, 형식과 프로그램 노트를 함께 보며 작품들이 만드는 공통점과 차이를 읽습니다.</span></li>
           <li><strong>판단 근거 분리</strong><span>확인된 사실과 큐레이터의 해석·추천을 구분해 과도한 확신을 피합니다.</span></li>
         </ol>
       </section>
 
-      <p className="curator-disclaimer">2026 공식 작품 데이터베이스를 바탕으로 섹션별 분석 칼럼을 순차적으로 추가합니다. 상영시간표가 연결된 뒤에는 회차 희소성·GV·동시간대 충돌까지 반영해 예매 우선순위를 별도로 갱신합니다.</p>
+      <p className="curator-disclaimer">2026 공식 작품 데이터베이스와 프로그램 노트를 바탕으로 섹션별 분석 칼럼을 순차적으로 추가합니다. 섹션 가이드는 상영 일정이 아니라 작품 자체의 주제와 형식, 감독의 시선을 분석하는 데 초점을 둡니다.</p>
     </main>
   )
 }

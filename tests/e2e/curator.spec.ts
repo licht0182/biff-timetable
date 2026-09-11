@@ -50,5 +50,28 @@ test('shows the complete 2026 competition section analysis', async ({ page }) =>
   await expect(page.locator('.curator-film-guide')).toHaveCount(13)
   await expect(page.locator('.curator-film-guide').first()).toContainText('그날의 태주')
   await expect(page.locator('.curator-film-guide').last()).toContainText('힐롤')
-  await expect(page.locator('.curator-body')).toContainText('상영시간표가 붙으면 순위는 다시 바뀝니다')
+  await expect(page.locator('.curator-body')).not.toContainText('상영시간표가 붙으면 순위는 다시 바뀝니다')
+  await expect(page.locator('.curator-article-footer')).toHaveCount(0)
+})
+
+
+test('shows complete film-analysis guides for the next four sections', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 큐레이터' }).click()
+
+  const guides = [
+    { card: /아이콘 35편 전작 분석/, count: 35, first: 'zi', last: '피오르' },
+    { card: /비전 - 한국 12편 전작 분석/, count: 12, first: '귀벌레', last: '화곡사' },
+    { card: /비전 - 아시아 12편 전작 분석/, count: 12, first: '1982', last: '환상의 불빛' },
+    { card: /아시아영화의 창 27편 전작 분석/, count: 27, first: '겨울 이야기', last: '필리피냐나' },
+  ]
+
+  for (const guide of guides) {
+    await page.getByRole('button', { name: guide.card }).click()
+    await expect(page.locator('.curator-film-guide')).toHaveCount(guide.count)
+    await expect(page.locator('.curator-film-guide').first()).toContainText(guide.first)
+    await expect(page.locator('.curator-film-guide').last()).toContainText(guide.last)
+    await expect(page.locator('.curator-article-footer')).toHaveCount(0)
+    await page.getByRole('button', { name: '← 목록으로' }).click()
+  }
 })
