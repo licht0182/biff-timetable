@@ -8,13 +8,57 @@ type ExportItem = { film: Film; screening: Screening }
 export type PngExportSettings = TransferSettings & {
   showTransferWarnings: boolean
 }
+export type PngExportViewport = {
+  width: number
+  height: number
+}
 
-const EXPORT_WIDTH = 1440
-const EXPORT_AXIS_WIDTH = 72
-const EXPORT_HEADER_HEIGHT = 56
-const EXPORT_HOUR_HEIGHT = 58
-const EXPORT_EDGE_SPACE = 16
+type PngExportProfile = {
+  mode: 'desktop' | 'mobile'
+  width: number
+  axisWidth: number
+  headerHeight: number
+  hourHeight: number
+  edgeSpace: number
+  pixelRatio: number
+  minimumHeight: number
+  minimumEventHeight: number
+  eventInset: number
+  horizontalPadding: number
+}
+
 const EXPORT_FILENAME = 'BIFF-timetable.png'
+const MOBILE_EXPORT_BREAKPOINT = 700
+const DESKTOP_EXPORT_PROFILE: PngExportProfile = {
+  mode: 'desktop',
+  width: 1440,
+  axisWidth: 72,
+  headerHeight: 56,
+  hourHeight: 58,
+  edgeSpace: 16,
+  pixelRatio: 1.5,
+  minimumHeight: 0,
+  minimumEventHeight: 34,
+  eventInset: 5,
+  horizontalPadding: 46,
+}
+const MOBILE_EXPORT_PROFILE: PngExportProfile = {
+  mode: 'mobile',
+  width: 480,
+  axisWidth: 44,
+  headerHeight: 38,
+  hourHeight: 25,
+  edgeSpace: 10,
+  pixelRatio: 3,
+  minimumHeight: 640,
+  minimumEventHeight: 24,
+  eventInset: 3,
+  horizontalPadding: 24,
+}
+
+function exportProfile(viewport: PngExportViewport): PngExportProfile {
+  return viewport.width <= MOBILE_EXPORT_BREAKPOINT ? MOBILE_EXPORT_PROFILE : DESKTOP_EXPORT_PROFILE
+}
 
 function exportEndHour(items: ExportItem[], customEvents: readonly CustomEvent[]) {
   const screeningEnd = items.reduce(
@@ -90,20 +134,40 @@ function element<K extends keyof HTMLElementTagNameMap>(tag: K, className?: stri
   return node
 }
 
-function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap, settings: PngExportSettings, customEvents: readonly CustomEvent[]) {
+function buildExportBoard(
+  items: ExportItem[],
+  ticketStatus: TicketStatusMap,
+  settings: PngExportSettings,
+  customEvents: readonly CustomEvent[],
+  profile: PngExportProfile,
+) {
   const dates = Array.from(new Set([
     ...items.map(({ screening }) => timetableDate(screening)),
     ...customEvents.map((event) => customEventTimetableDate(event)),
   ])).sort()
   const endHour = exportEndHour(items, customEvents)
-  const board = element('section', 'png-export-board')
+  const board = element('section', `png-export-board ${profile.mode}`)
+  const extraEndHours = Math.max(0, endHour - BASE_END_HOUR)
+  const mobileMinimumHeight = profile.mode === 'mobile'
+    ? profile.minimumHeight + extraEndHours * profile.hourHeight
+    : 0
+  const contentWidth = profile.width - profile.horizontalPadding * 2
+  const dayWidth = dates.length > 0 ? (contentWidth - profile.axisWidth) / dates.length : contentWidth - profile.axisWidth
+  if (profile.mode === 'mobile' && dayWidth < 76) board.classList.add('dense')
+  if (profile.mode === 'mobile' && dayWidth < 48) board.classList.add('ultra-dense')
+
+  board.dataset.exportMode = profile.mode
+  board.dataset.exportLogicalWidth = String(profile.width)
+  board.dataset.exportPixelRatio = String(profile.pixelRatio)
+  board.dataset.exportMinimumHeight = String(mobileMinimumHeight)
   board.style.setProperty('--png-days', String(Math.max(dates.length, 1)))
-  board.style.setProperty('--png-axis-width', `${EXPORT_AXIS_WIDTH}px`)
-  board.style.setProperty('--png-header-height', `${EXPORT_HEADER_HEIGHT}px`)
-  board.style.setProperty('--png-hour-height', `${EXPORT_HOUR_HEIGHT}px`)
+  board.style.setProperty('--png-axis-width', `${profile.axisWidth}px`)
+  board.style.setProperty('--png-header-height', `${profile.headerHeight}px`)
+  board.style.setProperty('--png-hour-height', `${profile.hourHeight}px`)
   board.style.setProperty('--png-hours', String(endHour - START_HOUR))
-  board.style.setProperty('--png-edge-space', `${EXPORT_EDGE_SPACE}px`)
-  board.style.width = `${EXPORT_WIDTH}px`
+  board.style.setProperty('--png-edge-space', `${profile.edgeSpace}px`)
+  board.style.width = `${profile.width}px`
+  if (mobileMinimumHeight > 0) board.style.minHeight = `${mobileMinimumHeight}px`
 
   const head = element('header', 'png-export-head')
   const brand = element('div', 'png-export-brand')
@@ -119,11 +183,12 @@ function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap, se
   head.append(brand)
 
   const legend = element('div', 'png-export-legend')
-  legend.append(element('span', 'booked', '✓ 예매 완료'))
-  legend.append(element('span', 'planned', '○ 예매 예정'))
-  legend.append(element('span', '', 'GV 게스트 방문'))
-  legend.append(element('span', 'custom', '◆ 사용자 일정'))
-  legend.append(element('span', 'warning', '! 충돌/이동 확인'))
+  const mobileLegend = profile.mode === 'mobile'
+  legend.append(element('span', 'booked', mobileLegend ? '✓ 완료' : '✓ 예매 완료'))
+  legend.append(element('span', 'planned', mobileLegend ? '○ 예정' : '○ 예매 예정'))
+  legend.append(element('span', '', mobileLegend ? 'GV' : 'GV 게스트 방문'))
+  legend.append(element('span', 'custom', mobileLegend ? '◆ 일정' : '◆ 사용자 일정'))
+  legend.append(element('span', 'warning', mobileLegend ? '! 확인' : '! 충돌/이동 확인'))
   head.append(legend)
   board.append(head)
 
@@ -134,7 +199,7 @@ function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap, se
   const axis = element('div', 'png-export-axis')
   for (let hour = START_HOUR; hour <= endHour; hour += 1) {
     const label = element('span', '', formatHourLabel(hour))
-    label.style.top = `${EXPORT_EDGE_SPACE + (hour - START_HOUR) * EXPORT_HOUR_HEIGHT}px`
+    label.style.top = `${profile.edgeSpace + (hour - START_HOUR) * profile.hourHeight}px`
     axis.append(label)
   }
   grid.append(axis)
@@ -143,7 +208,7 @@ function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap, se
     const column = element('div', 'png-export-day')
     for (let i = 0; i <= endHour - START_HOUR; i += 1) {
       const line = element('div', 'png-export-hour-line')
-      line.style.top = `${EXPORT_EDGE_SPACE + i * EXPORT_HOUR_HEIGHT}px`
+      line.style.top = `${profile.edgeSpace + i * profile.hourHeight}px`
       column.append(line)
     }
 
@@ -153,8 +218,8 @@ function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap, se
         const { film, screening } = item
         const start = timetableStartMinutes(screening)
         const end = timetableEndMinutes(film, screening)
-        const top = EXPORT_EDGE_SPACE + ((start - START_HOUR * 60) / 60) * EXPORT_HOUR_HEIGHT
-        const height = Math.max(((end - start) / 60) * EXPORT_HOUR_HEIGHT, 34)
+        const top = profile.edgeSpace + ((start - START_HOUR * 60) / 60) * profile.hourHeight
+        const height = Math.max(((end - start) / 60) * profile.hourHeight, profile.minimumEventHeight)
         const status = ticketStatus[screening.id]
         const statusPrefix = status === 'booked' ? '✓ ' : status === 'planned' ? '○ ' : ''
         const event = element('div', `png-export-event palette-${paletteIndex(film.id)}${status ? ` status-${status}` : ''}${hasTransferWarning(item, items, settings) ? ' transfer-warning' : ''}${screeningHasCustomConflict(item, customEvents) ? ' time-conflict' : ''}`)
@@ -173,8 +238,8 @@ function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap, se
       .forEach((customEvent) => {
         const start = customEventTimetableStartMinutes(customEvent)
         const end = customEventTimetableEndMinutes(customEvent)
-        const top = EXPORT_EDGE_SPACE + ((start - START_HOUR * 60) / 60) * EXPORT_HOUR_HEIGHT
-        const height = Math.max(((end - start) / 60) * EXPORT_HOUR_HEIGHT, 34)
+        const top = profile.edgeSpace + ((start - START_HOUR * 60) / 60) * profile.hourHeight
+        const height = Math.max(((end - start) / 60) * profile.hourHeight, profile.minimumEventHeight)
         const conflict = customEventHasConflict(customEvent, items, customEvents)
         const event = element('div', `png-export-event custom-event category-${customEvent.category}${conflict ? ' time-conflict' : ''}`)
         event.style.top = `${top}px`
@@ -199,12 +264,13 @@ function buildExportBoard(items: ExportItem[], ticketStatus: TicketStatusMap, se
   return board
 }
 
-function stabilizeExportEventWidths(board: HTMLElement) {
+function stabilizeExportEventWidths(board: HTMLElement, profile: PngExportProfile) {
   board.querySelectorAll<HTMLElement>('.png-export-event').forEach((event) => {
     const column = event.parentElement
     if (!column) return
-    const width = Math.max(1, column.getBoundingClientRect().width - 10)
-    event.style.left = '5px'
+    const inset = board.classList.contains('ultra-dense') ? 1 : board.classList.contains('dense') ? 2 : profile.eventInset
+    const width = Math.max(1, column.getBoundingClientRect().width - inset * 2)
+    event.style.left = `${inset}px`
     event.style.right = 'auto'
     event.style.width = `${width}px`
   })
@@ -228,8 +294,8 @@ function fitExportEventTitle(event: HTMLElement) {
   }
 }
 
-function prepareExportBoard(board: HTMLElement) {
-  stabilizeExportEventWidths(board)
+function prepareExportBoard(board: HTMLElement, profile: PngExportProfile) {
+  stabilizeExportEventWidths(board, profile)
   board.querySelectorAll<HTMLElement>('.png-export-event').forEach(fitExportEventTitle)
 }
 
@@ -322,6 +388,7 @@ export async function exportTimetablePng(
   ticketStatus: TicketStatusMap,
   settings: PngExportSettings,
   customEvents: readonly CustomEvent[] = [],
+  viewport: PngExportViewport = { width: window.innerWidth, height: window.innerHeight },
 ): Promise<'apple-ready' | 'downloaded'> {
   if (!sourceItems.length && !customEvents.length) throw new Error('저장할 시간표가 없습니다.')
 
@@ -329,23 +396,26 @@ export async function exportTimetablePng(
     screeningAbsoluteWindow(a.film, a.screening).start - screeningAbsoluteWindow(b.film, b.screening).start
   ))
   const sortedCustomEvents = [...customEvents].sort((a, b) => customEventAbsoluteWindow(a).start - customEventAbsoluteWindow(b).start)
+  const profile = exportProfile(viewport)
   let host: HTMLElement | null = null
 
   try {
-    const board = buildExportBoard(items, ticketStatus, settings, sortedCustomEvents)
+    const board = buildExportBoard(items, ticketStatus, settings, sortedCustomEvents, profile)
     host = element('div', 'png-export-host')
+    host.style.width = `${profile.width}px`
+    host.dataset.exportMode = profile.mode
     host.append(board)
     document.body.append(host)
 
     await document.fonts?.ready
     await nextPaint()
-    prepareExportBoard(board)
+    prepareExportBoard(board, profile)
     await nextPaint()
 
     const blob = await toBlob(board, {
       backgroundColor: '#ffffff',
       cacheBust: true,
-      pixelRatio: 1.5,
+      pixelRatio: profile.pixelRatio,
       width: board.scrollWidth,
       height: board.scrollHeight,
     })

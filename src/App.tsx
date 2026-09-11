@@ -705,7 +705,7 @@ export default function App() {
     if (pngExportState === 'working' || (!selectedItems.length && !customEvents.length)) return
     setPngExportState('working')
     try {
-      const result = await exportTimetablePng(selectedItems, ticketStatus, userSettings, customEvents)
+      const result = await exportTimetablePng(selectedItems, ticketStatus, userSettings, customEvents, viewport)
       setPngExportState(result === 'apple-ready' ? 'ready' : 'done')
       if (result === 'downloaded') setToast('시간표 PNG를 저장했습니다.')
     } catch (error) {
@@ -968,7 +968,7 @@ export default function App() {
               <button
                 type="button"
                 className="png-export-trigger"
-                title="현재 화면 크기와 무관한 고정 레이아웃으로 시간표 PNG를 저장합니다."
+                title="데스크탑은 기존 넓은 레이아웃, 모바일은 기본 3:4 고해상도 레이아웃으로 저장하며 늦은 일정은 세로로 확장합니다."
                 onClick={() => void savePng()}
                 disabled={pngExportState === 'working'}
               >{pngExportState === 'working' ? 'PNG 생성 중…' : pngExportState === 'ready' ? 'PNG 준비 완료' : pngExportState === 'done' ? '저장 완료' : pngExportState === 'error' ? '저장 실패' : 'PNG 저장'}</button>
