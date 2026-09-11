@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CURATOR_ARTICLES, type CuratorArticle } from '../curator-content'
+import { pushNavigationState, readNavigationState } from '../navigation-history'
 
 type Props = {
   onOpenFilms: () => void
@@ -97,7 +98,10 @@ const CATEGORY_ORDER = [
 ]
 
 export default function CuratorPage({ onOpenFilms }: Props) {
-  const [activeSlug, setActiveSlug] = useState<string | null>(null)
+  const [activeSlug, setActiveSlug] = useState<string | null>(() => {
+    const navigation = readNavigationState()
+    return navigation.tab === 'curator' && !navigation.settingsOpen ? navigation.curatorSlug : null
+  })
   const activeArticle = useMemo(
     () => CURATOR_ARTICLES.find((article) => article.slug === activeSlug) ?? null,
     [activeSlug],
@@ -125,8 +129,19 @@ export default function CuratorPage({ onOpenFilms }: Props) {
     if (activeSlug) scrollPageTop()
   }, [activeSlug])
 
+  const openArticle = (slug: string) => {
+    pushNavigationState({ tab: 'curator', settingsOpen: false, curatorSlug: slug })
+    setActiveSlug(slug)
+  }
+
+  const openArticleList = () => {
+    pushNavigationState({ tab: 'curator', settingsOpen: false, curatorSlug: null })
+    setActiveSlug(null)
+    scrollPageTop()
+  }
+
   if (activeArticle) {
-    return <ArticleDetail article={activeArticle} onBack={() => setActiveSlug(null)} onOpenFilms={onOpenFilms} />
+    return <ArticleDetail article={activeArticle} onBack={openArticleList} onOpenFilms={onOpenFilms} />
   }
 
   return (
@@ -157,7 +172,7 @@ export default function CuratorPage({ onOpenFilms }: Props) {
                 </div>
                 <div className="curator-grid">
                   {group.articles.map((article) => (
-                    <button type="button" className="curator-card" key={article.slug} onClick={() => setActiveSlug(article.slug)}>
+                    <button type="button" className="curator-card" key={article.slug} onClick={() => openArticle(article.slug)}>
                       <h3>{article.title}</h3>
                       <p>{article.deck}</p>
                       <div className="curator-card-tags">{article.tags.slice(0, 2).map((tag) => <span key={tag}>#{tag}</span>)}</div>
