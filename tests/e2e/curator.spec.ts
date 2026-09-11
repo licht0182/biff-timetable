@@ -6,6 +6,7 @@ test('opens the AI curator and reads a column like an editorial page', async ({ 
 
   await expect(page.getByRole('heading', { name: '영화 고르기 전에 읽는 BIFF 분석' })).toBeVisible()
   await expect(page.locator('.curator-featured-card')).toBeVisible()
+  await expect(page.getByText('2026. 09. 11.')).toHaveCount(0)
 
   await page.locator('.curator-featured-card').click()
   await expect(page.getByRole('heading', { name: '2026 BIFF, 작품을 고르기 전에 먼저 정할 세 가지' })).toBeVisible()

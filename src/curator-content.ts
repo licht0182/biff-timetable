@@ -9,7 +9,6 @@ export type CuratorArticle = {
   category: string
   title: string
   deck: string
-  publishedAt: string
   readingMinutes: number
   tags: string[]
   lead: string
@@ -23,7 +22,6 @@ export const CURATOR_ARTICLES: CuratorArticle[] = [
     category: '선택 전략',
     title: '2026 BIFF, 작품을 고르기 전에 먼저 정할 세 가지',
     deck: '제목과 유명세보다 먼저 “이번 영화제에서 무엇을 얻고 싶은가”를 정하면 선택지가 빠르게 정리됩니다.',
-    publishedAt: '2026-09-11',
     readingMinutes: 5,
     tags: ['입문', '우선순위', '시간표'],
     lead: '영화제에서 가장 어려운 일은 좋은 영화를 찾는 것이 아니라, 좋은 영화가 너무 많을 때 무엇을 포기할지 정하는 일입니다. AI 큐레이터는 작품의 절대적인 점수보다 관객의 제한된 시간 안에서 선택의 가치가 어떻게 달라지는지를 먼저 봅니다.',
@@ -63,7 +61,6 @@ export const CURATOR_ARTICLES: CuratorArticle[] = [
     category: '관람 경험',
     title: 'GV 회차는 무조건 우선일까? 작품과 대화 사이의 선택법',
     deck: 'GV는 강력한 경험이지만 언제나 최선의 회차는 아닙니다. 일정 비용까지 포함해 판단하는 기준을 정리했습니다.',
-    publishedAt: '2026-09-11',
     readingMinutes: 4,
     tags: ['GV', '회차 선택', '관람 경험'],
     lead: '감독이나 배우가 직접 참여하는 GV는 영화제의 가장 큰 장점 중 하나입니다. 다만 모든 작품을 GV 회차로 보려 하면 이동과 대기 때문에 다른 중요한 작품을 포기하게 될 수 있습니다.',
@@ -98,7 +95,6 @@ export const CURATOR_ARTICLES: CuratorArticle[] = [
     category: '시간표 설계',
     title: '하루 네 편보다 좋은 세 편이 있을 수 있는 이유',
     deck: '관람 편수를 최대화하는 시간표와 영화제 만족도를 최대화하는 시간표는 같지 않을 수 있습니다.',
-    publishedAt: '2026-09-11',
     readingMinutes: 4,
     tags: ['동선', '체력', '일정 설계'],
     lead: '영화제 시간표를 짤 때 빈 시간이 보이면 한 편을 더 넣고 싶어집니다. 하지만 연속 관람이 길어질수록 작품을 받아들이는 집중력과 다음 상영에 대한 안정성이 함께 떨어질 수 있습니다.',
