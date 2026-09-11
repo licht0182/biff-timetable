@@ -18,7 +18,7 @@ function ArticleDetail({ article, onBack, onOpenFilms }: { article: CuratorArtic
             <p className="curator-deck">{article.deck}</p>
             <div className="curator-meta">
               <span>AI 큐레이터 편집부</span>
-              <span>약 {article.readingMinutes}분</span>
+              <span>예상 읽는 시간 : 약 {article.readingMinutes}분</span>
             </div>
             <div className="curator-tags">{article.tags.map((tag) => <span key={tag}>#{tag}</span>)}</div>
           </header>
@@ -82,7 +82,7 @@ export default function CuratorPage({ onOpenFilms }: Props) {
           <span className="curator-category">{featured.category}</span>
           <h3>{featured.title}</h3>
           <p>{featured.deck}</p>
-          <div className="curator-card-meta"><span>약 {featured.readingMinutes}분</span></div>
+          <div className="curator-card-meta"><span>예상 읽는 시간 : 약 {featured.readingMinutes}분</span></div>
           <strong>칼럼 읽기 →</strong>
         </button>
       </section>
@@ -98,7 +98,7 @@ export default function CuratorPage({ onOpenFilms }: Props) {
               <h3>{article.title}</h3>
               <p>{article.deck}</p>
               <div className="curator-card-tags">{article.tags.slice(0, 2).map((tag) => <span key={tag}>#{tag}</span>)}</div>
-              <div className="curator-card-meta"><span>약 {article.readingMinutes}분</span></div>
+              <div className="curator-card-meta"><span>예상 읽는 시간 : 약 {article.readingMinutes}분</span></div>
             </button>
           ))}
         </div>
