@@ -100,7 +100,7 @@ const CATEGORY_ORDER = [
 ]
 
 export default function CuratorPage({ onOpenFilms, onOpenFilm }: Props) {
-  const [activeCategory, setActiveCategory] = useState('전체')
+  const [activeCategory, setActiveCategory] = useState(CATEGORY_ORDER[0])
   const [activeSlug, setActiveSlug] = useState<string | null>(() => {
     const navigation = readNavigationState()
     return navigation.tab === 'curator' && !navigation.settingsOpen ? navigation.curatorSlug : null
@@ -121,9 +121,7 @@ export default function CuratorPage({ onOpenFilms, onOpenFilm }: Props) {
   }, [])
 
   const visibleArticles = useMemo(
-    () => activeCategory === '전체'
-      ? CURATOR_ARTICLES
-      : CURATOR_ARTICLES.filter((article) => article.category === activeCategory),
+    () => CURATOR_ARTICLES.filter((article) => article.category === activeCategory),
     [activeCategory],
   )
 
@@ -172,14 +170,6 @@ export default function CuratorPage({ onOpenFilms, onOpenFilm }: Props) {
         </div>
 
         <div className="curator-filter-chips" role="group" aria-label="AI 도슨트 칼럼 분류">
-          <button
-            type="button"
-            className={activeCategory === '전체' ? 'active' : ''}
-            aria-pressed={activeCategory === '전체'}
-            onClick={() => setActiveCategory('전체')}
-          >
-            전체 <span>{CURATOR_ARTICLES.length}</span>
-          </button>
           {categories.map((category) => (
             <button
               type="button"
@@ -195,7 +185,7 @@ export default function CuratorPage({ onOpenFilms, onOpenFilm }: Props) {
 
         <div className="curator-filter-result">
           <div className="curator-group-heading">
-            <h4>{activeCategory === '전체' ? '전체 칼럼' : activeCategory}</h4>
+            <h4>{activeCategory}</h4>
             <span>{visibleArticles.length}개</span>
           </div>
           <div className="curator-grid">
