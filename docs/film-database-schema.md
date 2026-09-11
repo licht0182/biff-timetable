@@ -65,3 +65,15 @@ npm run validate:films
 ```
 
 The dedicated GitHub Actions workflow refreshes the database on the data branch, and the normal CI workflow validates the generated snapshot on every pull request.
+
+
+## Current 2026 snapshot
+
+The committed snapshot uses schema version 5 and currently contains:
+
+- 246 unique official film records.
+- 254 official program-section memberships.
+- 8 films that belong to more than one official section.
+- Program Note, director data, and official image references for all 246 films.
+- Official `#작품검색` themes for 239 films; films whose official page exposes no theme keep an empty array.
+- Raw Screening-section storage so schedule information exposed on film pages can be preserved without mixing it into normalized timetable data.
