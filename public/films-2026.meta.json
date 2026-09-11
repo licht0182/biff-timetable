@@ -1,0 +1,17 @@
+{
+  "festivalYear": 2026,
+  "source": "https://www.biff.kr/kor/html/program/prog_all_list.asp?allYear=2026",
+  "expectedOfficialCount": 246,
+  "filmCount": 246,
+  "collectedAtUtc": "2026-09-11T05:24:45+00:00",
+  "sectionCounts": {
+    "(unclassified)": 246
+  },
+  "coverage": {
+    "withProgramNote": 246,
+    "withDirector": 246,
+    "withImages": 246
+  },
+  "databaseFile": "public/films-2026.json",
+  "schemaVersion": 1
+}
