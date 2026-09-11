@@ -11,24 +11,22 @@ with urlopen(req, timeout=30) as response:
     raw = response.read()
     html = raw.decode(response.headers.get_content_charset() or "utf-8", errors="replace")
 
-print(f"schedule probe bytes={len(raw)}")
 soup = BeautifulSoup(html, "html.parser")
-items = soup.select("div.sch_it")
-print(f"schedule items={len(items)}")
+print(f"schedule probe bytes={len(raw)}")
+print(f"schedule items={len(soup.select('div.sch_it'))}")
 
-for index, item in enumerate(items[:8]):
-    print(f"\n=== item {index} classes={item.get('class')} ===")
-    print(item.prettify()[:12000])
-    parent = item.find_parent("div", class_="sch_li")
-    if parent is not None:
-        print("--- sch_li text ---")
-        print(parent.get_text(" | ", strip=True)[:2500])
+first_li = soup.select_one("div.sch_li")
+print("\n=== first sch_li ===")
+print(first_li.prettify()[:16000] if first_li else "(none)")
 
-venues = []
-for li in soup.select("div.sch_li"):
-    text = li.get_text(" ", strip=True)
-    if text:
-        venues.append(text[:300])
-print(f"sch_li blocks={len(venues)}")
-for i, text in enumerate(venues[:12]):
-    print(f"SCHLI[{i}] {text}")
+packs = [item for item in soup.select("div.sch_it") if item.select_one(".pack")]
+print(f"\npack items={len(packs)}")
+for index, item in enumerate(packs[:5]):
+    print(f"\n=== pack {index} ===")
+    print(item.prettify()[:20000])
+
+print("\n=== structural summary ===")
+for i, li in enumerate(soup.select("div.sch_li")[:5]):
+    print("sch_li", i)
+    for child in li.find_all(recursive=False):
+        print(" child", child.name, child.get("class"), repr(child.get_text(" ", strip=True)[:250]))
