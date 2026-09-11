@@ -5,9 +5,7 @@ type VenueSite = {
   label: string
   shortLabel: string
   address: string
-  exitMinutes: number
-  entryMinutes: number
-  internalMinutes: number
+  internalWalkMinutes: number
 }
 
 export type PreciseVenueTransfer = {
@@ -19,12 +17,16 @@ export type PreciseVenueTransfer = {
   toSite: VenueSiteId
 }
 
+export const REST_BREAK_MINUTES = 5
+
 /*
- * BIFF 2025 센텀권 공식 상영관을 기준으로 한 보수적인 최소 이동 여유입니다.
- * 계산 원칙: 상영관 퇴장/건물 수직 이동 + 외부 도보 + 목적지 건물 진입/수직 이동.
- * 외부 도보는 공식 BIFF 행사장 지도와 각 시설의 공개 주소/좌표를 기준으로 산정했고,
- * 백화점 상층 영화관처럼 엘리베이터/에스컬레이터 이동이 필요한 곳은 별도 진입 시간을 더했습니다.
- * 실시간 보행 내비게이션 값이 아니라 영화제 시간표 연결을 위한 권장 최소 버퍼입니다.
+ * BIFF 2026 공식 센텀권 상영관을 기준으로 한 이동 여유입니다.
+ * 공식 상영관: 영화의전당, CGV센텀시티, 롯데시네마 센텀시티,
+ * 영화진흥위원회 표준시사실, 소향씨어터 우리은행홀, 부산시청자미디어센터 공개홀.
+ *
+ * 계산 원칙은 사용자가 실제로 걸어야 하는 시간 + 고정 휴게시간 5분입니다.
+ * 서로 다른 시설은 시설 출입구 사이 도보시간을, 같은 시설의 다른 관/층은 내부 도보시간을 사용합니다.
+ * 완전히 같은 상영관은 도보 0분 + 휴게 5분으로 transfer-buffer.ts에서 처리합니다.
  */
 export const VENUE_TRANSFER_SITES: readonly VenueSite[] = [
   {
@@ -32,60 +34,48 @@ export const VENUE_TRANSFER_SITES: readonly VenueSite[] = [
     label: '영화의전당',
     shortLabel: '영화의전당',
     address: '부산 해운대구 수영강변대로 120',
-    exitMinutes: 2,
-    entryMinutes: 3,
-    internalMinutes: 5,
+    internalWalkMinutes: 5,
   },
   {
     id: 'cgv',
     label: 'CGV센텀시티',
     shortLabel: 'CGV',
     address: '부산 해운대구 센텀남대로 35 신세계백화점 7층',
-    exitMinutes: 4,
-    entryMinutes: 6,
-    internalMinutes: 4,
+    internalWalkMinutes: 4,
   },
   {
     id: 'lotte',
     label: '롯데시네마 센텀시티',
     shortLabel: '롯데',
     address: '부산 해운대구 센텀남대로 59 롯데백화점 8·9층',
-    exitMinutes: 5,
-    entryMinutes: 7,
-    internalMinutes: 5,
+    internalWalkMinutes: 5,
   },
   {
     id: 'kofic',
     label: '영화진흥위원회 표준시사실',
     shortLabel: '영진위',
     address: '부산 해운대구 수영강변대로 130',
-    exitMinutes: 2,
-    entryMinutes: 3,
-    internalMinutes: 3,
+    internalWalkMinutes: 3,
   },
   {
     id: 'dsu',
-    label: '동서대 센텀캠퍼스',
-    shortLabel: '동서대',
+    label: '소향씨어터 우리은행홀',
+    shortLabel: '소향',
     address: '부산 해운대구 센텀중앙로 55',
-    exitMinutes: 3,
-    entryMinutes: 4,
-    internalMinutes: 5,
+    internalWalkMinutes: 5,
   },
   {
     id: 'media',
-    label: '시청자미디어센터',
+    label: '부산시청자미디어센터 공개홀',
     shortLabel: '미디어',
     address: '부산 해운대구 센텀중앙로 42',
-    exitMinutes: 2,
-    entryMinutes: 3,
-    internalMinutes: 3,
+    internalWalkMinutes: 3,
   },
 ] as const
 
 const SITE_BY_ID = Object.fromEntries(VENUE_TRANSFER_SITES.map((site) => [site.id, site])) as Record<VenueSiteId, VenueSite>
 
-/* 시설 출입구 사이의 보수적 도보 시간(분). 교차로 대기와 실제 보행 동선을 반영해 직선거리보다 여유 있게 잡았습니다. */
+/* 시설 출입구 사이의 도보 시간(분). 교차로 대기와 실제 보행 동선을 고려한 센텀권 이동 기준입니다. */
 const OUTDOOR_WALK_MINUTES: Record<VenueSiteId, Partial<Record<VenueSiteId, number>>> = {
   bcc: { cgv: 6, lotte: 8, kofic: 3, dsu: 4, media: 6 },
   cgv: { bcc: 6, lotte: 4, kofic: 9, dsu: 10, media: 8 },
@@ -107,11 +97,10 @@ export function resolveVenueSite(venue: string): VenueSite | null {
 
 export function getVenueSiteTransferMinutes(fromSite: VenueSiteId, toSite: VenueSiteId) {
   const from = SITE_BY_ID[fromSite]
-  const to = SITE_BY_ID[toSite]
-  if (fromSite === toSite) return from.internalMinutes
+  if (fromSite === toSite) return from.internalWalkMinutes + REST_BREAK_MINUTES
   const walk = OUTDOOR_WALK_MINUTES[fromSite][toSite]
   if (walk == null) return null
-  return from.exitMinutes + walk + to.entryMinutes
+  return walk + REST_BREAK_MINUTES
 }
 
 export function getPreciseVenueTransfer(fromVenue: string, toVenue: string): PreciseVenueTransfer | null {
@@ -122,10 +111,11 @@ export function getPreciseVenueTransfer(fromVenue: string, toVenue: string): Pre
   if (!from || !to) return null
 
   if (from.id === to.id) {
+    const minutes = from.internalWalkMinutes + REST_BREAK_MINUTES
     return {
-      minutes: from.internalMinutes,
+      minutes,
       routeLabel: `${from.shortLabel} 내부`,
-      detail: `${from.label} 내부 다른 상영관/층 이동 ${from.internalMinutes}분`,
+      detail: `${from.label} 내부 도보 ${from.internalWalkMinutes}분 + 휴게 ${REST_BREAK_MINUTES}분 = ${minutes}분`,
       precise: true,
       fromSite: from.id,
       toSite: to.id,
@@ -135,11 +125,11 @@ export function getPreciseVenueTransfer(fromVenue: string, toVenue: string): Pre
   const walkMinutes = OUTDOOR_WALK_MINUTES[from.id][to.id]
   if (walkMinutes == null) return null
 
-  const minutes = from.exitMinutes + walkMinutes + to.entryMinutes
+  const minutes = walkMinutes + REST_BREAK_MINUTES
   return {
     minutes,
     routeLabel: `${from.shortLabel} → ${to.shortLabel}`,
-    detail: `${from.label} 퇴장 ${from.exitMinutes}분 + 시설 간 도보 ${walkMinutes}분 + ${to.label} 입장 ${to.entryMinutes}분 = ${minutes}분`,
+    detail: `${from.label} → ${to.label} 도보 ${walkMinutes}분 + 휴게 ${REST_BREAK_MINUTES}분 = ${minutes}분`,
     precise: true,
     fromSite: from.id,
     toSite: to.id,
