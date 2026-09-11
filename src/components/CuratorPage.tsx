@@ -98,6 +98,7 @@ const CATEGORY_ORDER = [
 ]
 
 export default function CuratorPage({ onOpenFilms }: Props) {
+  const [activeCategory, setActiveCategory] = useState('전체')
   const [activeSlug, setActiveSlug] = useState<string | null>(() => {
     const navigation = readNavigationState()
     return navigation.tab === 'curator' && !navigation.settingsOpen ? navigation.curatorSlug : null
@@ -106,24 +107,31 @@ export default function CuratorPage({ onOpenFilms }: Props) {
     () => CURATOR_ARTICLES.find((article) => article.slug === activeSlug) ?? null,
     [activeSlug],
   )
-  const articleGroups = useMemo(() => {
-    const groups = new Map<string, CuratorArticle[]>()
-    for (const article of CURATOR_ARTICLES) {
-      const items = groups.get(article.category) ?? []
-      items.push(article)
-      groups.set(article.category, items)
-    }
-
-    return Array.from(groups.entries())
-      .map(([category, articles]) => ({ category, articles }))
-      .sort((a, b) => {
-        const aIndex = CATEGORY_ORDER.indexOf(a.category)
-        const bIndex = CATEGORY_ORDER.indexOf(b.category)
-        const aOrder = aIndex === -1 ? CATEGORY_ORDER.length : aIndex
-        const bOrder = bIndex === -1 ? CATEGORY_ORDER.length : bIndex
-        return aOrder - bOrder || a.category.localeCompare(b.category, 'ko')
-      })
+  const categories = useMemo(() => {
+    const available = Array.from(new Set(CURATOR_ARTICLES.map((article) => article.category)))
+    return available.sort((a, b) => {
+      const aIndex = CATEGORY_ORDER.indexOf(a)
+      const bIndex = CATEGORY_ORDER.indexOf(b)
+      const aOrder = aIndex === -1 ? CATEGORY_ORDER.length : aIndex
+      const bOrder = bIndex === -1 ? CATEGORY_ORDER.length : bIndex
+      return aOrder - bOrder || a.localeCompare(b, 'ko')
+    })
   }, [])
+
+  const visibleArticles = useMemo(
+    () => activeCategory === '전체'
+      ? CURATOR_ARTICLES
+      : CURATOR_ARTICLES.filter((article) => article.category === activeCategory),
+    [activeCategory],
+  )
+
+  const categoryCount = useMemo(
+    () => new Map(categories.map((category) => [
+      category,
+      CURATOR_ARTICLES.filter((article) => article.category === category).length,
+    ])),
+    [categories],
+  )
 
   useEffect(() => {
     if (activeSlug) scrollPageTop()
@@ -158,31 +166,47 @@ export default function CuratorPage({ onOpenFilms }: Props) {
       <section className="curator-latest" aria-labelledby="curator-latest-title">
         <div className="curator-section-heading">
           <div><p>DOCENT COLUMNS</p><h3 id="curator-latest-title">AI 도슨트 칼럼</h3></div>
-          <span>{CURATOR_ARTICLES.length}개의 칼럼 · {articleGroups.length}개 분류</span>
+          <span>{CURATOR_ARTICLES.length}개의 칼럼 · {categories.length}개 분류</span>
         </div>
 
-        <div className="curator-groups">
-          {articleGroups.map((group, index) => {
-            const groupTitleId = `curator-group-${index}`
-            return (
-              <section className="curator-group" key={group.category} aria-labelledby={groupTitleId}>
-                <div className="curator-group-heading">
-                  <h4 id={groupTitleId}>{group.category}</h4>
-                  <span>{group.articles.length}개</span>
-                </div>
-                <div className="curator-grid">
-                  {group.articles.map((article) => (
-                    <button type="button" className="curator-card" key={article.slug} onClick={() => openArticle(article.slug)}>
-                      <h3>{article.title}</h3>
-                      <p>{article.deck}</p>
-                      <div className="curator-card-tags">{article.tags.slice(0, 2).map((tag) => <span key={tag}>#{tag}</span>)}</div>
-                      <div className="curator-card-meta"><span>예상 읽는 시간 : 약 {article.readingMinutes}분</span></div>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            )
-          })}
+        <div className="curator-filter-chips" role="group" aria-label="AI 도슨트 칼럼 분류">
+          <button
+            type="button"
+            className={activeCategory === '전체' ? 'active' : ''}
+            aria-pressed={activeCategory === '전체'}
+            onClick={() => setActiveCategory('전체')}
+          >
+            전체 <span>{CURATOR_ARTICLES.length}</span>
+          </button>
+          {categories.map((category) => (
+            <button
+              type="button"
+              key={category}
+              className={activeCategory === category ? 'active' : ''}
+              aria-pressed={activeCategory === category}
+              onClick={() => setActiveCategory(category)}
+            >
+              {category} <span>{categoryCount.get(category) ?? 0}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="curator-filter-result">
+          <div className="curator-group-heading">
+            <h4>{activeCategory === '전체' ? '전체 칼럼' : activeCategory}</h4>
+            <span>{visibleArticles.length}개</span>
+          </div>
+          <div className="curator-grid">
+            {visibleArticles.map((article) => (
+              <button type="button" className="curator-card" key={article.slug} onClick={() => openArticle(article.slug)}>
+                <span className="curator-category">{article.category}</span>
+                <h3>{article.title}</h3>
+                <p>{article.deck}</p>
+                <div className="curator-card-tags">{article.tags.slice(0, 2).map((tag) => <span key={tag}>#{tag}</span>)}</div>
+                <div className="curator-card-meta"><span>예상 읽는 시간 : 약 {article.readingMinutes}분</span></div>
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
