@@ -159,3 +159,169 @@
 .png-export-footer span:last-child{text-align:right}
 
 .png-export-trigger:disabled{opacity:.62;cursor:wait}
+
+
+/* Mobile PNG share profile: fixed 3:4 base canvas, high-resolution rasterized at 3x.
+ * The board can grow vertically beyond 3:4 when the timetable extends past midnight. */
+.png-export-board.mobile{
+  padding:24px 24px 18px;
+}
+
+.png-export-board.mobile .png-export-head{
+  min-height:82px;
+  display:block;
+  padding-bottom:12px;
+}
+
+.png-export-board.mobile .png-export-brand{
+  gap:11px;
+}
+
+.png-export-board.mobile .png-export-mark{
+  width:46px;
+  height:46px;
+  border-radius:11px;
+  font-size:11px;
+}
+
+.png-export-board.mobile .png-export-eyebrow{
+  display:none;
+}
+
+.png-export-board.mobile .png-export-title-group{
+  gap:2px;
+}
+
+.png-export-board.mobile .png-export-title-group h1{
+  font-size:22px;
+  line-height:1.08;
+  letter-spacing:-.45px;
+}
+
+.png-export-board.mobile .png-export-period{
+  margin-top:2px;
+  font-size:10px;
+}
+
+.png-export-board.mobile .png-export-legend{
+  max-width:none;
+  justify-content:flex-start;
+  gap:4px;
+  padding-top:0;
+  margin-top:9px;
+}
+
+.png-export-board.mobile .png-export-legend span{
+  padding:4px 6px;
+  border-radius:6px;
+  font-size:8px;
+}
+
+.png-export-board.mobile .png-export-grid{
+  margin-top:14px;
+  border-radius:8px;
+}
+
+.png-export-board.mobile .png-export-date{
+  padding:0 2px;
+  font-size:10px;
+  line-height:1.08;
+}
+
+.png-export-board.mobile .png-export-axis>span{
+  right:5px;
+  font-size:8px;
+}
+
+.png-export-board.mobile .png-export-event{
+  padding:4px 5px 3px;
+  border-left-width:3px;
+  border-radius:5px;
+}
+
+.png-export-board.mobile .png-export-event-title{
+  font-size:9px;
+  line-height:1.1;
+}
+
+.png-export-board.mobile .png-export-event-time{
+  margin-top:2px;
+  font-size:7px;
+}
+
+.png-export-board.mobile .png-export-event-venue{
+  margin-top:1px;
+  font-size:6px;
+}
+
+.png-export-board.mobile .png-export-event.transfer-warning{
+  padding-right:21px;
+}
+
+.png-export-board.mobile .png-export-event.transfer-warning::after,
+.png-export-board.mobile .png-export-event.time-conflict::after{
+  right:3px;
+  top:3px;
+  width:13px;
+  height:13px;
+  font-size:8px;
+}
+
+.png-export-board.mobile .png-export-footer{
+  gap:8px;
+  margin-top:10px;
+  font-size:7px;
+  line-height:1.25;
+}
+
+.png-export-board.mobile.dense .png-export-event{
+  padding:3px 3px 2px;
+}
+
+.png-export-board.mobile.dense .png-export-event-title{
+  font-size:7.5px;
+}
+
+.png-export-board.mobile.dense .png-export-event-time{
+  font-size:6px;
+}
+
+.png-export-board.mobile.dense .png-export-event-venue{
+  display:none;
+}
+
+.png-export-board.mobile.dense .png-export-date{
+  font-size:8px;
+}
+
+.png-export-board.mobile.ultra-dense .png-export-event{
+  padding:2px;
+  border-left-width:2px;
+}
+
+.png-export-board.mobile.ultra-dense .png-export-event-title{
+  font-size:6.4px;
+  line-height:1.04;
+}
+
+.png-export-board.mobile.ultra-dense .png-export-event-time,
+.png-export-board.mobile.ultra-dense .png-export-event-venue{
+  display:none;
+}
+
+.png-export-board.mobile.ultra-dense .png-export-date{
+  padding:0 1px;
+  font-size:6.8px;
+}
+
+.png-export-board.mobile .png-export-day>.png-export-event[data-runtime-lane]{
+  --runtime-lane-gap:3px;
+}
+
+.png-export-board.mobile.dense .png-export-day>.png-export-event[data-runtime-lane]{
+  --runtime-lane-gap:2px;
+}
+
+.png-export-board.mobile.ultra-dense .png-export-day>.png-export-event[data-runtime-lane]{
+  --runtime-lane-gap:1px;
+}

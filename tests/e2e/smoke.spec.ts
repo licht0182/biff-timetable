@@ -81,6 +81,78 @@ async function seedSelected(page: Page, ids: string[]) {
   }, { selectedKey: SELECTED_KEY, statusKey: STATUS_KEY, ids })
 }
 
+async function emulateAppleSaveSheet(page: Page) {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'userAgent', {
+      configurable: true,
+      get: () => 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148',
+    })
+    Object.defineProperty(navigator, 'platform', {
+      configurable: true,
+      get: () => 'iPhone',
+    })
+  })
+}
+
+async function pngPreviewSize(page: Page) {
+  const preview = page.locator('.png-ios-preview')
+  await expect(preview).toBeVisible({ timeout: 20_000 })
+  return await preview.evaluate(async (image: HTMLImageElement) => {
+    if (!image.complete || image.naturalWidth === 0) {
+      await new Promise<void>((resolve, reject) => {
+        image.addEventListener('load', () => resolve(), { once: true })
+        image.addEventListener('error', () => reject(new Error('PNG preview failed to load')), { once: true })
+      })
+    }
+    return { width: image.naturalWidth, height: image.naturalHeight }
+  })
+}
+
+test('exports desktop and mobile timetable PNGs with separate high-resolution profiles', async ({ page, request }) => {
+  const data = await screeningData(request)
+  const item = flatten(data)[0]
+  test.skip(!item, 'PNG 출력 테스트에 사용할 회차가 없습니다.')
+
+  await emulateAppleSaveSheet(page)
+  await seedSelected(page, [item!.screening.id])
+
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('./')
+  await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: 'PNG 저장' }).click()
+
+  const desktop = await pngPreviewSize(page)
+  expect(desktop.width).toBe(2160)
+  expect(desktop.height).toBeGreaterThan(900)
+  await page.getByRole('button', { name: 'PNG 저장 창 닫기' }).click()
+
+  await page.setViewportSize({ width: 393, height: 852 })
+  await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(393)
+  await page.getByRole('button', { name: 'PNG 저장' }).click()
+
+  const mobile = await pngPreviewSize(page)
+  expect(mobile.width).toBe(1440)
+  expect(mobile.height).toBeGreaterThanOrEqual(1920)
+  expect(mobile.width / mobile.height).toBeLessThanOrEqual(0.75)
+})
+
+test('extends mobile PNG height when the last timetable hour runs past midnight', async ({ page, request }) => {
+  const data = await screeningData(request)
+  const lateItem = flatten(data).find((item) => timetableEnd(item) > 24 * 60)
+  test.skip(!lateItem, '자정 이후 종료되는 회차가 없어 세로 확장 PNG 테스트를 건너뜁니다.')
+
+  await emulateAppleSaveSheet(page)
+  await seedSelected(page, [lateItem!.screening.id])
+  await page.setViewportSize({ width: 393, height: 852 })
+  await page.goto('./')
+  await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: 'PNG 저장' }).click()
+
+  const mobile = await pngPreviewSize(page)
+  expect(mobile.width).toBe(1440)
+  expect(mobile.height).toBeGreaterThan(1920)
+})
+
 test('loads, opens a centered detail dialog, and closes it from the backdrop', async ({ page }) => {
   const errors: Error[] = []
   page.on('pageerror', (error) => errors.push(error))
