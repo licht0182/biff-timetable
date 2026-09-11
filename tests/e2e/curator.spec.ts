@@ -14,15 +14,15 @@ test('opens the AI docent, groups columns, and keeps article navigation anchored
   await expect(page.locator('.curator-featured-card')).toHaveCount(0)
   await expect(page.getByText('2026. 09. 11.')).toHaveCount(0)
 
-  const fourDayCard = page.getByRole('button', { name: /10월 9일부터 12일까지 BIFF에 간다면/ })
-  await fourDayCard.scrollIntoViewIfNeeded()
-  await fourDayCard.click()
+  const twoDayCard = page.getByRole('button', { name: /10월 10~11일만 BIFF에 있다면/ })
+  await twoDayCard.scrollIntoViewIfNeeded()
+  await twoDayCard.click()
 
-  await expect(page.getByRole('heading', { name: '10월 9일부터 12일까지 BIFF에 간다면: 4일을 가장 강하게 쓰는 법' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '10월 10~11일만 BIFF에 있다면: 가장 붐비는 이틀의 실전 선택법' })).toBeVisible()
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
   await expect(page.locator('.curator-meta')).toContainText('AI 도슨트 편집부')
-  await expect(page.locator('.curator-meta')).toContainText('예상 읽는 시간 : 약 7분')
-  await expect(page.locator('.curator-body')).toContainText('기간 내 회차 희소성')
+  await expect(page.locator('.curator-meta')).toContainText('예상 읽는 시간 : 약 9분')
+  await expect(page.locator('.curator-body')).toContainText('114편')
   await expect(page.getByRole('button', { name: '영화 찾기로 이동' })).toBeVisible()
 
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
@@ -33,7 +33,7 @@ test('opens the AI docent, groups columns, and keeps article navigation anchored
   await page.getByRole('button', { name: 'AI 도슨트' }).click()
   await expect(page.getByRole('heading', { name: 'AI 도슨트 칼럼' })).toBeVisible()
   await expect(page.locator('.curator-article-header h2')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: /10월 9일부터 12일까지 BIFF에 간다면/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /10월 10~11일만 BIFF에 있다면/ })).toBeVisible()
 })
 
 
@@ -55,11 +55,14 @@ test('filters AI docent columns by category without showing unrelated cards', as
   const sectionGuideCards = page.locator('.curator-card')
   await expect(sectionGuideCards.first()).toBeVisible()
   expect(await sectionGuideCards.count()).toBeGreaterThan(5)
-  await expect(page.getByRole('button', { name: /10월 9일부터 12일까지 BIFF에 간다면/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /10월 10~11일만 BIFF에 있다면/ })).toHaveCount(0)
 
-  await categoryFilters.filter({ hasText: '10/9–12 특별 분석' }).first().click()
-  await expect(page.locator('.curator-card')).toHaveCount(1)
-  await expect(page.locator('.curator-card')).toContainText('10월 9일부터 12일까지 BIFF에 간다면')
+  await categoryFilters.filter({ hasText: '체류 일정별 추천' }).first().click()
+  await expect(page.locator('.curator-card')).toHaveCount(4)
+  await expect(page.locator('.curator-card')).toContainText('10월 10~11일만 BIFF에 있다면')
+  await expect(page.locator('.curator-card')).toContainText('10월 10~12일에 있다면')
+  await expect(page.locator('.curator-card')).toContainText('10월 9~11일에 있다면')
+  await expect(page.locator('.curator-card')).toContainText('10월 9~12일 4일 체류 실전판')
 })
 
 
