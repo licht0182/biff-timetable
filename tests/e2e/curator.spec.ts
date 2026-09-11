@@ -75,3 +75,25 @@ test('shows complete film-analysis guides for the next four sections', async ({ 
     await page.getByRole('button', { name: '← 목록으로' }).click()
   }
 })
+
+
+test('shows complete World, Flash Forward and Korean Cinema Today guides', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 큐레이터' }).click()
+
+  const guides = [
+    { card: /월드 시네마 29편 전작 분석/, count: 29, first: '15/18', last: '프레셔' },
+    { card: /플래시 포워드 12편 전작 분석/, count: 12, first: '노트르 살뤼', last: '타인에게 속한 것들' },
+    { card: /한국영화의 오늘 - 파노라마 6편 분석/, count: 6, first: '수능, 출제의 비밀', last: '호프' },
+    { card: /한국영화의 오늘 - 스페셜 프리미어 3편 분석/, count: 3, first: '사피엔스', last: '정가네' },
+  ]
+
+  for (const guide of guides) {
+    await page.getByRole('button', { name: guide.card }).click()
+    await expect(page.locator('.curator-film-guide')).toHaveCount(guide.count)
+    await expect(page.locator('.curator-film-guide').first()).toContainText(guide.first)
+    await expect(page.locator('.curator-film-guide').last()).toContainText(guide.last)
+    await expect(page.locator('.curator-article-footer')).toHaveCount(0)
+    await page.getByRole('button', { name: '← 목록으로' }).click()
+  }
+})
