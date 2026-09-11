@@ -119,3 +119,30 @@ test('shows complete Wide Angle, Gala, Open Cinema and Midnight Passion guides',
     await page.getByRole('button', { name: '← 목록으로' }).click()
   }
 })
+
+
+test('shows complete On Screen, special program, special screening and opening-film analyses', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 큐레이터' }).click()
+
+  const guides = [
+    { card: /온 스크린 3편 분석/, count: 3, first: '꿀알바', last: '푸른길' },
+    { card: /특별기획 프로그램 23편 분석/, count: 23, first: '우리 할머니는 큐브왕', last: '하얀전쟁' },
+    { card: /특별상영 8편 분석/, count: 8, first: 'M \(4K 리마스터링\)', last: '플레시 임팩트' },
+  ]
+
+  for (const guide of guides) {
+    await page.getByRole('button', { name: guide.card }).click()
+    await expect(page.locator('.curator-film-guide')).toHaveCount(guide.count)
+    await expect(page.locator('.curator-film-guide').first()).toContainText(guide.first)
+    await expect(page.locator('.curator-film-guide').last()).toContainText(guide.last)
+    await expect(page.locator('.curator-article-footer')).toHaveCount(0)
+    await page.getByRole('button', { name: '← 목록으로' }).click()
+  }
+
+  await page.getByRole('button', { name: /개막작 분석/ }).click()
+  await expect(page.getByRole('heading', { name: /개막작 분석: <낮과 밤은 서로에게>/ })).toBeVisible()
+  await expect(page.locator('.curator-body')).toContainText('하나의 장소, 서로 다른 시간')
+  await expect(page.locator('.curator-body')).toContainText('대화가 사건이 되는 영화')
+  await expect(page.locator('.curator-article-footer')).toHaveCount(0)
+})
