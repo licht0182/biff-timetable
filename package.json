@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "validate:data": "python -m pip install -r scripts/requirements-biff-scrape.txt && python scripts/probe-biff-schedule.py && node scripts/validate-screenings.mjs",
+    "validate:data": "python -m pip install -r scripts/requirements-biff-scrape.txt && python scripts/scrape-biff-screenings.py && node scripts/validate-screenings.mjs",
     "validate:films": "node scripts/validate-films.mjs",
     "analyze:sections": "node scripts/analyze-curator-sections.mjs",
     "validate:curator": "node scripts/validate-curator-analysis.mjs",
