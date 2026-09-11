@@ -1,8 +1,12 @@
 select{font:inherit}
 .enhanced-controls{display:grid;gap:10px}
-.filter-row{display:grid;grid-template-columns:minmax(145px,.8fr) minmax(220px,1.3fr) minmax(200px,1fr) auto auto auto;gap:7px;align-items:end}
+.filter-row{display:grid;grid-template-columns:minmax(145px,.8fr) minmax(220px,1.2fr) minmax(280px,1.5fr) auto auto auto;gap:7px;align-items:end}
 .filter-row label,.time-range-filter{display:grid;gap:4px;min-width:0}
-.filter-row label>span,.time-range-filter>span{font-size:10px;font-weight:700;color:#888}
+.filter-row label>span,.time-range-filter-head>span{font-size:10px;font-weight:700;color:#888}
+.time-range-filter-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.time-range-filter-head small{min-width:0;color:#999;font-size:9px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.time-range-filter-head small.active{color:var(--accent)}
+.time-range-control-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:5px;min-width:0}
 .filter-row select,.time-range-inputs input,.ticket-select{width:100%;min-width:0;border:1px solid #d7d7d7;border-radius:5px;background:#fafafa;color:#444;outline:none}
 .filter-row select{height:34px;padding:0 28px 0 9px;font-size:11px}
 .time-range-inputs{display:grid;grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr);align-items:center;gap:4px;min-width:0}
@@ -11,6 +15,10 @@ select{font:inherit}
 .time-range-inputs input:last-child{justify-self:end}
 .time-range-separator{color:#999;font-size:11px;text-align:center;line-height:1}
 .filter-row select:focus,.time-range-inputs input:focus,.ticket-select:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 2px rgba(198,41,23,.07)}
+.time-range-action{height:34px;border:1px solid #dedede;border-radius:5px;background:#fff;color:#666;font-size:10px;font-weight:800;padding:0 8px;cursor:pointer;white-space:nowrap}
+.time-range-action.apply:not(:disabled){border-color:#efc0ba;background:var(--accent-soft);color:var(--accent)}
+.time-range-action.clear:not(:disabled){color:#777}
+.time-range-action:disabled{opacity:.42;cursor:default;background:#f8f8f8;color:#999}
 .filter-toggle,.filter-reset{height:34px;border:1px solid #dedede;border-radius:5px;background:#fff;color:#666;font-size:11px;font-weight:700;padding:0 10px;cursor:pointer;white-space:nowrap}
 .filter-toggle:hover,.filter-reset:hover{background:#fafafa;border-color:#c9c9c9}
 .filter-toggle.active{color:var(--accent);border-color:#efc0ba;background:var(--accent-soft)}
@@ -74,9 +82,12 @@ select{font:inherit}
   .filter-row{grid-template-columns:1fr 1fr;gap:6px}
   .filter-row label:nth-child(2){grid-column:span 1}
   .time-range-filter{grid-column:1 / -1}
-  .time-range-inputs{grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr);gap:3px}
+  .time-range-filter-head small{font-size:8px}
+  .time-range-control-row{grid-template-columns:1fr 1fr;gap:6px}
+  .time-range-inputs{grid-column:1 / -1;grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr);gap:3px}
   .time-range-inputs input{inline-size:calc(100% - 8px);width:calc(100% - 8px);max-inline-size:calc(100% - 8px);max-width:calc(100% - 8px);height:31px;padding:0 3px;font-size:10px}
   .time-range-separator{display:block;font-size:10px}
+  .time-range-action{width:100%;height:31px;font-size:10px;padding:0 8px}
   .filter-toggle,.filter-reset{height:31px;font-size:10px;padding:0 8px}
   .filter-row select{height:31px;font-size:10px}
   .film-actions{min-width:0;justify-content:flex-start;margin-top:8px}

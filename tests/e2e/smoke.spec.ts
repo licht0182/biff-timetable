@@ -131,26 +131,110 @@ test('sorts movie finder films by their earliest screening on the selected date'
   await expect(page.locator('.film-card h2').first()).toHaveText(expected!.film.title)
 })
 
-test('filters movie finder screenings by start-time range and resets it', async ({ page, request }) => {
+test('drafts, applies, clears, and fully resets the movie time-range filter', async ({ page, request }) => {
   const data = await screeningData(request)
-  const item = flatten(data).find(({ screening }) => /^\d{2}:\d{2}$/.test(screening.start))
-  test.skip(!item, '시간대 필터 회귀 테스트에 사용할 회차가 없습니다.')
+  const timeCounts = new Map<string, number>()
+  for (const { screening } of flatten(data)) timeCounts.set(screening.start, (timeCounts.get(screening.start) ?? 0) + 1)
+  const targetTime = [...timeCounts.entries()].sort((a, b) => a[1] - b[1] || b[0].localeCompare(a[0]))[0]?.[0]
+  test.skip(!targetTime, '시간대 필터 회귀 테스트에 사용할 회차가 없습니다.')
 
   await page.goto('./')
   const fromInput = page.getByLabel('회차 시작 시간부터')
   const toInput = page.getByLabel('회차 시작 시간까지')
-  await fromInput.fill(item!.screening.start)
-  await toInput.fill(item!.screening.start)
+  const applyButton = page.getByRole('button', { name: '시간대 적용' })
+  const clearButton = page.getByRole('button', { name: '시간대 해제' })
+  const status = page.locator('.time-range-filter-head small')
+  const firstTitleBefore = await page.locator('.film-card h2').first().textContent()
+  const firstRowBefore = await page.locator('.screening-row strong').first().textContent()
 
-  const rows = page.locator('.screening-row')
-  await expect(rows.first()).toBeVisible()
-  const rowTexts = await rows.locator('strong').allTextContents()
-  expect(rowTexts.length).toBeGreaterThan(0)
-  expect(rowTexts.every((text) => text.includes(item!.screening.start))).toBeTruthy()
+  await expect(status).toHaveText('시간대 제한 없음')
+  await expect(applyButton).toBeDisabled()
+  await expect(clearButton).toBeDisabled()
 
+  await fromInput.fill(targetTime!)
+  await toInput.fill(targetTime!)
+
+  // Editing the native time inputs only changes the draft; results stay untouched until Apply.
+  await expect(page.locator('.film-card h2').first()).toHaveText(firstTitleBefore ?? '')
+  await expect(page.locator('.screening-row strong').first()).toHaveText(firstRowBefore ?? '')
+  await expect(status).toHaveText('시간대 제한 없음')
+  await expect(applyButton).toBeEnabled()
+  await expect(clearButton).toBeEnabled()
+
+  await applyButton.click()
+  await expect(status).toContainText(`${targetTime} ~ ${targetTime}`)
+  await expect(applyButton).toBeDisabled()
+  const filteredRowTexts = await page.locator('.screening-row strong').allTextContents()
+  expect(filteredRowTexts.length).toBeGreaterThan(0)
+  expect(filteredRowTexts.every((text) => text.includes(targetTime!))).toBeTruthy()
+
+  await clearButton.click()
+  await expect(fromInput).toHaveValue('')
+  await expect(toInput).toHaveValue('')
+  await expect(status).toHaveText('시간대 제한 없음')
+  await expect(page.locator('.film-card h2').first()).toHaveText(firstTitleBefore ?? '')
+  await expect(clearButton).toBeDisabled()
+
+  // Overall reset also discards an unapplied draft.
+  await fromInput.fill(targetTime!)
+  await expect(applyButton).toBeEnabled()
   await page.getByRole('button', { name: '초기화' }).click()
   await expect(fromInput).toHaveValue('')
   await expect(toInput).toHaveValue('')
+  await expect(status).toHaveText('시간대 제한 없음')
+  await expect(applyButton).toBeDisabled()
+})
+
+test('supports open-ended and overnight time ranges after explicit apply', async ({ page, request }) => {
+  const data = await screeningData(request)
+  const times = Array.from(new Set(flatten(data).map(({ screening }) => screening.start))).sort((a, b) => clockMinutes(a) - clockMinutes(b))
+  test.skip(times.length < 3, '단방향 시간대 테스트에 필요한 회차가 부족합니다.')
+  const pivot = times[Math.floor(times.length / 2)]
+
+  await page.goto('./')
+  const fromInput = page.getByLabel('회차 시작 시간부터')
+  const toInput = page.getByLabel('회차 시작 시간까지')
+  const applyButton = page.getByRole('button', { name: '시간대 적용' })
+  const clearButton = page.getByRole('button', { name: '시간대 해제' })
+
+  await fromInput.fill(pivot)
+  await applyButton.click()
+  let rowTexts = await page.locator('.screening-row strong').allTextContents()
+  expect(rowTexts.length).toBeGreaterThan(0)
+  expect(rowTexts.every((text) => {
+    const match = text.match(/\d{2}:\d{2}/g)
+    const start = match?.at(-1)
+    return Boolean(start) && clockMinutes(start!) >= clockMinutes(pivot)
+  })).toBeTruthy()
+
+  await clearButton.click()
+  await toInput.fill(pivot)
+  await applyButton.click()
+  rowTexts = await page.locator('.screening-row strong').allTextContents()
+  expect(rowTexts.length).toBeGreaterThan(0)
+  expect(rowTexts.every((text) => {
+    const match = text.match(/\d{2}:\d{2}/g)
+    const start = match?.at(-1)
+    return Boolean(start) && clockMinutes(start!) <= clockMinutes(pivot)
+  })).toBeTruthy()
+
+  const late = times.find((time) => clockMinutes(time) >= 22 * 60)
+  const early = times.find((time) => clockMinutes(time) <= 2 * 60)
+  if (!late || !early) return
+
+  await clearButton.click()
+  await fromInput.fill(late)
+  await toInput.fill(early)
+  await applyButton.click()
+  rowTexts = await page.locator('.screening-row strong').allTextContents()
+  expect(rowTexts.length).toBeGreaterThan(0)
+  expect(rowTexts.every((text) => {
+    const match = text.match(/\d{2}:\d{2}/g)
+    const start = match?.at(-1)
+    if (!start) return false
+    const minutes = clockMinutes(start)
+    return minutes >= clockMinutes(late) || minutes <= clockMinutes(early)
+  })).toBeTruthy()
 })
 
 test('keeps native time inputs compact and separated on iPhone-width WebKit layouts', async ({ page }) => {
