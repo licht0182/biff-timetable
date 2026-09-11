@@ -20,9 +20,9 @@ export type PreciseVenueTransfer = {
 export const REST_BREAK_MINUTES = 5
 
 /*
- * BIFF 2026 공식 센텀권 상영관을 기준으로 한 이동 여유입니다.
- * 공식 상영관: 영화의전당, CGV센텀시티, 롯데시네마 센텀시티,
- * 영화진흥위원회 표준시사실, 소향씨어터 우리은행홀, 부산시청자미디어센터 공개홀.
+ * BIFF 2026 공식 상영시간표의 26개 상영관명을 실제 이동 기준 6개 시설군으로 정규화한 이동 여유입니다.
+ * 시설군: 영화의전당, 신세계 센텀시티(CGV센텀시티·9층 문화홀), 롯데시네마 센텀시티,
+ * 영화진흥위원회, 동서대-KIT 센텀캠퍼스(소향씨어터·북카페/민석소극장), 부산시청자미디어센터.
  *
  * 계산 원칙은 사용자가 실제로 걸어야 하는 시간 + 고정 휴게시간 5분입니다.
  * 서로 다른 시설은 시설 출입구 사이 도보시간을, 같은 시설의 다른 관/층은 내부 도보시간을 사용합니다.
@@ -38,9 +38,9 @@ export const VENUE_TRANSFER_SITES: readonly VenueSite[] = [
   },
   {
     id: 'cgv',
-    label: 'CGV센텀시티',
-    shortLabel: 'CGV',
-    address: '부산 해운대구 센텀남대로 35 신세계백화점 7층',
+    label: '신세계 센텀시티 (CGV센텀시티·9층 문화홀)',
+    shortLabel: '신세계·CGV',
+    address: '부산 해운대구 센텀남대로 35',
     internalWalkMinutes: 4,
   },
   {
@@ -59,8 +59,8 @@ export const VENUE_TRANSFER_SITES: readonly VenueSite[] = [
   },
   {
     id: 'dsu',
-    label: '소향씨어터 우리은행홀',
-    shortLabel: '소향',
+    label: '동서대-KIT 센텀캠퍼스',
+    shortLabel: '동서대',
     address: '부산 해운대구 센텀중앙로 55',
     internalWalkMinutes: 5,
   },
@@ -87,7 +87,7 @@ const OUTDOOR_WALK_MINUTES: Record<VenueSiteId, Partial<Record<VenueSiteId, numb
 
 export function resolveVenueSite(venue: string): VenueSite | null {
   if (venue.startsWith('영화의전당')) return SITE_BY_ID.bcc
-  if (venue.startsWith('CGV센텀시티') || venue.startsWith('CGV 센텀시티')) return SITE_BY_ID.cgv
+  if (venue.startsWith('CGV센텀시티') || venue.startsWith('CGV 센텀시티') || venue.startsWith('신세계백화점 센텀시티점')) return SITE_BY_ID.cgv
   if (venue.startsWith('롯데시네마 센텀시티') || venue.startsWith('롯데시네마 센텀')) return SITE_BY_ID.lotte
   if (venue.includes('영화진흥위원회')) return SITE_BY_ID.kofic
   if (venue.includes('소향씨어터') || venue.startsWith('동서대학교-경남정보대학교')) return SITE_BY_ID.dsu

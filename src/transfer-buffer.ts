@@ -14,9 +14,9 @@ export type TransferBufferResult = {
 
 function venueCluster(venue: string) {
   if (venue.startsWith('영화의전당')) return '영화의전당'
-  if (venue.startsWith('CGV센텀시티') || venue.startsWith('CGV 센텀시티')) return 'CGV센텀시티'
+  if (venue.startsWith('CGV센텀시티') || venue.startsWith('CGV 센텀시티') || venue.startsWith('신세계백화점 센텀시티점')) return '신세계 센텀시티'
   if (venue.startsWith('롯데시네마 센텀')) return '롯데시네마 센텀시티'
-  if (venue.includes('소향씨어터') || venue.startsWith('동서대학교-경남정보대학교')) return '소향씨어터 우리은행홀'
+  if (venue.includes('소향씨어터') || venue.startsWith('동서대학교-경남정보대학교')) return '동서대-KIT 센텀캠퍼스'
   if (venue.includes('영화진흥위원회')) return '영화진흥위원회'
   if (venue.includes('시청자미디어센터')) return '부산시청자미디어센터'
   return venue
