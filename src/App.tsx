@@ -857,9 +857,9 @@ export default function App() {
             <div className="time-range-filter">
               <span>회차 시간대</span>
               <div className="time-range-inputs">
-                <input type="time" step="900" value={startTimeFilter} onChange={(event) => setStartTimeFilter(event.target.value)} aria-label="회차 시작 시간부터" />
+                <input type="time" step="300" value={startTimeFilter} onChange={(event) => setStartTimeFilter(event.target.value)} aria-label="회차 시작 시간부터" />
                 <em>~</em>
-                <input type="time" step="900" value={endTimeFilter} onChange={(event) => setEndTimeFilter(event.target.value)} aria-label="회차 시작 시간까지" />
+                <input type="time" step="300" value={endTimeFilter} onChange={(event) => setEndTimeFilter(event.target.value)} aria-label="회차 시작 시간까지" />
               </div>
             </div>
             <button className={`filter-toggle ${gvOnly ? 'active' : ''}`} onClick={() => setGvOnly((value) => !value)} aria-pressed={gvOnly}>GV만</button>
