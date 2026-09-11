@@ -92,6 +92,49 @@ const guides = [
     ],
   },
   {
+    section: '와이드 앵글',
+    file: '../src/curator-section-guide-wide-angle.ts',
+    expectedCount: 47,
+    stats: ({ films: xs, themeCount, premiereCount }) => [
+      `{ value: '${xs.length}편', label: '전체 작품' }`,
+      `{ value: '${premiereCount('World Premiere')}편', label: 'World Premiere' }`,
+      `{ value: '${themeCount('실화바탕')}편', label: '실화바탕' }`,
+      `{ value: '${themeCount('가족/아동')}편', label: '가족/아동 주제' }`,
+    ],
+  },
+  {
+    section: '갈라 프레젠테이션',
+    file: '../src/curator-section-guides-gala-open-midnight.ts',
+    expectedCount: 6,
+    stats: ({ films: xs, themeCount }) => [
+      `{ value: '${xs.length}편', label: '전체 작품' }`,
+      `{ value: '${themeCount('성장영화/청춘')}편', label: '성장영화/청춘' }`,
+      `{ value: '${themeCount('여성')}편', label: '여성 주제' }`,
+    ],
+  },
+  {
+    section: '오픈 시네마',
+    file: '../src/curator-section-guides-gala-open-midnight.ts',
+    expectedCount: 8,
+    stats: ({ films: xs, averageRuntime, themeCount }) => [
+      `{ value: '${xs.length}편', label: '전체 작품' }`,
+      `{ value: '약 ${averageRuntime}분', label: '평균 러닝타임' }`,
+      `{ value: '${themeCount('성장영화/청춘')}편', label: '성장영화/청춘' }`,
+      `{ value: '${themeCount('예술/예술가')}편', label: '예술/예술가' }`,
+    ],
+  },
+  {
+    section: '미드나잇 패션',
+    file: '../src/curator-section-guides-gala-open-midnight.ts',
+    expectedCount: 9,
+    stats: ({ films: xs, averageRuntime, themeCount }) => [
+      `{ value: '${xs.length}편', label: '전체 작품' }`,
+      `{ value: '약 ${averageRuntime}분', label: '평균 러닝타임' }`,
+      `{ value: '${themeCount('심리/미스터리/서스펜스/스릴러')}편', label: '심리·미스터리·스릴러' }`,
+      `{ value: '${themeCount('SF/판타지')}편', label: 'SF/판타지' }`,
+    ],
+  },
+  {
     section: '아시아영화의 창',
     file: '../src/curator-section-guide-asian-window.ts',
     expectedCount: 27,

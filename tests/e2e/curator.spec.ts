@@ -97,3 +97,25 @@ test('shows complete World, Flash Forward and Korean Cinema Today guides', async
     await page.getByRole('button', { name: '← 목록으로' }).click()
   }
 })
+
+
+test('shows complete Wide Angle, Gala, Open Cinema and Midnight Passion guides', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 큐레이터' }).click()
+
+  const guides = [
+    { card: /와이드 앵글 47편 전작 분석/, count: 47, first: '58번째', last: '흐르는 세월' },
+    { card: /갈라 프레젠테이션 6편 분석/, count: 6, first: '그 소녀의 기억', last: '우리 할머니는 큐브왕' },
+    { card: /오픈 시네마 8편 분석/, count: 8, first: '내일은 이름이 있다', last: '세대유감' },
+    { card: /미드나잇 패션 9편 분석/, count: 9, first: '불청객', last: '사피엔스' },
+  ]
+
+  for (const guide of guides) {
+    await page.getByRole('button', { name: guide.card }).click()
+    await expect(page.locator('.curator-film-guide')).toHaveCount(guide.count)
+    await expect(page.locator('.curator-film-guide').first()).toContainText(guide.first)
+    await expect(page.locator('.curator-film-guide').last()).toContainText(guide.last)
+    await expect(page.locator('.curator-article-footer')).toHaveCount(0)
+    await page.getByRole('button', { name: '← 목록으로' }).click()
+  }
+})
