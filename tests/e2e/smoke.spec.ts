@@ -112,8 +112,8 @@ test('filters movie finder screenings by start-time range and resets it', async 
   await page.goto('./')
   const fromInput = page.getByLabel('회차 시작 시간부터')
   const toInput = page.getByLabel('회차 시작 시간까지')
-  await fromInput.fill(item!.screening.start)
-  await toInput.fill(item!.screening.start)
+  await fromInput.selectOption(item!.screening.start)
+  await toInput.selectOption(item!.screening.start)
 
   const rows = page.locator('.screening-row')
   await expect(rows.first()).toBeVisible()
@@ -124,6 +124,32 @@ test('filters movie finder screenings by start-time range and resets it', async 
   await page.getByRole('button', { name: '초기화' }).click()
   await expect(fromInput).toHaveValue('')
   await expect(toInput).toHaveValue('')
+})
+
+test('keeps the movie time-range controls aligned on iPhone-width WebKit layouts', async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 })
+  await page.goto('./')
+
+  const range = page.locator('.time-range-inputs')
+  const selects = range.locator('select')
+  await expect(selects).toHaveCount(2)
+  await expect(page.locator('.time-range-separator')).toBeHidden()
+
+  const containerBox = await range.boundingBox()
+  const firstBox = await selects.nth(0).boundingBox()
+  const secondBox = await selects.nth(1).boundingBox()
+  expect(containerBox).not.toBeNull()
+  expect(firstBox).not.toBeNull()
+  expect(secondBox).not.toBeNull()
+
+  if (containerBox && firstBox && secondBox) {
+    expect(firstBox.x).toBeGreaterThanOrEqual(containerBox.x - 1)
+    expect(firstBox.x + firstBox.width).toBeLessThanOrEqual(secondBox.x - 4)
+    expect(secondBox.x + secondBox.width).toBeLessThanOrEqual(containerBox.x + containerBox.width + 1)
+  }
+
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+  expect(overflow).toBeLessThanOrEqual(1)
 })
 
 test('repairs malformed persisted state instead of crashing', async ({ page }) => {
