@@ -21,8 +21,9 @@ Each film record is divided into these groups:
 - `editorial`: the official BIFF Program Note and its author when the byline is detectable.
 - `director`: normalized Korean/English director names plus the complete text exposed in the Director area. This intentionally keeps adjacent official photo-credit text when present.
 - `credits`: text and label/value pairs found in the Credit area. The current static 2026 pages expose the Credit heading but may expose no credit body, in which case the empty source state is preserved rather than invented.
-- `media`: official image/CDN URLs, image metadata, page copyright notices, Photo-area text, and raw trailer/video/media-related page references. Image binaries are not copied into the repository.
-- `rawSections`: source-order strings from Film Info, Program Note, Director, Credit, and Photo areas. These are retained so information is not lost when it cannot yet be normalized safely.
+- `media`: official image/CDN URLs classified as film photos, director photos, related-film thumbnails or other media; image metadata; page/photo copyright notices; Photo-area text; and raw trailer/video/media-related page references. Image binaries are not copied into the repository.
+- `related`: the related-film block shown on the official film page, including its section label and bilingual related titles.
+- `rawSections`: source-order strings from Film Info, Program Note, Director, Credit, Photo, and Screening areas. These are retained so information is not lost when it cannot yet be normalized safely.
 - `source`: canonical official film URL, all-films list URL, catalogue entries, selected HTML metadata/attributes, and a SHA-256 fingerprint of the source text.
 
 The companion `public/films-2026.meta.json` stores:
@@ -41,8 +42,9 @@ The companion `public/films-2026.meta.json` stores:
 2. A title can have more than one official section, so `biff.sections[]` is authoritative. `biff.section` is only the first catalogue membership for convenience.
 3. Film Info strings before `국가` are normalized as Korean title, English/international title, then zero or more official `#작품검색` themes after removing trailer controls and premiere labels.
 4. Slash characters inside a theme are preserved. For example, `역사/전쟁` remains one official topic label.
-5. Empty official fields remain empty. The collector does not infer or fabricate missing credits, themes, or other source data.
-6. Official image files stay on BIFF/CDN infrastructure; only references and associated metadata are stored.
+5. Invisible source markers such as U+FEFF/BOM are removed from normalized fields so titles remain searchable and comparable.
+6. Empty official fields remain empty. The collector does not infer or fabricate missing credits, themes, screening data, or other source data.
+7. Official image files stay on BIFF/CDN infrastructure; only references and associated metadata are stored.
 
 ## Collection and validation
 
