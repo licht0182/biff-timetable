@@ -1,4 +1,7 @@
 import { COMPETITION_2026_ARTICLE } from './curator-section-content'
+import { ICONS_2026_ARTICLE } from './curator-section-guide-icons'
+import { VISION_KOREA_2026_ARTICLE, VISION_ASIA_2026_ARTICLE } from './curator-section-guides-vision'
+import { ASIAN_WINDOW_2026_ARTICLE } from './curator-section-guide-asian-window'
 
 export type CuratorStat = {
   value: string
@@ -115,6 +118,10 @@ export const CURATOR_ARTICLES: CuratorArticle[] = [
     ],
   },
   COMPETITION_2026_ARTICLE,
+  ICONS_2026_ARTICLE,
+  VISION_KOREA_2026_ARTICLE,
+  VISION_ASIA_2026_ARTICLE,
+  ASIAN_WINDOW_2026_ARTICLE,
   {
     slug: 'before-you-pick-three-rules',
     category: '선택 전략',
