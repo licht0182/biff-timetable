@@ -4,13 +4,14 @@ import { pushNavigationState, readNavigationState } from '../navigation-history'
 
 type Props = {
   onOpenFilms: () => void
+  onOpenFilm: (title: string) => void
 }
 
 function scrollPageTop(behavior: ScrollBehavior = 'auto') {
   window.scrollTo({ top: 0, left: 0, behavior })
 }
 
-function ArticleDetail({ article, onBack, onOpenFilms }: { article: CuratorArticle; onBack: () => void; onOpenFilms: () => void }) {
+function ArticleDetail({ article, onBack, onOpenFilms, onOpenFilm }: { article: CuratorArticle; onBack: () => void; onOpenFilms: () => void; onOpenFilm: (title: string) => void }) {
   return (
     <main className="curator-page curator-detail-page">
       <div className="curator-reading-shell">
@@ -62,6 +63,7 @@ function ArticleDetail({ article, onBack, onOpenFilms }: { article: CuratorArtic
                             {film.tags.map((tag) => <span key={tag}>#{tag}</span>)}
                           </div>
                         )}
+                        <button type="button" className="curator-film-search-button" onClick={() => onOpenFilm(film.title)}>영화 찾기에서 보기</button>
                       </article>
                     ))}
                   </div>
@@ -91,13 +93,13 @@ function ArticleDetail({ article, onBack, onOpenFilms }: { article: CuratorArtic
 
 const CATEGORY_ORDER = [
   '2026 섹션 가이드',
-  '10/9–12 특별 분석',
+  '체류 일정별 추천',
   '선택 전략',
   '관람 경험',
   '시간표 설계',
 ]
 
-export default function CuratorPage({ onOpenFilms }: Props) {
+export default function CuratorPage({ onOpenFilms, onOpenFilm }: Props) {
   const [activeCategory, setActiveCategory] = useState('전체')
   const [activeSlug, setActiveSlug] = useState<string | null>(() => {
     const navigation = readNavigationState()
@@ -149,7 +151,7 @@ export default function CuratorPage({ onOpenFilms }: Props) {
   }
 
   if (activeArticle) {
-    return <ArticleDetail article={activeArticle} onBack={openArticleList} onOpenFilms={onOpenFilms} />
+    return <ArticleDetail article={activeArticle} onBack={openArticleList} onOpenFilms={onOpenFilms} onOpenFilm={onOpenFilm} />
   }
 
   return (
@@ -158,7 +160,7 @@ export default function CuratorPage({ onOpenFilms }: Props) {
         <div>
           <p className="curator-kicker">AI DOCENT · BIFF EDITORIAL</p>
           <h2>영화 고르기 전에 읽는 BIFF 분석</h2>
-          <p>공식 작품 데이터와 프로그램 노트를 바탕으로 각 섹션의 흐름, 감독의 시선, 주제와 형식을 비교해 상영작을 깊이 있게 읽습니다.</p>
+          <p>공식 2026 작품 데이터와 상영시간표를 함께 분석해 섹션의 흐름뿐 아니라 체류 날짜별 희소 회차, GV, 충돌과 대체 가능성까지 읽습니다.</p>
         </div>
         <span className="curator-edition">2026</span>
       </section>
@@ -222,7 +224,7 @@ export default function CuratorPage({ onOpenFilms }: Props) {
         </ol>
       </section>
 
-      <p className="curator-disclaimer">2026 공식 작품 데이터베이스와 프로그램 노트를 바탕으로 섹션별 분석 칼럼을 순차적으로 추가합니다. 섹션 가이드는 상영 일정이 아니라 작품 자체의 주제와 형식, 감독의 시선을 분석하는 데 초점을 둡니다.</p>
+      <p className="curator-disclaimer">2026 공식 작품 데이터베이스와 상영시간표를 함께 사용합니다. 섹션 가이드는 작품 자체를, 체류 일정별 추천은 실제 회차의 희소성·GV·충돌·대체 가능성을 중심으로 분석합니다.</p>
     </main>
   )
 }
