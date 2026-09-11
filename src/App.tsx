@@ -810,6 +810,23 @@ export default function App() {
     window.setTimeout(restore, 0)
   }, [])
 
+  const openFilmFromCurator = useCallback((title: string) => {
+    setQuery(title)
+    setSection('전체')
+    setDateFilter('전체')
+    setVenueFilter('전체')
+    setDraftStartTime('')
+    setDraftEndTime('')
+    setStartTimeFilter('')
+    setEndTimeFilter('')
+    setGvOnly(false)
+    setFavoritesOnly(false)
+    pushNavigationState({ tab: 'films', settingsOpen: false, curatorSlug: null })
+    setActiveTab('films')
+    setSettingsOpen(false)
+    window.setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }), 0)
+  }, [])
+
   const openFilmsFromMenu = useCallback(() => {
     pushNavigationState({ tab: 'films', settingsOpen: false, curatorSlug: null })
     setActiveTab('films')
@@ -942,7 +959,7 @@ export default function App() {
             onStatusChange={setScreeningTicketStatus}
           />
         ) : !loadError && <div className="empty">조건에 맞는 상영작이 없습니다.</div>}
-      </main> : activeTab === 'curator' ? <CuratorPage key={curatorPageKey} onOpenFilms={openFilms} /> : <main className="timetable-page">
+      </main> : activeTab === 'curator' ? <CuratorPage key={curatorPageKey} onOpenFilms={openFilms} onOpenFilm={openFilmFromCurator} /> : <main className="timetable-page">
         {selectedItems.length === 0 && customEvents.length === 0 ? <div className="empty timetable-empty"><strong>아직 시간표에 일정이 없습니다.</strong><span>영화 회차를 고르거나 직접 일정을 추가해 주세요.</span><div className="timetable-empty-actions"><button onClick={openFilms}>영화 찾기</button><button type="button" className="custom-event-add-button" onClick={openCreateCustomEvent}>+ 일정 추가</button></div></div> : <>
           <div className="timetable-actions enhanced-timetable-actions">
             <div><span className="booking-summary">{timetableSelectionMode ? `삭제할 일정 ${timetableDeleteSelection.length}개 선택` : `예매 완료 ${bookedCount} · 예정 ${plannedCount} · 사용자 일정 ${customEvents.length}`}</span></div>
