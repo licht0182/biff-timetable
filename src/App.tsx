@@ -4,7 +4,7 @@ import FilmList from './components/FilmList'
 import CuratorPage from './components/CuratorPage'
 import type { Film, Screening, TicketStatus, TicketStatusMap } from './components/film-types'
 import { createCustomEventId, customEventAbsoluteWindow, customEventCategoryLabel, customEventTimetableDate, customEventTimetableEndMinutes, customEventTimetableStartMinutes, normalizeCustomEvents, windowsOverlap, type CustomEvent, type CustomEventDraft } from './custom-events'
-import { VENUE_TRANSFER_SITES, getVenueSiteTransferMinutes } from './venue-travel'
+import { REST_BREAK_MINUTES, VENUE_TRANSFER_SITES, getVenueSiteTransferMinutes } from './venue-travel'
 import { getTransferBuffer } from './transfer-buffer'
 import { exportTimetablePng } from './png-export'
 import { BASE_END_HOUR, START_HOUR, clockMinutes, endLabel, screeningAbsoluteWindow, screeningEndOffsetMinutes, screeningsOverlap, timetableDate, timetableEndMinutes, timetableStartMinutes } from './screening-time'
@@ -27,7 +27,6 @@ type CalendarExportItem =
   | { kind: 'custom'; date: string; start: string; event: CustomEvent }
 
 type UserTimetableSettings = {
-  sameVenueMinutes: number
   sameClusterMinutes: number
   differentVenueMinutes: number
   showTransferWarnings: boolean
@@ -42,7 +41,6 @@ const CUSTOM_EVENTS_KEY = 'biff-timetable:custom-events:v1'
 const USER_SETTINGS_KEY = 'biff-timetable:user-settings:v1'
 const DATA_VERSION_STORAGE_KEY = 'biff-timetable:data-version:v1'
 const DEFAULT_USER_SETTINGS: UserTimetableSettings = {
-  sameVenueMinutes: 0,
   sameClusterMinutes: 10,
   differentVenueMinutes: 30,
   showTransferWarnings: true,
@@ -82,7 +80,6 @@ function clampSetting(value: unknown, fallback: number, max: number) {
 function normalizeUserSettings(value: unknown): UserTimetableSettings {
   const source = value && typeof value === 'object' ? value as Partial<UserTimetableSettings> : {}
   return {
-    sameVenueMinutes: clampSetting(source.sameVenueMinutes, DEFAULT_USER_SETTINGS.sameVenueMinutes, 120),
     sameClusterMinutes: clampSetting(source.sameClusterMinutes, DEFAULT_USER_SETTINGS.sameClusterMinutes, 180),
     differentVenueMinutes: clampSetting(source.differentVenueMinutes, DEFAULT_USER_SETTINGS.differentVenueMinutes, 240),
     showTransferWarnings: typeof source.showTransferWarnings === 'boolean' ? source.showTransferWarnings : DEFAULT_USER_SETTINGS.showTransferWarnings,
@@ -812,10 +809,9 @@ export default function App() {
                 })}</tr>)}</tbody>
               </table>
             </div>
-            <p className="precise-transfer-note">퇴장·건물 내부 이동 + 시설 간 도보 + 목적지 입장 시간을 합산한 보수적 최소값입니다. 대각선은 같은 시설 안의 다른 관/층 이동 기준이며, 같은 정확한 상영관은 아래 ‘동일한 관’ 값을 사용합니다.</p>
+            <p className="precise-transfer-note">2026 상영시간표의 실제 시설군을 기준으로 도보시간에 휴게 {REST_BREAK_MINUTES}분을 더한 값입니다. 대각선은 같은 시설 안의 다른 관/층 이동 + 휴게 기준이며, 완전히 같은 상영관은 고정 {REST_BREAK_MINUTES}분을 적용합니다.</p>
           </div>
           <div className="settings-list">
-            <label className="settings-number-row"><span><strong>동일한 관</strong><small>완전히 같은 상영관에서 연속 관람할 때의 여유</small></span><span className="settings-number-control"><input type="number" min="0" max="120" step="5" inputMode="numeric" value={userSettings.sameVenueMinutes} onChange={(event) => setUserSettings((current) => ({ ...current, sameVenueMinutes: clampSetting(event.target.value, current.sameVenueMinutes, 120) }))} /><em>분</em></span></label>
             <label className="settings-number-row"><span><strong>미등록 같은 시설</strong><small>새 관명 등으로 정밀 매칭이 되지 않지만 같은 시설로 판단될 때</small></span><span className="settings-number-control"><input type="number" min="0" max="180" step="5" inputMode="numeric" value={userSettings.sameClusterMinutes} onChange={(event) => setUserSettings((current) => ({ ...current, sameClusterMinutes: clampSetting(event.target.value, current.sameClusterMinutes, 180) }))} /><em>분</em></span></label>
             <label className="settings-number-row"><span><strong>미등록 다른 시설</strong><small>정밀 이동시간 데이터에 없는 새로운 상영관 조합의 안전 기본값</small></span><span className="settings-number-control"><input type="number" min="0" max="240" step="5" inputMode="numeric" value={userSettings.differentVenueMinutes} onChange={(event) => setUserSettings((current) => ({ ...current, differentVenueMinutes: clampSetting(event.target.value, current.differentVenueMinutes, 240) }))} /><em>분</em></span></label>
             <label className="settings-toggle-row"><span><strong>이동 여유 경고 표시</strong><small>실제 회차 순서의 출발지 → 도착지 이동시간보다 여유가 짧으면 표시합니다.</small></span><span className="settings-switch"><input type="checkbox" checked={userSettings.showTransferWarnings} onChange={(event) => setUserSettings((current) => ({ ...current, showTransferWarnings: event.target.checked }))} /><i /></span></label>
@@ -957,7 +953,7 @@ export default function App() {
               </div>)}
             </div>
           </div>
-          {userSettings.showTransferWarnings && <p className="transfer-note">이동시간은 등록된 센텀권 상영관의 출발 → 도착 방향별 정밀값을 우선 사용합니다. 같은 정확한 관 {userSettings.sameVenueMinutes}분 · 미등록 같은 시설 {userSettings.sameClusterMinutes}분 · 미등록 다른 시설 {userSettings.differentVenueMinutes}분. 사용자 일정은 현재 시간 충돌만 계산합니다.</p>}
+          {userSettings.showTransferWarnings && <p className="transfer-note">이동시간은 2026 센텀권 상영관의 출발 → 도착 도보시간 + 휴게 {REST_BREAK_MINUTES}분 정밀값을 우선 사용합니다. 같은 정확한 관은 고정 {REST_BREAK_MINUTES}분 · 미등록 같은 시설 {userSettings.sameClusterMinutes}분 · 미등록 다른 시설 {userSettings.differentVenueMinutes}분. 사용자 일정은 현재 시간 충돌만 계산합니다.</p>}
         </>}
       </main>)}
 

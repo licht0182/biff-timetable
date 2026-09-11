@@ -1,7 +1,6 @@
-import { getPreciseVenueTransfer } from './venue-travel'
+import { getPreciseVenueTransfer, REST_BREAK_MINUTES } from './venue-travel'
 
 export type TransferSettings = {
-  sameVenueMinutes: number
   sameClusterMinutes: number
   differentVenueMinutes: number
 }
@@ -15,21 +14,21 @@ export type TransferBufferResult = {
 
 function venueCluster(venue: string) {
   if (venue.startsWith('영화의전당')) return '영화의전당'
-  if (venue.startsWith('CGV센텀시티') || venue.startsWith('CGV 센텀시티')) return 'CGV센텀시티'
+  if (venue.startsWith('CGV센텀시티') || venue.startsWith('CGV 센텀시티') || venue.startsWith('신세계백화점 센텀시티점')) return '신세계 센텀시티'
   if (venue.startsWith('롯데시네마 센텀')) return '롯데시네마 센텀시티'
-  if (venue.includes('소향씨어터') || venue.startsWith('동서대학교-경남정보대학교')) return '동서대 센텀캠퍼스'
+  if (venue.includes('소향씨어터') || venue.startsWith('동서대학교-경남정보대학교')) return '동서대-KIT 센텀캠퍼스'
   if (venue.includes('영화진흥위원회')) return '영화진흥위원회'
-  if (venue.includes('시청자미디어센터')) return '시청자미디어센터'
+  if (venue.includes('시청자미디어센터')) return '부산시청자미디어센터'
   return venue
 }
 
 export function getTransferBuffer(fromVenue: string, toVenue: string, settings: TransferSettings): TransferBufferResult {
   if (fromVenue === toVenue) {
     return {
-      minutes: settings.sameVenueMinutes,
+      minutes: REST_BREAK_MINUTES,
       routeLabel: '동일 상영관',
-      transferDetail: `같은 상영관 연속 관람 기본 여유 ${settings.sameVenueMinutes}분`,
-      precise: false,
+      transferDetail: `도보 0분 + 휴게 ${REST_BREAK_MINUTES}분 = ${REST_BREAK_MINUTES}분`,
+      precise: true,
     }
   }
 
@@ -48,7 +47,7 @@ export function getTransferBuffer(fromVenue: string, toVenue: string, settings: 
   return {
     minutes,
     routeLabel: `${fromVenue} → ${toVenue}`,
-    transferDetail: `정밀 이동시간 미등록 조합 · ${sameCluster ? '같은 시설' : '다른 시설'} 기본값 ${minutes}분 적용`,
+    transferDetail: `정밀 도보시간 미등록 조합 · ${sameCluster ? '같은 시설' : '다른 시설'} 기본값 ${minutes}분 적용`,
     precise: false,
   }
 }
