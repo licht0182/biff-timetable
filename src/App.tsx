@@ -172,6 +172,7 @@ export default function App() {
   const [gvOnly, setGvOnly] = useState(false)
   const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [activeTab, setActiveTab] = useState<'films' | 'timetable' | 'curator'>('films')
+  const [curatorPageKey, setCuratorPageKey] = useState(0)
   const [detailFilm, setDetailFilm] = useState<Film | null>(null)
   const [detailScreeningId, setDetailScreeningId] = useState<string | null>(null)
   const [customEventDialog, setCustomEventDialog] = useState<CustomEventDialogState | null>(null)
@@ -720,21 +721,31 @@ export default function App() {
     window.setTimeout(restore, 0)
   }, [])
 
+  const openFilmsFromMenu = useCallback(() => {
+    setActiveTab('films')
+    setSettingsOpen(false)
+    window.setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }), 0)
+  }, [])
+
   const openTimetable = useCallback(() => {
     if (filmViewActive) filmScrollPositionRef.current = window.scrollY
     setActiveTab('timetable')
     setSettingsOpen(false)
+    window.setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }), 0)
   }, [filmViewActive])
 
   const openCurator = useCallback(() => {
     if (filmViewActive) filmScrollPositionRef.current = window.scrollY
     setActiveTab('curator')
     setSettingsOpen(false)
+    setCuratorPageKey((current) => current + 1)
+    window.setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }), 0)
   }, [filmViewActive])
 
   const openSettings = useCallback(() => {
     if (filmViewActive) filmScrollPositionRef.current = window.scrollY
     setSettingsOpen(true)
+    window.setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }), 0)
   }, [filmViewActive])
 
   return (
@@ -745,9 +756,9 @@ export default function App() {
       </header>
 
       <nav className="tabs" aria-label="주요 메뉴">
-        <button className={activeTab === 'films' && !settingsOpen ? 'active' : ''} onClick={openFilms}>영화 찾기</button>
+        <button className={activeTab === 'films' && !settingsOpen ? 'active' : ''} onClick={openFilmsFromMenu}>영화 찾기</button>
         <button className={activeTab === 'timetable' && !settingsOpen ? 'active' : ''} onClick={openTimetable}>내 시간표</button>
-        <button className={activeTab === 'curator' && !settingsOpen ? 'active' : ''} onClick={openCurator}>AI 큐레이터</button>
+        <button className={activeTab === 'curator' && !settingsOpen ? 'active' : ''} onClick={openCurator}>AI 도슨트</button>
         <button className={`settings-tab-trigger ${settingsOpen ? 'active' : ''}`} onClick={openSettings}>설정</button>
       </nav>
 
@@ -819,7 +830,7 @@ export default function App() {
             onStatusChange={setScreeningTicketStatus}
           />
         ) : !loadError && <div className="empty">조건에 맞는 상영작이 없습니다.</div>}
-      </main> : activeTab === 'curator' ? <CuratorPage onOpenFilms={openFilms} /> : <main className="timetable-page">
+      </main> : activeTab === 'curator' ? <CuratorPage key={curatorPageKey} onOpenFilms={openFilms} /> : <main className="timetable-page">
         {selectedItems.length === 0 && customEvents.length === 0 ? <div className="empty timetable-empty"><strong>아직 시간표에 일정이 없습니다.</strong><span>영화 회차를 고르거나 직접 일정을 추가해 주세요.</span><div className="timetable-empty-actions"><button onClick={openFilms}>영화 찾기</button><button type="button" className="custom-event-add-button" onClick={openCreateCustomEvent}>+ 일정 추가</button></div></div> : <>
           <div className="timetable-actions enhanced-timetable-actions">
             <div><span className="booking-summary">{timetableSelectionMode ? `삭제할 일정 ${timetableDeleteSelection.length}개 선택` : `예매 완료 ${bookedCount} · 예정 ${plannedCount} · 사용자 일정 ${customEvents.length}`}</span></div>
