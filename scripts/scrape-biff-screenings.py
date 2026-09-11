@@ -223,13 +223,15 @@ def parse_schedule(films_by_idx: dict[str, dict[str, Any]]) -> tuple[list[dict[s
                     component_en = [clean((film.get("title") or {}).get("en")) for film in components]
                     display_ko = ko or "묶음상영"
                     display_en = en
-                    if component_ko:
+                    if component_ko and not all(name in display_ko for name in component_ko):
                         display_ko = f"{display_ko} ({' · '.join(component_ko)})"
-                    if component_en:
+                    if component_en and not all(name in display_en for name in component_en):
                         display_en = f"{display_en} ({' · '.join(component_en)})" if display_en else " · ".join(component_en)
                     sections = [clean((film.get("biff") or {}).get("section")) for film in components]
                     sections = [value for value in sections if value]
                     section = sections[0] if sections and len(set(sections)) == 1 else "묶음상영"
+                    if ko.startswith("미드나잇 패션"):
+                        section = "미드나잇 패션"
                     synopsis = "묶음상영 구성: " + " · ".join(
                         clean((film.get("title") or {}).get("display")) for film in components
                     )
@@ -245,9 +247,10 @@ def parse_schedule(films_by_idx: dict[str, dict[str, Any]]) -> tuple[list[dict[s
                     label = "개막식" if is_opening else "폐막식"
                     base_ko = clean(base.get("title") or ko)
                     base_en = clean(base.get("englishTitle") or en)
+                    event_title = base_ko if base_ko.startswith(label) else (f"{label} + {base_ko}" if base_ko else label)
                     special.append(special_item(
                         code,
-                        f"{label} + {base_ko}" if base_ko else label,
+                        event_title,
                         base_en,
                         date_value,
                         start,
