@@ -32,6 +32,9 @@ jobs:
       - name: Validate 2026 film database
         run: npm run validate:films
 
+      - name: Validate curator section analysis
+        run: npm run validate:curator
+
       - name: Build
         run: npm run build
 
