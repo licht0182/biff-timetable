@@ -50,5 +50,6 @@ test('shows the complete 2026 competition section analysis', async ({ page }) =>
   await expect(page.locator('.curator-film-guide')).toHaveCount(13)
   await expect(page.locator('.curator-film-guide').first()).toContainText('그날의 태주')
   await expect(page.locator('.curator-film-guide').last()).toContainText('힐롤')
-  await expect(page.locator('.curator-body')).toContainText('상영시간표가 붙으면 순위는 다시 바뀝니다')
+  await expect(page.locator('.curator-body')).not.toContainText('상영시간표가 붙으면 순위는 다시 바뀝니다')
+  await expect(page.locator('.curator-article-footer')).toHaveCount(0)
 })
