@@ -33,6 +33,32 @@ test('opens the AI docent, groups columns, and keeps article navigation anchored
   await expect(page.getByRole('heading', { name: '10월 9일부터 12일까지 BIFF에 간다면: 4일을 가장 강하게 쓰는 법' })).toHaveCount(0)
 })
 
+
+test('supports browser back and forward across menus and docent articles', async ({ page }) => {
+  await page.goto('./')
+  await expect(page.getByRole('button', { name: '영화 찾기' })).toHaveClass(/active/)
+
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
+  await expect(page.getByRole('heading', { name: 'AI 도슨트 칼럼' })).toBeVisible()
+
+  await page.getByRole('button', { name: /경쟁 13편 전작 분석/ }).click()
+  await expect(page.getByRole('heading', { name: '경쟁 13편 전작 분석: 올해 BIFF가 새롭게 발견하려는 영화들' })).toBeVisible()
+
+  await page.goBack()
+  await expect(page.getByRole('heading', { name: 'AI 도슨트 칼럼' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '경쟁 13편 전작 분석: 올해 BIFF가 새롭게 발견하려는 영화들' })).toHaveCount(0)
+
+  await page.goBack()
+  await expect(page.getByRole('button', { name: '영화 찾기' })).toHaveClass(/active/)
+  await expect(page.getByLabel('영화 검색')).toBeVisible()
+
+  await page.goForward()
+  await expect(page.getByRole('heading', { name: 'AI 도슨트 칼럼' })).toBeVisible()
+
+  await page.goForward()
+  await expect(page.getByRole('heading', { name: '경쟁 13편 전작 분석: 올해 BIFF가 새롭게 발견하려는 영화들' })).toBeVisible()
+})
+
 test('keeps the curator within a narrow mobile viewport', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 760 })
   await page.goto('./')
