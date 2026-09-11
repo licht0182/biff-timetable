@@ -33,3 +33,22 @@ test('keeps the curator within a narrow mobile viewport', async ({ page }) => {
   expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewport)
   expect(metrics.bodyWidth).toBeLessThanOrEqual(metrics.viewport)
 })
+
+
+test('shows the complete 2026 competition section analysis', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 큐레이터' }).click()
+
+  const competitionCard = page.getByRole('button', { name: /경쟁 13편 전작 분석/ })
+  await expect(competitionCard).toBeVisible()
+  await competitionCard.click()
+
+  await expect(page.getByRole('heading', { name: '경쟁 13편 전작 분석: 올해 BIFF가 새롭게 발견하려는 영화들' })).toBeVisible()
+  await expect(page.locator('.curator-stats')).toContainText('13편')
+  await expect(page.locator('.curator-stats')).toContainText('11편')
+  await expect(page.locator('.curator-stats')).toContainText('약 114분')
+  await expect(page.locator('.curator-film-guide')).toHaveCount(13)
+  await expect(page.locator('.curator-film-guide').first()).toContainText('그날의 태주')
+  await expect(page.locator('.curator-film-guide').last()).toContainText('힐롤')
+  await expect(page.locator('.curator-body')).toContainText('상영시간표가 붙으면 순위는 다시 바뀝니다')
+})
