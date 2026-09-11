@@ -11,7 +11,7 @@ function fail(message) {
 }
 
 function clean(value) {
-  return String(value ?? '').replace(/\s+/g, ' ').trim()
+  return String(value ?? '').replace(/\uFEFF/g, '').replace(/\s+/g, ' ').trim()
 }
 
 const films = JSON.parse(fs.readFileSync(FILMS_PATH, 'utf8'))
@@ -20,7 +20,7 @@ const meta = JSON.parse(fs.readFileSync(META_PATH, 'utf8'))
 if (!Array.isArray(films)) fail('database root must be an array')
 if (films.length !== EXPECTED_FILMS) fail(`expected ${EXPECTED_FILMS} films, got ${films.length}`)
 if (meta.filmCount !== films.length) fail(`meta filmCount ${meta.filmCount} does not match data ${films.length}`)
-if (meta.schemaVersion < 3) fail(`schemaVersion must be >= 3, got ${meta.schemaVersion}`)
+if (meta.schemaVersion < 5) fail(`schemaVersion must be >= 3, got ${meta.schemaVersion}`)
 
 const ids = new Set()
 const urls = new Set()
@@ -57,6 +57,8 @@ for (const [index, film] of films.entries()) {
   if (!film?.editorial?.programNote) fail(`${label}: missing Program Note`)
   if (!Array.isArray(film?.media?.images) || film.media.images.length === 0) fail(`${label}: missing official image references`)
   if (!Array.isArray(film?.media?.copyrightNotices)) fail(`${label}: copyrightNotices must be an array`)
+  if (!Array.isArray(film?.media?.photoCopyrightNotices)) fail(`${label}: photoCopyrightNotices must be an array`)
+  if (!Array.isArray(film?.related?.films)) fail(`${label}: related.films must be an array`)
   if (!Array.isArray(film?.classification?.themes)) fail(`${label}: themes must be an array`)
   if (film.classification.themes.length > 0) withThemes += 1
 
@@ -73,7 +75,7 @@ for (const [index, film] of films.entries()) {
   }
 
   const raw = film?.rawSections
-  for (const key of ['filmInfo', 'programNote', 'director', 'credit', 'photo']) {
+  for (const key of ['filmInfo', 'programNote', 'director', 'credit', 'photo', 'screening']) {
     if (!Array.isArray(raw?.[key])) fail(`${label}: rawSections.${key} must be an array`)
   }
 
