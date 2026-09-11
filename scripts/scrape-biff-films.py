@@ -90,58 +90,68 @@ def nearest_section(anchor: Tag) -> tuple[str, str]:
     return normalized_section(full), full
 
 
-def parse_list_page(html: str) -> list[dict[str, Any]]:
+def parse_list_page(html: str) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
     soup = BeautifulSoup(html, "html.parser")
     records: dict[str, dict[str, Any]] = {}
 
-    for anchor in soup.find_all("a", href=True):
-        url = normalize_detail_url(anchor.get("href", ""))
+    # Detail URLs are embedded in the live page markup even when the visible
+    # film table itself does not use the URL as a normal anchor href.
+    for match in re.findall(r"""(?:https?://[^"'\s]+)?/?kor/html/program/prog_view\.asp\?[^"'<>\s]+""", html, re.I):
+        url = normalize_detail_url(match)
         if not url:
             continue
         parsed = parse_qs(urlparse(url).query)
         idx = parsed["idx"][0]
-        c_idx = parsed.get("c_idx", [""])[0]
-        row = anchor.find_parent("tr")
-        cells = [clean(td.get_text(" ", strip=True)) for td in row.find_all(["th", "td"], recursive=False)] if row else []
-        section, section_heading = nearest_section(anchor)
-        anchor_text = clean(anchor.get_text(" ", strip=True))
-
-        title_cell = cells[0] if cells else anchor_text
-        director_cell = cells[1] if len(cells) > 1 else ""
-        countries_cell = cells[2] if len(cells) > 2 else ""
-        title_cell = re.sub(r"\s*트레일러\s*$", "", title_cell).strip()
-
         records[idx] = {
             "idx": idx,
-            "cIdx": c_idx,
+            "cIdx": parsed.get("c_idx", [""])[0],
             "url": url,
-            "section": section,
-            "sectionHeading": section_heading,
-            "listTitle": title_cell,
-            "listDirector": director_cell,
-            "listCountries": countries_cell,
+            "section": "",
+            "sectionGroup": "",
+            "sectionHeading": "",
+            "listTitle": "",
+            "listDirector": "",
+            "listCountries": "",
         }
 
-    if not records:
-        # Fallback for links embedded in scripts/onclick.
-        for match in re.findall(r"""(?:https?://[^"'\s]+)?/?kor/html/program/prog_view\.asp\?[^"'<>\s]+""", html, re.I):
-            url = normalize_detail_url(match)
-            if not url:
-                continue
-            parsed = parse_qs(urlparse(url).query)
-            idx = parsed["idx"][0]
-            records[idx] = {
-                "idx": idx,
-                "cIdx": parsed.get("c_idx", [""])[0],
-                "url": url,
-                "section": "",
-                "sectionHeading": "",
-                "listTitle": "",
-                "listDirector": "",
-                "listCountries": "",
-            }
+    # The official all-films page also exposes a fully rendered section table.
+    # Build a second catalogue from those table rows and join it to detail pages
+    # later by the bilingual title. This is more reliable than inferring a
+    # section from BIFF's internal c_idx value.
+    catalogue: list[dict[str, str]] = []
+    for row in soup.find_all("tr"):
+        cells = row.find_all(["th", "td"], recursive=False)
+        if len(cells) < 3:
+            continue
 
-    return list(records.values())
+        title_cell = clean(cells[0].get_text(" ", strip=True))
+        director_cell = clean(cells[1].get_text(" ", strip=True))
+        countries_cell = clean(cells[2].get_text(" ", strip=True))
+        if not title_cell or "작품명" in title_cell or "Title" == title_cell:
+            continue
+
+        title_cell = re.sub(r"\s*트레일러\s*$", "", title_cell).strip()
+        heading = row.find_previous(["h2", "h3", "h4", "h5"])
+        if not heading:
+            continue
+        section_heading = clean(heading.get_text(" ", strip=True))
+        section = normalized_section(section_heading)
+        if section not in SECTION_PREFIXES:
+            continue
+
+        title_ko, title_en = split_bilingual(title_cell)
+        catalogue.append({
+            "titleKo": title_ko,
+            "titleEn": title_en,
+            "displayTitle": title_cell,
+            "director": director_cell,
+            "countries": countries_cell,
+            "section": section,
+            "sectionGroup": section_group(section),
+            "sectionHeading": section_heading,
+        })
+
+    return list(records.values()), catalogue
 
 
 def split_bilingual(raw: str) -> tuple[str, str]:
@@ -156,11 +166,19 @@ def contains_hangul(value: str) -> bool:
     return bool(re.search(r"[가-힣]", value))
 
 
-def derive_title_from_info(info_segment: list[str], fallback: str) -> tuple[str, str, str, str]:
-    title_ko, title_en = split_bilingual(fallback)
-    if fallback:
-        return title_ko, title_en, fallback, ""
+def section_group(section: str) -> str:
+    if section.startswith("비전"):
+        return "비전"
+    if section.startswith("한국영화의 오늘"):
+        return "한국영화의 오늘"
+    if section in {"개막작", "폐막작", "개·폐막작"}:
+        return "개·폐막작"
+    return section
 
+
+def derive_title_and_themes(
+    info_segment: list[str], fallback: str
+) -> tuple[str, str, str, list[str]]:
     try:
         country_index = info_segment.index("국가")
     except ValueError:
@@ -170,23 +188,24 @@ def derive_title_from_info(info_segment: list[str], fallback: str) -> tuple[str,
         clean(x) for x in info_segment[:country_index]
         if clean(x)
         and clean(x) != "트레일러 재생"
+        and clean(x) not in PREMIERE_LABELS
         and not clean(x).startswith("©")
     ]
-    if not prefix:
-        return "", "", "", ""
 
-    genre_raw = prefix[-1] if len(prefix) >= 2 else ""
-    title_parts = prefix[:-1] if genre_raw else prefix
-    if len(title_parts) >= 2:
-        title_ko = title_parts[-2]
-        title_en = title_parts[-1]
-        display = f"{title_ko} / {title_en}"
-    elif title_parts:
-        display = title_parts[-1]
-        title_ko, title_en = split_bilingual(display)
-    else:
-        display = ""
-    return clean(title_ko), clean(title_en), clean(display), clean(genre_raw)
+    fallback_ko, fallback_en = split_bilingual(fallback)
+    if fallback:
+        title_ko, title_en, display = fallback_ko, fallback_en, fallback
+        themes = [x for x in prefix if x not in {title_ko, title_en, display}]
+        return clean(title_ko), clean(title_en), clean(display), list(dict.fromkeys(themes))
+
+    if not prefix:
+        return "", "", "", []
+
+    title_ko = prefix[0]
+    title_en = prefix[1] if len(prefix) >= 2 else ""
+    display = f"{title_ko} / {title_en}" if title_en else title_ko
+    themes = prefix[2:] if len(prefix) >= 3 else []
+    return clean(title_ko), clean(title_en), clean(display), list(dict.fromkeys(themes))
 
 
 def derive_director_names(parts: list[str], fallback: str) -> tuple[str, str, str]:
@@ -316,7 +335,7 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
     credit_parts = string_segment(strings, "Credit", "Photo")
     photo_parts = string_segment(strings, "Photo", "BIFF NEWSLETTER")
 
-    title_ko, title_en, title_display, derived_genre = derive_title_from_info(
+    title_ko, title_en, title_display, themes = derive_title_and_themes(
         info_segment, record.get("listTitle", "")
     )
     director_ko, director_en, director_display = derive_director_names(
@@ -328,15 +347,6 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
     runtime_raw = read_labeled_value(info_segment, "러닝타임")
     format_raw = read_labeled_value(info_segment, "상영포맷")
     color_raw = read_labeled_value(info_segment, "컬러")
-
-    # The genre is normally the standalone string immediately before the country label.
-    genre_raw = derived_genre
-    if not genre_raw and "국가" in info_segment:
-        idx = info_segment.index("국가")
-        candidates = [x for x in info_segment[:idx] if x not in {"트레일러 재생"} and "©" not in x]
-        candidates = [x for x in candidates if x not in {record.get("listTitle", ""), title_ko, title_en}]
-        if candidates:
-            genre_raw = candidates[-1]
 
     runtime_match = re.search(r"(\d+)", runtime_raw)
     year_match = re.search(r"(19|20)\d{2}", year_raw)
@@ -357,6 +367,13 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
 
     all_pairs = extract_pairs(soup)
     media = media_from_page(soup)
+    copyright_notices = list(dict.fromkeys(
+        clean(value) for value in strings
+        if "©" in value or re.search(r"\(c\)\s*\d{4}", value, re.I)
+    ))
+    media["copyrightNotices"] = copyright_notices
+    media["photoSectionText"] = clean(" ".join(photo_parts))
+    media["rawMediaReferences"] = media.pop("mediaReferences", [])
 
     parsed = {
         "id": f"biff-{YEAR}-{record['idx']}",
@@ -365,6 +382,7 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
             "idx": record["idx"],
             "cIdx": record.get("cIdx", ""),
             "section": record.get("section", ""),
+            "sectionGroup": record.get("sectionGroup", ""),
             "sectionHeading": record.get("sectionHeading", ""),
             "premiere": premiere,
         },
@@ -374,8 +392,8 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
             "display": title_display,
         },
         "classification": {
-            "genres": [clean(x) for x in re.split(r"\s*/\s*", genre_raw) if clean(x)],
-            "genreRaw": genre_raw,
+            "themes": themes,
+            "sourceLabel": "#작품검색",
         },
         "production": {
             "countries": [clean(x) for x in re.split(r"\s*/\s*", country_raw) if clean(x)],
@@ -421,8 +439,9 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
 
 def main() -> int:
     list_html = fetch(LIST_URL)
-    list_records = parse_list_page(list_html)
+    list_records, catalogue = parse_list_page(list_html)
     print(f"Discovered {len(list_records)} unique film detail URLs from {LIST_URL}")
+    print(f"Parsed {len(catalogue)} visible catalogue rows with official section labels")
 
     if len(list_records) != EXPECTED_OFFICIAL_COUNT:
         sample = [r.get("url") for r in list_records[:5]]
@@ -445,6 +464,37 @@ def main() -> int:
     if errors:
         print(json.dumps(errors[:20], ensure_ascii=False, indent=2))
         raise RuntimeError(f"{len(errors)} film detail pages failed; refusing to save partial data.")
+
+    catalogue_by_pair = {
+        (entry["titleKo"], entry["titleEn"]): entry for entry in catalogue
+        if entry["titleKo"]
+    }
+    catalogue_by_ko: dict[str, list[dict[str, str]]] = {}
+    for entry in catalogue:
+        catalogue_by_ko.setdefault(entry["titleKo"], []).append(entry)
+
+    for film in films:
+        key = (film["title"]["ko"], film["title"]["en"])
+        entry = catalogue_by_pair.get(key)
+        if not entry:
+            candidates = catalogue_by_ko.get(film["title"]["ko"], [])
+            if len(candidates) == 1:
+                entry = candidates[0]
+        if entry:
+            film["biff"]["section"] = entry["section"]
+            film["biff"]["sectionGroup"] = entry["sectionGroup"]
+            film["biff"]["sectionHeading"] = entry["sectionHeading"]
+            film["source"]["listTitle"] = entry["displayTitle"]
+            film["source"]["listDirector"] = entry["director"]
+            film["source"]["listCountries"] = entry["countries"]
+
+    # Opening film is the only current 2026 detail page whose bottom related-film
+    # block is absent. The official all-films table still assigns it correctly.
+    # Any remaining unclassified film is treated as a hard failure.
+    unclassified = [film["title"]["display"] for film in films if not film["biff"]["section"]]
+    if unclassified:
+        print(json.dumps({"unclassified": unclassified[:20]}, ensure_ascii=False, indent=2))
+        raise RuntimeError(f"{len(unclassified)} films are missing official section classification.")
 
     films.sort(key=lambda film: (film["biff"]["section"], film["title"]["ko"], film["biff"]["idx"]))
     ids = [film["id"] for film in films]
@@ -476,9 +526,11 @@ def main() -> int:
             "withProgramNote": with_notes,
             "withDirector": with_director,
             "withImages": with_images,
+            "withOfficialSection": sum(bool(film["biff"]["section"]) for film in films),
+            "withThemes": sum(bool(film["classification"]["themes"]) for film in films),
         },
         "databaseFile": str(OUT_PATH),
-        "schemaVersion": 1,
+        "schemaVersion": 2,
     }
     META_PATH.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(meta, ensure_ascii=False, indent=2))
