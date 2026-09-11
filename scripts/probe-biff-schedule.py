@@ -13,19 +13,22 @@ with urlopen(req, timeout=30) as response:
 
 print(f"schedule probe bytes={len(raw)}")
 soup = BeautifulSoup(html, "html.parser")
-anchors = [a for a in soup.find_all("a", href=True) if "prog_view.asp" in a["href"]]
-print(f"film anchors={len(anchors)}")
+items = soup.select("div.sch_it")
+print(f"schedule items={len(items)}")
 
-for index, anchor in enumerate(anchors[:8]):
-    print(f"\n--- anchor {index} ---")
-    print("href=", anchor.get("href"))
-    print("text=", anchor.get_text(" ", strip=True))
-    node = anchor
-    for depth in range(1, 6):
-        node = node.parent
-        if node is None:
-            break
-        print("depth", depth, "tag", node.name, "class", node.get("class"), "id", node.get("id"))
-    block = anchor.find_parent(["li", "tr", "div"])
-    if block is not None:
-        print(str(block)[:6000])
+for index, item in enumerate(items[:8]):
+    print(f"\n=== item {index} classes={item.get('class')} ===")
+    print(item.prettify()[:12000])
+    parent = item.find_parent("div", class_="sch_li")
+    if parent is not None:
+        print("--- sch_li text ---")
+        print(parent.get_text(" | ", strip=True)[:2500])
+
+venues = []
+for li in soup.select("div.sch_li"):
+    text = li.get_text(" ", strip=True)
+    if text:
+        venues.append(text[:300])
+print(f"sch_li blocks={len(venues)}")
+for i, text in enumerate(venues[:12]):
+    print(f"SCHLI[{i}] {text}")
