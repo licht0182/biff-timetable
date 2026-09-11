@@ -109,6 +109,15 @@ function screeningMatchesTimeRange(start: string, fromTime: string, toTime: stri
   return true
 }
 
+function timeRangeStatusLabel(fromTime: string, toTime: string) {
+  if (!fromTime && !toTime) return '시간대 제한 없음'
+  if (fromTime && toTime) {
+    return `${fromTime} ~ ${toTime}${clockMinutes(fromTime) > clockMinutes(toTime) ? ' · 익일' : ''} 적용 중`
+  }
+  if (fromTime) return `${fromTime} 이후 적용 중`
+  return `${toTime} 이전 적용 중`
+}
+
 function compareScreeningsByStart(a: Screening, b: Screening) {
   const dateOrder = a.date.localeCompare(b.date)
   if (dateOrder !== 0) return dateOrder
@@ -198,6 +207,8 @@ export default function App() {
   const [venueFilter, setVenueFilter] = useState('전체')
   const [startTimeFilter, setStartTimeFilter] = useState('')
   const [endTimeFilter, setEndTimeFilter] = useState('')
+  const [draftStartTime, setDraftStartTime] = useState('')
+  const [draftEndTime, setDraftEndTime] = useState('')
   const [gvOnly, setGvOnly] = useState(false)
   const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [activeTab, setActiveTab] = useState<'films' | 'timetable' | 'curator'>(initialNavigation.tab)
@@ -212,6 +223,10 @@ export default function App() {
   const [userSettings, setUserSettings] = useState<UserTimetableSettings>(() => normalizeUserSettings(readStorageValue(USER_SETTINGS_KEY)))
   const [timetableSelectionMode, setTimetableSelectionMode] = useState(false)
   const [timetableDeleteSelection, setTimetableDeleteSelection] = useState<string[]>([])
+  const timeRangeDraftChanged = draftStartTime !== startTimeFilter || draftEndTime !== endTimeFilter
+  const timeRangeActive = Boolean(startTimeFilter || endTimeFilter)
+  const timeRangeHasDraft = Boolean(draftStartTime || draftEndTime)
+  const timeRangeStatus = timeRangeStatusLabel(startTimeFilter, endTimeFilter)
 
   useEffect(() => {
     if (!hasNavigationState()) replaceNavigationState(initialNavigation)
@@ -508,11 +523,25 @@ export default function App() {
     })
   }, [])
 
+  function applyTimeRangeFilter() {
+    setStartTimeFilter(draftStartTime)
+    setEndTimeFilter(draftEndTime)
+  }
+
+  function clearTimeRangeFilter() {
+    setDraftStartTime('')
+    setDraftEndTime('')
+    setStartTimeFilter('')
+    setEndTimeFilter('')
+  }
+
   function resetFilters() {
     setQuery('')
     setSection('전체')
     setDateFilter('전체')
     setVenueFilter('전체')
+    setDraftStartTime('')
+    setDraftEndTime('')
     setStartTimeFilter('')
     setEndTimeFilter('')
     setGvOnly(false)
@@ -875,11 +904,18 @@ export default function App() {
             <label><span>날짜</span><select value={dateFilter} onChange={(event) => setDateFilter(event.target.value)}><option value="전체">전체 날짜</option>{allDates.map((date) => <option key={date} value={date}>{formatDate(date)}</option>)}</select></label>
             <label><span>상영관</span><select value={venueFilter} onChange={(event) => setVenueFilter(event.target.value)}><option value="전체">전체 상영관</option>{allVenues.map((venue) => <option key={venue} value={venue}>{venue}</option>)}</select></label>
             <div className="time-range-filter">
-              <span>회차 시간대</span>
-              <div className="time-range-inputs">
-                <input type="time" step="300" value={startTimeFilter} onChange={(event) => setStartTimeFilter(event.target.value)} aria-label="회차 시작 시간부터" />
-                <span className="time-range-separator" aria-hidden="true">~</span>
-                <input type="time" step="300" value={endTimeFilter} onChange={(event) => setEndTimeFilter(event.target.value)} aria-label="회차 시작 시간까지" />
+              <div className="time-range-filter-head">
+                <span>회차 시간대</span>
+                <small className={timeRangeActive ? 'active' : ''} aria-live="polite">{timeRangeStatus}</small>
+              </div>
+              <div className="time-range-control-row">
+                <div className="time-range-inputs">
+                  <input type="time" step="300" value={draftStartTime} onChange={(event) => setDraftStartTime(event.target.value)} aria-label="회차 시작 시간부터" />
+                  <span className="time-range-separator" aria-hidden="true">~</span>
+                  <input type="time" step="300" value={draftEndTime} onChange={(event) => setDraftEndTime(event.target.value)} aria-label="회차 시작 시간까지" />
+                </div>
+                <button type="button" className="time-range-action apply" onClick={applyTimeRangeFilter} disabled={!timeRangeDraftChanged} aria-label="시간대 적용">적용</button>
+                <button type="button" className="time-range-action clear" onClick={clearTimeRangeFilter} disabled={!timeRangeActive && !timeRangeHasDraft} aria-label="시간대 해제">해제</button>
               </div>
             </div>
             <button className={`filter-toggle ${gvOnly ? 'active' : ''}`} onClick={() => setGvOnly((value) => !value)} aria-pressed={gvOnly}>GV만</button>
