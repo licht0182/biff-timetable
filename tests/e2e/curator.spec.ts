@@ -59,10 +59,10 @@ test('filters AI docent columns by category without showing unrelated cards', as
 
   await categoryFilters.filter({ hasText: '체류 일정별 추천' }).first().click()
   await expect(page.locator('.curator-card')).toHaveCount(4)
-  await expect(page.locator('.curator-card')).toContainText('10월 10~11일만 BIFF에 있다면')
-  await expect(page.locator('.curator-card')).toContainText('10월 10~12일에 있다면')
-  await expect(page.locator('.curator-card')).toContainText('10월 9~11일에 있다면')
-  await expect(page.locator('.curator-card')).toContainText('10월 9~12일 4일 체류 실전판')
+  await expect(page.getByRole('button', { name: /10월 10~11일만 BIFF에 있다면/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /10월 10~12일에 있다면/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /10월 9~11일에 있다면/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /10월 9~12일 4일 체류 실전판/ })).toBeVisible()
 })
 
 
