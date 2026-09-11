@@ -94,6 +94,21 @@ function formatDate(date: string, _compact = false) {
   return `${value.getMonth() + 1}월 ${value.getDate()}일 ${weekdays[value.getDay()]}`
 }
 
+function screeningMatchesTimeRange(start: string, fromTime: string, toTime: string) {
+  if (!fromTime && !toTime) return true
+
+  const startMinutes = clockMinutes(start)
+  const fromMinutes = fromTime ? clockMinutes(fromTime) : null
+  const toMinutes = toTime ? clockMinutes(toTime) : null
+
+  if (fromMinutes != null && toMinutes != null && fromMinutes > toMinutes) {
+    return startMinutes >= fromMinutes || startMinutes <= toMinutes
+  }
+  if (fromMinutes != null && startMinutes < fromMinutes) return false
+  if (toMinutes != null && startMinutes > toMinutes) return false
+  return true
+}
+
 function downloadText(filename: string, content: string, type: string) {
   const blob = new Blob([content], { type })
   const url = URL.createObjectURL(blob)
@@ -168,6 +183,8 @@ export default function App() {
   const [section, setSection] = useState('전체')
   const [dateFilter, setDateFilter] = useState('전체')
   const [venueFilter, setVenueFilter] = useState('전체')
+  const [startTimeFilter, setStartTimeFilter] = useState('')
+  const [endTimeFilter, setEndTimeFilter] = useState('')
   const [gvOnly, setGvOnly] = useState(false)
   const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [activeTab, setActiveTab] = useState<'films' | 'timetable' | 'curator'>(initialNavigation.tab)
@@ -304,9 +321,10 @@ export default function App() {
   const visibleScreenings = useCallback((film: Film) => film.screenings.filter((screening) => {
     if (dateFilter !== '전체' && screening.date !== dateFilter) return false
     if (venueFilter !== '전체' && screening.venue !== venueFilter) return false
+    if (!screeningMatchesTimeRange(screening.start, startTimeFilter, endTimeFilter)) return false
     if (gvOnly && !screening.gv) return false
     return true
-  }), [dateFilter, venueFilter, gvOnly])
+  }), [dateFilter, venueFilter, startTimeFilter, endTimeFilter, gvOnly])
 
   const selectedSet = useMemo(() => new Set(selected), [selected])
   const favoriteSet = useMemo(() => new Set(favorites), [favorites])
@@ -321,11 +339,12 @@ export default function App() {
       return film.screenings.some((screening) => {
         if (dateFilter !== '전체' && screening.date !== dateFilter) return false
         if (venueFilter !== '전체' && screening.venue !== venueFilter) return false
+        if (!screeningMatchesTimeRange(screening.start, startTimeFilter, endTimeFilter)) return false
         if (gvOnly && !screening.gv) return false
         return true
       })
     })
-  }, [films, deferredQuery, section, dateFilter, venueFilter, gvOnly, favoritesOnly, favoriteSet])
+  }, [films, deferredQuery, section, dateFilter, venueFilter, startTimeFilter, endTimeFilter, gvOnly, favoritesOnly, favoriteSet])
 
   const selectedItems = useMemo<TimetableItem[]>(
     () => films.flatMap((film) => film.screenings.filter((screening) => selectedSet.has(screening.id)).map((screening) => ({ film, screening }))),
@@ -474,6 +493,8 @@ export default function App() {
     setSection('전체')
     setDateFilter('전체')
     setVenueFilter('전체')
+    setStartTimeFilter('')
+    setEndTimeFilter('')
     setGvOnly(false)
     setFavoritesOnly(false)
   }
@@ -833,6 +854,14 @@ export default function App() {
           <div className="filter-row">
             <label><span>날짜</span><select value={dateFilter} onChange={(event) => setDateFilter(event.target.value)}><option value="전체">전체 날짜</option>{allDates.map((date) => <option key={date} value={date}>{formatDate(date)}</option>)}</select></label>
             <label><span>상영관</span><select value={venueFilter} onChange={(event) => setVenueFilter(event.target.value)}><option value="전체">전체 상영관</option>{allVenues.map((venue) => <option key={venue} value={venue}>{venue}</option>)}</select></label>
+            <div className="time-range-filter">
+              <span>회차 시간대</span>
+              <div className="time-range-inputs">
+                <input type="time" step="900" value={startTimeFilter} onChange={(event) => setStartTimeFilter(event.target.value)} aria-label="회차 시작 시간부터" />
+                <em>~</em>
+                <input type="time" step="900" value={endTimeFilter} onChange={(event) => setEndTimeFilter(event.target.value)} aria-label="회차 시작 시간까지" />
+              </div>
+            </div>
             <button className={`filter-toggle ${gvOnly ? 'active' : ''}`} onClick={() => setGvOnly((value) => !value)} aria-pressed={gvOnly}>GV만</button>
             <button className={`filter-toggle ${favoritesOnly ? 'active' : ''}`} onClick={() => setFavoritesOnly((value) => !value)} aria-pressed={favoritesOnly}>★ 관심작</button>
             <button className="filter-reset" onClick={resetFilters}>초기화</button>
