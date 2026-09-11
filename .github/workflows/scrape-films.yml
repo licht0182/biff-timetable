@@ -8,6 +8,9 @@ on:
       - scripts/scrape-biff-films.py
       - scripts/requirements-biff-scrape.txt
       - .github/workflows/scrape-films.yml
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -44,7 +47,16 @@ jobs:
           print(json.dumps(meta, ensure_ascii=False, indent=2))
           PY
 
+      - name: Upload generated database artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: biff-2026-film-database
+          path: |
+            public/films-2026.json
+            public/films-2026.meta.json
+
       - name: Commit generated database
+        if: github.event_name != 'pull_request'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
