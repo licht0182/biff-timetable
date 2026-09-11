@@ -6,8 +6,9 @@ test('opens the AI docent, groups columns, and keeps article navigation anchored
 
   await expect(page.getByRole('heading', { name: '영화 고르기 전에 읽는 BIFF 분석' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'AI 도슨트 칼럼' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: '2026 섹션 가이드' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: '선택 전략' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^전체 / })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^2026 섹션 가이드 / })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^선택 전략 / })).toBeVisible()
   await expect(page.getByText('먼저 읽을 글')).toHaveCount(0)
   await expect(page.locator('.curator-featured-card')).toHaveCount(0)
   await expect(page.getByText('2026. 09. 11.')).toHaveCount(0)
@@ -31,6 +32,31 @@ test('opens the AI docent, groups columns, and keeps article navigation anchored
   await page.getByRole('button', { name: 'AI 도슨트' }).click()
   await expect(page.getByRole('heading', { name: 'AI 도슨트 칼럼' })).toBeVisible()
   await expect(page.getByRole('heading', { name: '10월 9일부터 12일까지 BIFF에 간다면: 4일을 가장 강하게 쓰는 법' })).toHaveCount(0)
+})
+
+
+
+test('filters AI docent columns by category without showing unrelated cards', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
+
+  const allCount = await page.locator('.curator-card').count()
+  expect(allCount).toBeGreaterThan(5)
+
+  await page.getByRole('button', { name: /^선택 전략 / }).click()
+  await expect(page.locator('.curator-card')).toHaveCount(1)
+  await expect(page.locator('.curator-card')).toContainText('작품을 고르기 전에 먼저 정할 세 가지')
+  await expect(page.locator('.curator-card')).not.toContainText('경쟁 13편 전작 분석')
+
+  await page.getByRole('button', { name: /^2026 섹션 가이드 / }).click()
+  const sectionGuideCards = page.locator('.curator-card')
+  await expect(sectionGuideCards.first()).toBeVisible()
+  expect(await sectionGuideCards.count()).toBeGreaterThan(5)
+  await expect(page.getByRole('button', { name: /10월 9일부터 12일까지 BIFF에 간다면/ })).toHaveCount(0)
+
+  await page.getByRole('button', { name: /^10\/9–12 특별 분석 / }).click()
+  await expect(page.locator('.curator-card')).toHaveCount(1)
+  await expect(page.locator('.curator-card')).toContainText('10월 9일부터 12일까지 BIFF에 간다면')
 })
 
 
