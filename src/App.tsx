@@ -8,6 +8,7 @@ import { VENUE_TRANSFER_SITES, getVenueSiteTransferMinutes } from './venue-trave
 import { getTransferBuffer } from './transfer-buffer'
 import { exportTimetablePng } from './png-export'
 import { BASE_END_HOUR, START_HOUR, clockMinutes, endLabel, screeningAbsoluteWindow, screeningEndOffsetMinutes, screeningsOverlap, timetableDate, timetableEndMinutes, timetableStartMinutes } from './screening-time'
+import { hasNavigationState, pushNavigationState, readNavigationState, replaceNavigationState } from './navigation-history'
 
 type FilmData = { films: Film[]; note?: string; source?: string }
 type BackupData = {
@@ -155,6 +156,7 @@ function useViewport() {
 
 export default function App() {
   const viewport = useViewport()
+  const initialNavigation = useMemo(() => readNavigationState(), [])
   const importInputRef = useRef<HTMLInputElement>(null)
   const filmScrollPositionRef = useRef(0)
   const [films, setFilms] = useState<Film[]>([])
@@ -171,7 +173,7 @@ export default function App() {
   const [venueFilter, setVenueFilter] = useState('전체')
   const [gvOnly, setGvOnly] = useState(false)
   const [favoritesOnly, setFavoritesOnly] = useState(false)
-  const [activeTab, setActiveTab] = useState<'films' | 'timetable' | 'curator'>('films')
+  const [activeTab, setActiveTab] = useState<'films' | 'timetable' | 'curator'>(initialNavigation.tab)
   const [curatorPageKey, setCuratorPageKey] = useState(0)
   const [detailFilm, setDetailFilm] = useState<Film | null>(null)
   const [detailScreeningId, setDetailScreeningId] = useState<string | null>(null)
@@ -179,10 +181,29 @@ export default function App() {
   const [loadError, setLoadError] = useState('')
   const [toast, setToast] = useState('')
   const [pngExportState, setPngExportState] = useState<'idle' | 'working' | 'ready' | 'done' | 'error'>('idle')
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(initialNavigation.settingsOpen)
   const [userSettings, setUserSettings] = useState<UserTimetableSettings>(() => normalizeUserSettings(readStorageValue(USER_SETTINGS_KEY)))
   const [timetableSelectionMode, setTimetableSelectionMode] = useState(false)
   const [timetableDeleteSelection, setTimetableDeleteSelection] = useState<string[]>([])
+
+  useEffect(() => {
+    if (!hasNavigationState()) replaceNavigationState(initialNavigation)
+
+    const handlePopState = (event: PopStateEvent) => {
+      const navigation = readNavigationState(event.state)
+      setActiveTab(navigation.tab)
+      setSettingsOpen(navigation.settingsOpen)
+      setDetailFilm(null)
+      setDetailScreeningId(null)
+      setCustomEventDialog(null)
+      if (navigation.tab === 'curator' && !navigation.settingsOpen) {
+        setCuratorPageKey((current) => current + 1)
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [initialNavigation])
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}screenings.json?v=${DATA_VERSION}`, { cache: 'no-store' })
@@ -702,6 +723,7 @@ export default function App() {
 
   const openFilms = useCallback(() => {
     const target = filmScrollPositionRef.current
+    pushNavigationState({ tab: 'films', settingsOpen: false, curatorSlug: null })
     setActiveTab('films')
     setSettingsOpen(false)
 
@@ -722,6 +744,7 @@ export default function App() {
   }, [])
 
   const openFilmsFromMenu = useCallback(() => {
+    pushNavigationState({ tab: 'films', settingsOpen: false, curatorSlug: null })
     setActiveTab('films')
     setSettingsOpen(false)
     window.setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }), 0)
@@ -729,6 +752,7 @@ export default function App() {
 
   const openTimetable = useCallback(() => {
     if (filmViewActive) filmScrollPositionRef.current = window.scrollY
+    pushNavigationState({ tab: 'timetable', settingsOpen: false, curatorSlug: null })
     setActiveTab('timetable')
     setSettingsOpen(false)
     window.setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }), 0)
@@ -736,6 +760,7 @@ export default function App() {
 
   const openCurator = useCallback(() => {
     if (filmViewActive) filmScrollPositionRef.current = window.scrollY
+    pushNavigationState({ tab: 'curator', settingsOpen: false, curatorSlug: null })
     setActiveTab('curator')
     setSettingsOpen(false)
     setCuratorPageKey((current) => current + 1)
@@ -744,9 +769,15 @@ export default function App() {
 
   const openSettings = useCallback(() => {
     if (filmViewActive) filmScrollPositionRef.current = window.scrollY
+    const currentNavigation = readNavigationState()
+    pushNavigationState({
+      tab: activeTab,
+      settingsOpen: true,
+      curatorSlug: activeTab === 'curator' ? currentNavigation.curatorSlug : null,
+    })
     setSettingsOpen(true)
     window.setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }), 0)
-  }, [filmViewActive])
+  }, [activeTab, filmViewActive])
 
   return (
     <div className={`app-shell ${activeTab === 'timetable' ? 'timetable-mode' : ''}`}>
