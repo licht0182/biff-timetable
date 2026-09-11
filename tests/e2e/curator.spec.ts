@@ -215,3 +215,26 @@ test('shows complete On Screen, special program, special screening and opening-f
   await expect(page.locator('.curator-body')).toContainText('대화가 사건이 되는 영화')
   await expect(page.locator('.curator-article-footer')).toHaveCount(0)
 })
+
+
+test('shows stay-window guides with real 2026 schedule data and opens a recommended film', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
+
+  await page.getByRole('button', { name: /체류 일정별 추천 4/ }).click()
+  await expect(page.locator('.curator-card')).toHaveCount(4)
+
+  await page.getByRole('button', { name: /10월 10~11일만 BIFF에 있다면/ }).click()
+  await expect(page.getByRole('heading', { name: /10월 10~11일만 BIFF에 있다면/ })).toBeVisible()
+  await expect(page.locator('.curator-stats')).toContainText('160편')
+  await expect(page.locator('.curator-stats')).toContainText('206회')
+  await expect(page.locator('.curator-stats')).toContainText('118회')
+  await expect(page.locator('.curator-stats')).toContainText('114편')
+  await expect(page.locator('.curator-body')).toContainText('스페이스')
+  await expect(page.locator('.curator-body')).toContainText('멜트다운')
+
+  const firstFilm = page.locator('.curator-film-guide').filter({ hasText: '비트윈 투 러버스' })
+  await firstFilm.getByRole('button', { name: '영화 찾기에서 보기' }).click()
+  await expect(page.getByLabel('영화 검색')).toHaveValue('비트윈 투 러버스')
+  await expect(page.getByText('비트윈 투 러버스', { exact: true }).first()).toBeVisible()
+})
