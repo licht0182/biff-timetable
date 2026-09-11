@@ -3,6 +3,14 @@
 .timetable-empty-actions{display:flex;flex-wrap:wrap;gap:6px}
 
 .event-block.custom-event{border-left-color:rgba(64,64,64,.28);background:#eceff3;color:#3f4852}
+.event-block.custom-event.category-personal.custom-palette-0{background:#fdecea;border-left-color:#d86e63;color:#70413b}
+.event-block.custom-event.category-personal.custom-palette-1{background:#eaf3fd;border-left-color:#6c9bd2;color:#315a84}
+.event-block.custom-event.category-personal.custom-palette-2{background:#eaf8ef;border-left-color:#62a979;color:#3d6d4c}
+.event-block.custom-event.category-personal.custom-palette-3{background:#f2ecfb;border-left-color:#9271c4;color:#674b84}
+.event-block.custom-event.category-personal.custom-palette-4{background:#fff1e5;border-left-color:#d98b50;color:#82542f}
+.event-block.custom-event.category-personal.custom-palette-5{background:#e9f7f6;border-left-color:#5ca6a1;color:#386c69}
+.event-block.custom-event.category-personal.custom-palette-6{background:#f9edf5;border-left-color:#bd729f;color:#784a68}
+.event-block.custom-event.category-personal.custom-palette-7{background:#f4f3e7;border-left-color:#9d9b55;color:#67662f}
 .event-block.custom-event.category-meal{background:#fff0d8;color:#76531f}
 .event-block.custom-event.category-travel{background:#e2eef8;color:#345c7b}
 .event-block.custom-event.category-rest{background:#e7f1e9;color:#3d6746}

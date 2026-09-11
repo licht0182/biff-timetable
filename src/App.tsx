@@ -3,7 +3,7 @@ import CustomEventDialog from './components/CustomEventDialog'
 import FilmList from './components/FilmList'
 import CuratorPage from './components/CuratorPage'
 import type { Film, Screening, TicketStatus, TicketStatusMap } from './components/film-types'
-import { createCustomEventId, customEventAbsoluteWindow, customEventCategoryLabel, customEventTimetableDate, customEventTimetableEndMinutes, customEventTimetableStartMinutes, normalizeCustomEvents, windowsOverlap, type CustomEvent, type CustomEventDraft } from './custom-events'
+import { createCustomEventId, customEventAbsoluteWindow, customEventCategoryLabel, customEventPaletteIndex, customEventTimetableDate, customEventTimetableEndMinutes, customEventTimetableStartMinutes, normalizeCustomEvents, windowsOverlap, type CustomEvent, type CustomEventDraft } from './custom-events'
 import { REST_BREAK_MINUTES, VENUE_TRANSFER_SITES, getVenueSiteTransferMinutes } from './venue-travel'
 import { getTransferBuffer } from './transfer-buffer'
 import { exportTimetablePng } from './png-export'
@@ -1031,7 +1031,7 @@ export default function App() {
                   const isMarkedForDelete = timetableDeleteSelection.includes(event.id)
                   return <button
                     type="button"
-                    className={`event-block custom-event category-${event.category} ${conflict ? 'has-time-conflict' : ''} ${timetableSelectionMode ? 'delete-selectable' : ''} ${isMarkedForDelete ? 'selected-for-delete' : ''}`}
+                    className={`event-block custom-event category-${event.category} custom-palette-${customEventPaletteIndex(event.id)} ${conflict ? 'has-time-conflict' : ''} ${timetableSelectionMode ? 'delete-selectable' : ''} ${isMarkedForDelete ? 'selected-for-delete' : ''}`}
                     key={event.id}
                     style={{ top: `${top}px`, height: `${height}px` }}
                     title={`${event.title} · ${event.start}–${event.end} · ${customEventCategoryLabel(event.category)}${event.location ? ` · ${event.location}` : ''}${conflict ? ' · 다른 일정과 시간 겹침' : ''}${timetableSelectionMode ? `\n${isMarkedForDelete ? '삭제 선택됨 · 클릭하여 선택 해제' : '삭제할 일정으로 선택하려면 클릭'}` : '\n클릭하여 상세정보 보기'}`}
