@@ -152,6 +152,66 @@ def split_bilingual(raw: str) -> tuple[str, str]:
     return raw, ""
 
 
+def contains_hangul(value: str) -> bool:
+    return bool(re.search(r"[가-힣]", value))
+
+
+def derive_title_from_info(info_segment: list[str], fallback: str) -> tuple[str, str, str, str]:
+    title_ko, title_en = split_bilingual(fallback)
+    if fallback:
+        return title_ko, title_en, fallback, ""
+
+    try:
+        country_index = info_segment.index("국가")
+    except ValueError:
+        country_index = len(info_segment)
+
+    prefix = [
+        clean(x) for x in info_segment[:country_index]
+        if clean(x)
+        and clean(x) != "트레일러 재생"
+        and not clean(x).startswith("©")
+    ]
+    if not prefix:
+        return "", "", "", ""
+
+    genre_raw = prefix[-1] if len(prefix) >= 2 else ""
+    title_parts = prefix[:-1] if genre_raw else prefix
+    if len(title_parts) >= 2:
+        title_ko = title_parts[-2]
+        title_en = title_parts[-1]
+        display = f"{title_ko} / {title_en}"
+    elif title_parts:
+        display = title_parts[-1]
+        title_ko, title_en = split_bilingual(display)
+    else:
+        display = ""
+    return clean(title_ko), clean(title_en), clean(display), clean(genre_raw)
+
+
+def derive_director_names(parts: list[str], fallback: str) -> tuple[str, str, str]:
+    if fallback:
+        ko, en = split_bilingual(fallback)
+        return ko, en, fallback
+
+    candidates = [
+        clean(x) for x in parts
+        if clean(x)
+        and not clean(x).startswith("©")
+        and len(clean(x)) <= 120
+    ]
+    for i in range(len(candidates) - 1):
+        first, second = candidates[i], candidates[i + 1]
+        if contains_hangul(first) and re.search(r"[A-Za-z]", second):
+            return first, second, f"{first} / {second}"
+
+    if len(candidates) >= 2:
+        return candidates[0], candidates[1], f"{candidates[0]} / {candidates[1]}"
+    if candidates:
+        return candidates[0], "", candidates[0]
+    return "", "", ""
+
+
 def string_segment(strings: list[str], start: str, end: str | None) -> list[str]:
     try:
         start_idx = strings.index(start) + 1
@@ -256,8 +316,12 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
     credit_parts = string_segment(strings, "Credit", "Photo")
     photo_parts = string_segment(strings, "Photo", "BIFF NEWSLETTER")
 
-    title_ko, title_en = split_bilingual(record.get("listTitle", ""))
-    director_ko, director_en = split_bilingual(record.get("listDirector", ""))
+    title_ko, title_en, title_display, derived_genre = derive_title_from_info(
+        info_segment, record.get("listTitle", "")
+    )
+    director_ko, director_en, director_display = derive_director_names(
+        director_parts, record.get("listDirector", "")
+    )
 
     country_raw = read_labeled_value(info_segment, "국가") or record.get("listCountries", "")
     year_raw = read_labeled_value(info_segment, "제작연도")
@@ -266,8 +330,8 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
     color_raw = read_labeled_value(info_segment, "컬러")
 
     # The genre is normally the standalone string immediately before the country label.
-    genre_raw = ""
-    if "국가" in info_segment:
+    genre_raw = derived_genre
+    if not genre_raw and "국가" in info_segment:
         idx = info_segment.index("국가")
         candidates = [x for x in info_segment[:idx] if x not in {"트레일러 재생"} and "©" not in x]
         candidates = [x for x in candidates if x not in {record.get("listTitle", ""), title_ko, title_en}]
@@ -307,7 +371,7 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
         "title": {
             "ko": title_ko,
             "en": title_en,
-            "display": record.get("listTitle", ""),
+            "display": title_display,
         },
         "classification": {
             "genres": [clean(x) for x in re.split(r"\s*/\s*", genre_raw) if clean(x)],
@@ -329,7 +393,7 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
         "director": {
             "nameKo": director_ko,
             "nameEn": director_en,
-            "display": record.get("listDirector", ""),
+            "display": director_display,
             "sectionText": clean(" ".join(director_parts)),
         },
         "credits": {
