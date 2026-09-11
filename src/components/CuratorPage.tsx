@@ -1,10 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CURATOR_ARTICLES, type CuratorArticle } from '../curator-content'
 
 type Props = {
   onOpenFilms: () => void
 }
 
+function scrollPageTop(behavior: ScrollBehavior = 'auto') {
+  window.scrollTo({ top: 0, left: 0, behavior })
+}
 
 function ArticleDetail({ article, onBack, onOpenFilms }: { article: CuratorArticle; onBack: () => void; onOpenFilms: () => void }) {
   return (
@@ -17,7 +20,7 @@ function ArticleDetail({ article, onBack, onOpenFilms }: { article: CuratorArtic
             <h2>{article.title}</h2>
             <p className="curator-deck">{article.deck}</p>
             <div className="curator-meta">
-              <span>AI 큐레이터 편집부</span>
+              <span>AI 도슨트 편집부</span>
               <span>예상 읽는 시간 : 약 {article.readingMinutes}분</span>
             </div>
             <div className="curator-tags">{article.tags.map((tag) => <span key={tag}>#{tag}</span>)}</div>
@@ -76,11 +79,22 @@ function ArticleDetail({ article, onBack, onOpenFilms }: { article: CuratorArtic
             </footer>
           )}
         </article>
-        <p className="curator-disclaimer">AI 큐레이터의 글은 작품 선택을 돕기 위한 편집 분석이며 BIFF 공식 안내가 아닙니다. 작품·상영 정보는 BIFF 공식 정보를 우선 확인해 주세요.</p>
+        <p className="curator-disclaimer">AI 도슨트의 글은 작품 선택을 돕기 위한 편집 분석이며 BIFF 공식 안내가 아닙니다. 작품·상영 정보는 BIFF 공식 정보를 우선 확인해 주세요.</p>
+        <div className="curator-detail-actions">
+          <button type="button" className="curator-top-button" onClick={() => scrollPageTop('smooth')}>↑ 맨 위로</button>
+        </div>
       </div>
     </main>
   )
 }
+
+const CATEGORY_ORDER = [
+  '2026 섹션 가이드',
+  '10/9–12 특별 분석',
+  '선택 전략',
+  '관람 경험',
+  '시간표 설계',
+]
 
 export default function CuratorPage({ onOpenFilms }: Props) {
   const [activeSlug, setActiveSlug] = useState<string | null>(null)
@@ -88,64 +102,84 @@ export default function CuratorPage({ onOpenFilms }: Props) {
     () => CURATOR_ARTICLES.find((article) => article.slug === activeSlug) ?? null,
     [activeSlug],
   )
+  const articleGroups = useMemo(() => {
+    const groups = new Map<string, CuratorArticle[]>()
+    for (const article of CURATOR_ARTICLES) {
+      const items = groups.get(article.category) ?? []
+      items.push(article)
+      groups.set(article.category, items)
+    }
+
+    return Array.from(groups.entries())
+      .map(([category, articles]) => ({ category, articles }))
+      .sort((a, b) => {
+        const aIndex = CATEGORY_ORDER.indexOf(a.category)
+        const bIndex = CATEGORY_ORDER.indexOf(b.category)
+        const aOrder = aIndex === -1 ? CATEGORY_ORDER.length : aIndex
+        const bOrder = bIndex === -1 ? CATEGORY_ORDER.length : bIndex
+        return aOrder - bOrder || a.category.localeCompare(b.category, 'ko')
+      })
+  }, [])
+
+  useEffect(() => {
+    if (activeSlug) scrollPageTop()
+  }, [activeSlug])
 
   if (activeArticle) {
     return <ArticleDetail article={activeArticle} onBack={() => setActiveSlug(null)} onOpenFilms={onOpenFilms} />
   }
 
-  const [featured, ...articles] = CURATOR_ARTICLES
-
   return (
     <main className="curator-page">
       <section className="curator-hero">
         <div>
-          <p className="curator-kicker">AI CURATOR · BIFF EDITORIAL</p>
+          <p className="curator-kicker">AI DOCENT · BIFF EDITORIAL</p>
           <h2>영화 고르기 전에 읽는 BIFF 분석</h2>
           <p>공식 작품 데이터와 프로그램 노트를 바탕으로 각 섹션의 흐름, 감독의 시선, 주제와 형식을 비교해 상영작을 깊이 있게 읽습니다.</p>
         </div>
         <span className="curator-edition">2026</span>
       </section>
 
-      <section className="curator-featured" aria-labelledby="curator-featured-title">
-        <div className="curator-section-heading">
-          <div><p>FEATURED</p><h3 id="curator-featured-title">먼저 읽을 글</h3></div>
-          <span>{CURATOR_ARTICLES.length}개의 칼럼</span>
-        </div>
-        <button type="button" className="curator-featured-card" onClick={() => setActiveSlug(featured.slug)}>
-          <span className="curator-category">{featured.category}</span>
-          <h3>{featured.title}</h3>
-          <p>{featured.deck}</p>
-          <div className="curator-card-meta"><span>예상 읽는 시간 : 약 {featured.readingMinutes}분</span></div>
-          <strong>칼럼 읽기 →</strong>
-        </button>
-      </section>
-
       <section className="curator-latest" aria-labelledby="curator-latest-title">
         <div className="curator-section-heading">
-          <div><p>LATEST COLUMNS</p><h3 id="curator-latest-title">큐레이터 칼럼</h3></div>
+          <div><p>DOCENT COLUMNS</p><h3 id="curator-latest-title">AI 도슨트 칼럼</h3></div>
+          <span>{CURATOR_ARTICLES.length}개의 칼럼 · {articleGroups.length}개 분류</span>
         </div>
-        <div className="curator-grid">
-          {articles.map((article) => (
-            <button type="button" className="curator-card" key={article.slug} onClick={() => setActiveSlug(article.slug)}>
-              <span className="curator-category">{article.category}</span>
-              <h3>{article.title}</h3>
-              <p>{article.deck}</p>
-              <div className="curator-card-tags">{article.tags.slice(0, 2).map((tag) => <span key={tag}>#{tag}</span>)}</div>
-              <div className="curator-card-meta"><span>예상 읽는 시간 : 약 {article.readingMinutes}분</span></div>
-            </button>
-          ))}
+
+        <div className="curator-groups">
+          {articleGroups.map((group, index) => {
+            const groupTitleId = `curator-group-${index}`
+            return (
+              <section className="curator-group" key={group.category} aria-labelledby={groupTitleId}>
+                <div className="curator-group-heading">
+                  <h4 id={groupTitleId}>{group.category}</h4>
+                  <span>{group.articles.length}개</span>
+                </div>
+                <div className="curator-grid">
+                  {group.articles.map((article) => (
+                    <button type="button" className="curator-card" key={article.slug} onClick={() => setActiveSlug(article.slug)}>
+                      <h3>{article.title}</h3>
+                      <p>{article.deck}</p>
+                      <div className="curator-card-tags">{article.tags.slice(0, 2).map((tag) => <span key={tag}>#{tag}</span>)}</div>
+                      <div className="curator-card-meta"><span>예상 읽는 시간 : 약 {article.readingMinutes}분</span></div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )
+          })}
         </div>
       </section>
 
       <section className="curator-method">
         <div>
           <p className="curator-kicker">HOW IT WORKS</p>
-          <h3>AI 큐레이터는 이렇게 글을 만듭니다</h3>
+          <h3>AI 도슨트는 이렇게 글을 만듭니다</h3>
         </div>
         <ol>
           <li><strong>공식 정보 확인</strong><span>작품·섹션·감독·프로그램 노트처럼 변할 수 있는 사실은 공식 정보를 기준으로 정리합니다.</span></li>
           <li><strong>섹션 내부 비교</strong><span>국가, 주제, 러닝타임, 형식과 프로그램 노트를 함께 보며 작품들이 만드는 공통점과 차이를 읽습니다.</span></li>
-          <li><strong>판단 근거 분리</strong><span>확인된 사실과 큐레이터의 해석·추천을 구분해 과도한 확신을 피합니다.</span></li>
+          <li><strong>판단 근거 분리</strong><span>확인된 사실과 도슨트의 해석·추천을 구분해 과도한 확신을 피합니다.</span></li>
         </ol>
       </section>
 
