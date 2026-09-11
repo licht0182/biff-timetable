@@ -109,6 +109,19 @@ function screeningMatchesTimeRange(start: string, fromTime: string, toTime: stri
   return true
 }
 
+function compareScreeningsByStart(a: Screening, b: Screening) {
+  const dateOrder = a.date.localeCompare(b.date)
+  if (dateOrder !== 0) return dateOrder
+  return clockMinutes(a.start) - clockMinutes(b.start)
+}
+
+function earliestScreening(screenings: Screening[]) {
+  return screenings.reduce<Screening | null>(
+    (earliest, screening) => !earliest || compareScreeningsByStart(screening, earliest) < 0 ? screening : earliest,
+    null,
+  )
+}
+
 function downloadText(filename: string, content: string, type: string) {
   const blob = new Blob([content], { type })
   const url = URL.createObjectURL(blob)
@@ -331,19 +344,26 @@ export default function App() {
 
   const filteredFilms = useMemo(() => {
     const q = deferredQuery.trim().toLowerCase()
-    return films.filter((film) => {
-      const haystack = [film.title, film.englishTitle, film.director, film.country, film.genre, film.section].filter(Boolean).join(' ').toLowerCase()
-      if (section !== '전체' && film.section !== section) return false
-      if (favoritesOnly && !favoriteSet.has(film.id)) return false
-      if (q && !haystack.includes(q)) return false
-      return film.screenings.some((screening) => {
-        if (dateFilter !== '전체' && screening.date !== dateFilter) return false
-        if (venueFilter !== '전체' && screening.venue !== venueFilter) return false
-        if (!screeningMatchesTimeRange(screening.start, startTimeFilter, endTimeFilter)) return false
-        if (gvOnly && !screening.gv) return false
-        return true
+    return films
+      .map((film, sourceIndex) => {
+        const haystack = [film.title, film.englishTitle, film.director, film.country, film.genre, film.section].filter(Boolean).join(' ').toLowerCase()
+        if (section !== '전체' && film.section !== section) return null
+        if (favoritesOnly && !favoriteSet.has(film.id)) return null
+        if (q && !haystack.includes(q)) return null
+
+        const matchingScreenings = film.screenings.filter((screening) => {
+          if (dateFilter !== '전체' && screening.date !== dateFilter) return false
+          if (venueFilter !== '전체' && screening.venue !== venueFilter) return false
+          if (!screeningMatchesTimeRange(screening.start, startTimeFilter, endTimeFilter)) return false
+          if (gvOnly && !screening.gv) return false
+          return true
+        })
+        const earliest = earliestScreening(matchingScreenings)
+        return earliest ? { film, earliest, sourceIndex } : null
       })
-    })
+      .filter((item): item is { film: Film; earliest: Screening; sourceIndex: number } => item !== null)
+      .sort((a, b) => compareScreeningsByStart(a.earliest, b.earliest) || a.sourceIndex - b.sourceIndex)
+      .map(({ film }) => film)
   }, [films, deferredQuery, section, dateFilter, venueFilter, startTimeFilter, endTimeFilter, gvOnly, favoritesOnly, favoriteSet])
 
   const selectedItems = useMemo<TimetableItem[]>(

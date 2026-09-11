@@ -104,6 +104,33 @@ test('loads, opens a centered detail dialog, and closes it from the backdrop', a
   expect(errors).toEqual([])
 })
 
+test('sorts movie finder films by their earliest screening on the selected date', async ({ page, request }) => {
+  const data = await screeningData(request)
+  const dates = Array.from(new Set(flatten(data).map(({ screening }) => screening.date))).sort()
+  const candidateDate = dates.find((date) => {
+    const starts = data.films
+      .map((film) => film.screenings.filter((screening) => screening.date === date).map((screening) => screening.start).sort()[0])
+      .filter((start): start is string => Boolean(start))
+    return new Set(starts).size >= 2
+  })
+  test.skip(!candidateDate, '영화 정렬 테스트에 사용할 날짜가 없습니다.')
+
+  const candidates = data.films.map((film, sourceIndex) => {
+    const screenings = film.screenings.filter((screening) => screening.date === candidateDate)
+    if (!screenings.length) return null
+    const earliest = screenings.reduce((best, screening) => clockMinutes(screening.start) < clockMinutes(best.start) ? screening : best)
+    return { film, earliest, sourceIndex }
+  }).filter((item): item is { film: Film; earliest: Screening; sourceIndex: number } => item !== null)
+
+  candidates.sort((a, b) => clockMinutes(a.earliest.start) - clockMinutes(b.earliest.start) || a.sourceIndex - b.sourceIndex)
+  const expected = candidates[0]
+  expect(expected).toBeTruthy()
+
+  await page.goto('./')
+  await page.getByLabel('날짜').selectOption(candidateDate!)
+  await expect(page.locator('.film-card h2').first()).toHaveText(expected!.film.title)
+})
+
 test('filters movie finder screenings by start-time range and resets it', async ({ page, request }) => {
   const data = await screeningData(request)
   const item = flatten(data).find(({ screening }) => /^\d{2}:\d{2}$/.test(screening.start))
