@@ -48,6 +48,50 @@ const guides = [
     ],
   },
   {
+    section: '월드 시네마',
+    file: '../src/curator-section-guides-world.ts',
+    expectedCount: 29,
+    stats: ({ films: xs, averageRuntime, themeCount }) => [
+      `{ value: '${xs.length}편', label: '전체 작품' }`,
+      `{ value: '약 ${averageRuntime}분', label: '평균 러닝타임' }`,
+      `{ value: '${themeCount('인권/노동/사회')}편', label: '인권/노동/사회' }`,
+      `{ value: '${themeCount('성장영화/청춘')}편', label: '성장영화/청춘' }`,
+    ],
+  },
+  {
+    section: '플래시 포워드',
+    file: '../src/curator-section-guides-world.ts',
+    expectedCount: 12,
+    stats: ({ films: xs, averageRuntime, themeCount }) => [
+      `{ value: '${xs.length}편', label: '전체 작품' }`,
+      `{ value: '약 ${averageRuntime}분', label: '평균 러닝타임' }`,
+      `{ value: '${themeCount('성장영화/청춘')}편', label: '성장영화/청춘' }`,
+      `{ value: '${themeCount('LGBTQ+')}편', label: 'LGBTQ+ 주제' }`,
+    ],
+  },
+  {
+    section: '한국영화의 오늘 - 파노라마',
+    file: '../src/curator-section-guides-korean-today.ts',
+    expectedCount: 6,
+    stats: ({ films: xs, averageRuntime, themeCount, premiereCount }) => [
+      `{ value: '${xs.length}편', label: '전체 작품' }`,
+      `{ value: '${premiereCount('World Premiere')}편', label: 'World Premiere' }`,
+      `{ value: '약 ${averageRuntime}분', label: '평균 러닝타임' }`,
+      `{ value: '${themeCount('여성')}편', label: '여성 주제' }`,
+    ],
+  },
+  {
+    section: '한국영화의 오늘 - 스페셜 프리미어',
+    file: '../src/curator-section-guides-korean-today.ts',
+    expectedCount: 3,
+    stats: ({ films: xs, averageRuntime, themeCount, premiereCount }) => [
+      `{ value: '${xs.length}편', label: '전체 작품' }`,
+      `{ value: '${premiereCount('World Premiere')}편', label: 'World Premiere' }`,
+      `{ value: '약 ${averageRuntime}분', label: '평균 러닝타임' }`,
+      `{ value: '${themeCount('가족/아동')}편', label: '가족/아동 주제' }`,
+    ],
+  },
+  {
     section: '아시아영화의 창',
     file: '../src/curator-section-guide-asian-window.ts',
     expectedCount: 27,
