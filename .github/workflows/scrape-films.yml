@@ -1,0 +1,69 @@
+name: Refresh 2026 BIFF Film Database
+
+on:
+  push:
+    branches:
+      - data/2026-film-database
+    paths:
+      - scripts/scrape-biff-films.py
+      - scripts/requirements-biff-scrape.txt
+      - .github/workflows/scrape-films.yml
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install scraper dependencies
+        run: pip install -r scripts/requirements-biff-scrape.txt
+
+      - name: Scrape all 2026 official BIFF film pages
+        run: python scripts/scrape-biff-films.py
+
+      - name: Show generated database summary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          films = json.loads(Path("public/films-2026.json").read_text(encoding="utf-8"))
+          meta = json.loads(Path("public/films-2026.meta.json").read_text(encoding="utf-8"))
+          print(f"films={len(films)}")
+          print(json.dumps(meta, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Upload generated database artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: biff-2026-film-database
+          path: |
+            public/films-2026.json
+            public/films-2026.meta.json
+
+      - name: Commit generated database
+        if: github.event_name != 'pull_request'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/films-2026.json public/films-2026.meta.json
+          if git diff --cached --quiet; then
+            echo "Film database is already current."
+          else
+            git commit -m "Update 2026 BIFF film database"
+            git fetch origin "${{ github.ref_name }}"
+            git rebase "origin/${{ github.ref_name }}"
+            git push origin HEAD:${{ github.ref_name }}
+          fi
