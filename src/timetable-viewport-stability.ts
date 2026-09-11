@@ -21,17 +21,24 @@ function clockMinutes(value: string) {
 }
 
 function eventRange(block: HTMLElement) {
-  const source = block.querySelector<HTMLElement>('.event-time')?.textContent
-    ?? block.getAttribute('title')
-    ?? block.getAttribute('aria-label')
-    ?? ''
-  const match = source.match(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/)
-  if (!match) return null
-  const start = clockMinutes(match[1])
-  let end = clockMinutes(match[2])
-  if (start == null || end == null) return null
-  while (end <= start) end += 24 * 60
-  return { start, end }
+  const sources = [
+    block.querySelector<HTMLElement>('.event-time')?.textContent,
+    block.getAttribute('title'),
+    block.getAttribute('aria-label'),
+  ]
+
+  for (const source of sources) {
+    if (!source) continue
+    const match = source.match(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/)
+    if (!match) continue
+    const start = clockMinutes(match[1])
+    let end = clockMinutes(match[2])
+    if (start == null || end == null) continue
+    while (end <= start) end += 24 * 60
+    return { start, end }
+  }
+
+  return null
 }
 
 function baseHourElements(timetable: HTMLElement) {

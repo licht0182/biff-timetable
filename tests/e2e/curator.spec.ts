@@ -32,7 +32,8 @@ test('opens the AI docent, groups columns, and keeps article navigation anchored
 
   await page.getByRole('button', { name: 'AI 도슨트' }).click()
   await expect(page.getByRole('heading', { name: 'AI 도슨트 칼럼' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: '10월 9일부터 12일까지 BIFF에 간다면: 4일을 가장 강하게 쓰는 법' })).toHaveCount(0)
+  await expect(page.locator('.curator-article-header h2')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /10월 9일부터 12일까지 BIFF에 간다면/ })).toBeVisible()
 })
 
 
