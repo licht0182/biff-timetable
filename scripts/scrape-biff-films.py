@@ -465,33 +465,54 @@ def main() -> int:
         print(json.dumps(errors[:20], ensure_ascii=False, indent=2))
         raise RuntimeError(f"{len(errors)} film detail pages failed; refusing to save partial data.")
 
-    catalogue_by_pair = {
-        (entry["titleKo"], entry["titleEn"]): entry for entry in catalogue
-        if entry["titleKo"]
-    }
+    catalogue_by_pair: dict[tuple[str, str], list[dict[str, str]]] = {}
     catalogue_by_ko: dict[str, list[dict[str, str]]] = {}
     for entry in catalogue:
-        catalogue_by_ko.setdefault(entry["titleKo"], []).append(entry)
+        if entry["titleKo"]:
+            catalogue_by_pair.setdefault((entry["titleKo"], entry["titleEn"]), []).append(entry)
+            catalogue_by_ko.setdefault(entry["titleKo"], []).append(entry)
 
     for film in films:
         key = (film["title"]["ko"], film["title"]["en"])
-        entry = catalogue_by_pair.get(key)
-        if not entry:
+        entries = catalogue_by_pair.get(key, [])
+        if not entries:
             candidates = catalogue_by_ko.get(film["title"]["ko"], [])
-            if len(candidates) == 1:
-                entry = candidates[0]
-        if entry:
-            film["biff"]["section"] = entry["section"]
-            film["biff"]["sectionGroup"] = entry["sectionGroup"]
-            film["biff"]["sectionHeading"] = entry["sectionHeading"]
-            film["source"]["listTitle"] = entry["displayTitle"]
-            film["source"]["listDirector"] = entry["director"]
-            film["source"]["listCountries"] = entry["countries"]
+            distinct_titles = {(entry["titleKo"], entry["titleEn"]) for entry in candidates}
+            if len(distinct_titles) == 1:
+                entries = candidates
 
-    # Opening film is the only current 2026 detail page whose bottom related-film
-    # block is absent. The official all-films table still assigns it correctly.
-    # Any remaining unclassified film is treated as a hard failure.
-    unclassified = [film["title"]["display"] for film in films if not film["biff"]["section"]]
+        unique_sections = []
+        seen_section_keys = set()
+        for entry in entries:
+            section_key = (entry["section"], entry["sectionHeading"])
+            if section_key in seen_section_keys:
+                continue
+            seen_section_keys.add(section_key)
+            unique_sections.append({
+                "name": entry["section"],
+                "group": entry["sectionGroup"],
+                "heading": entry["sectionHeading"],
+            })
+
+        film["biff"]["sections"] = unique_sections
+        if unique_sections:
+            primary = unique_sections[0]
+            film["biff"]["section"] = primary["name"]
+            film["biff"]["sectionGroup"] = primary["group"]
+            film["biff"]["sectionHeading"] = primary["heading"]
+            film["source"]["listEntries"] = [
+                {
+                    "displayTitle": entry["displayTitle"],
+                    "director": entry["director"],
+                    "countries": entry["countries"],
+                    "section": entry["section"],
+                    "sectionHeading": entry["sectionHeading"],
+                }
+                for entry in entries
+            ]
+
+    # Every official film must appear in at least one section of the all-films table.
+    unclassified = [film["title"]["display"] for film in films if not film["biff"].get("sections")]
     if unclassified:
         print(json.dumps({"unclassified": unclassified[:20]}, ensure_ascii=False, indent=2))
         raise RuntimeError(f"{len(unclassified)} films are missing official section classification.")
@@ -509,7 +530,12 @@ def main() -> int:
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUT_PATH.write_text(json.dumps(films, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    section_counts = Counter(film["biff"]["section"] or "(unclassified)" for film in films)
+    primary_section_counts = Counter(film["biff"]["section"] or "(unclassified)" for film in films)
+    membership_counts = Counter(
+        section["name"]
+        for film in films
+        for section in film["biff"].get("sections", [])
+    )
     with_notes = sum(bool(film["editorial"]["programNote"]) for film in films)
     with_images = sum(bool(film["media"]["images"]) for film in films)
     with_director = sum(bool(film["director"]["display"]) for film in films)
@@ -521,16 +547,20 @@ def main() -> int:
         "expectedOfficialCount": EXPECTED_OFFICIAL_COUNT,
         "filmCount": len(films),
         "collectedAtUtc": collected_at,
-        "sectionCounts": dict(sorted(section_counts.items())),
+        "catalogueRowCount": len(catalogue),
+        "primarySectionCounts": dict(sorted(primary_section_counts.items())),
+        "sectionMembershipCounts": dict(sorted(membership_counts.items())),
+        "sectionMembershipCount": sum(membership_counts.values()),
         "coverage": {
             "withProgramNote": with_notes,
             "withDirector": with_director,
             "withImages": with_images,
-            "withOfficialSection": sum(bool(film["biff"]["section"]) for film in films),
+            "withOfficialSection": sum(bool(film["biff"].get("sections")) for film in films),
+            "withMultipleSections": sum(len(film["biff"].get("sections", [])) > 1 for film in films),
             "withThemes": sum(bool(film["classification"]["themes"]) for film in films),
         },
         "databaseFile": str(OUT_PATH),
-        "schemaVersion": 2,
+        "schemaVersion": 3,
     }
     META_PATH.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(meta, ensure_ascii=False, indent=2))
