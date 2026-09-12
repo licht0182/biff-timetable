@@ -104,7 +104,7 @@ test('shows the 2026 director guide with the Lee Chang-dong analysis first', asy
   await expect(directorGuideFilter).toBeVisible()
   await directorGuideFilter.click()
 
-  await expect(page.locator('.curator-card')).toHaveCount(6)
+  await expect(page.locator('.curator-card')).toHaveCount(7)
   const leeCard = page.getByRole('button', { name: /이창동: 고통을 설명하지 않고 끝까지 바라보는 영화/ })
   await expect(leeCard).toBeVisible()
   await expect(leeCard).toContainText('예상 읽는 시간 : 약 14분')
@@ -296,6 +296,44 @@ test('shows the Na Hong-jin director guide and opens HOPE', async ({ page }) => 
   await page.locator('.curator-film-guide').getByRole('button', { name: '영화 찾기에서 보기' }).click()
   await expect(page.getByLabel('영화 검색')).toHaveValue('호프')
   await expect(page.getByText('호프', { exact: true }).first()).toBeVisible()
+})
+
+test('shows the Hirokazu Kore-eda director guide and opens Look Back', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
+
+  const categoryFilters = page.locator('.curator-filter-chips button')
+  await categoryFilters.filter({ hasText: '2026 감독 가이드' }).first().click()
+
+  const koreedaCard = page.getByRole('button', { name: /고레에다 히로카즈: 가족을 정의하지 않고 관계가 만들어지는 시간을 바라보는 영화/ })
+  await expect(koreedaCard).toBeVisible()
+  await expect(koreedaCard).toContainText('예상 읽는 시간 : 약 16분')
+  await koreedaCard.click()
+
+  await expect(page.getByRole('heading', { name: '고레에다 히로카즈: 가족을 정의하지 않고 관계가 만들어지는 시간을 바라보는 영화' })).toBeVisible()
+  await expect(page.locator('.curator-meta')).toContainText('예상 읽는 시간 : 약 16분')
+  await expect(page.locator('.curator-body')).toContainText('환상의 빛')
+  await expect(page.locator('.curator-body')).toContainText('원더풀 라이프')
+  await expect(page.locator('.curator-body')).toContainText('아무도 모른다')
+  await expect(page.locator('.curator-body')).toContainText('걸어도 걸어도')
+  await expect(page.locator('.curator-body')).toContainText('그렇게 아버지가 된다')
+  await expect(page.locator('.curator-body')).toContainText('어느 가족')
+  await expect(page.locator('.curator-body')).toContainText('괴물')
+  await expect(page.locator('.curator-body')).toContainText('Sheep in the Box')
+  await expect(page.locator('.curator-body')).toContainText('룩백')
+  await expect(page.locator('.curator-stats')).toContainText('2018')
+  await expect(page.locator('.curator-stats')).toContainText('100분')
+  await expect(page.locator('.curator-film-guide')).toHaveCount(1)
+  await expect(page.locator('.curator-film-guide')).toContainText('Look Back')
+  await expect(page.locator('.curator-film-guide')).toContainText('100분')
+  await expect(page.locator('.curator-film-guide')).toContainText('오픈 시네마')
+  await expect(page.locator('.curator-body')).toContainText('후지모토 타츠키')
+  await expect(page.locator('.curator-body')).toContainText('아무도 모른다')
+  await expect(page.locator('.curator-article-footer')).toHaveCount(0)
+
+  await page.locator('.curator-film-guide').getByRole('button', { name: '영화 찾기에서 보기' }).click()
+  await expect(page.getByLabel('영화 검색')).toHaveValue('룩백')
+  await expect(page.getByText('룩백', { exact: true }).first()).toBeVisible()
 })
 
 test('keeps the curator within a narrow mobile viewport', async ({ page }) => {
