@@ -104,7 +104,7 @@ test('shows the 2026 director guide with the Lee Chang-dong analysis first', asy
   await expect(directorGuideFilter).toBeVisible()
   await directorGuideFilter.click()
 
-  await expect(page.locator('.curator-card')).toHaveCount(2)
+  await expect(page.locator('.curator-card')).toHaveCount(3)
   const leeCard = page.getByRole('button', { name: /이창동: 고통을 설명하지 않고 끝까지 바라보는 영화/ })
   await expect(leeCard).toBeVisible()
   await expect(leeCard).toContainText('예상 읽는 시간 : 약 14분')
@@ -161,6 +161,39 @@ test('shows the Hamaguchi Ryusuke director guide and opens the 2026 BIFF film', 
   await page.locator('.curator-film-guide').getByRole('button', { name: '영화 찾기에서 보기' }).click()
   await expect(page.getByLabel('영화 검색')).toHaveValue('갑자기 병세가 악화되다')
   await expect(page.getByText('갑자기 병세가 악화되다', { exact: true }).first()).toBeVisible()
+})
+
+test('shows the Cristian Mungiu director guide and opens Fjord', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
+
+  const categoryFilters = page.locator('.curator-filter-chips button')
+  await categoryFilters.filter({ hasText: '2026 감독 가이드' }).first().click()
+
+  const mungiuCard = page.getByRole('button', { name: /크리스티안 문쥬: 정답을 주지 않고 도덕의 자리를 흔드는 영화/ })
+  await expect(mungiuCard).toBeVisible()
+  await expect(mungiuCard).toContainText('예상 읽는 시간 : 약 15분')
+  await mungiuCard.click()
+
+  await expect(page.getByRole('heading', { name: '크리스티안 문쥬: 정답을 주지 않고 도덕의 자리를 흔드는 영화' })).toBeVisible()
+  await expect(page.locator('.curator-meta')).toContainText('예상 읽는 시간 : 약 15분')
+  await expect(page.locator('.curator-body')).toContainText('서쪽')
+  await expect(page.locator('.curator-body')).toContainText('4개월, 3주 그리고 2일')
+  await expect(page.locator('.curator-body')).toContainText('언덕 너머로')
+  await expect(page.locator('.curator-body')).toContainText('졸업')
+  await expect(page.locator('.curator-body')).toContainText('R.M.N.')
+  await expect(page.locator('.curator-body')).toContainText('피오르')
+  await expect(page.locator('.curator-stats')).toContainText('2회')
+  await expect(page.locator('.curator-stats')).toContainText('146분')
+  await expect(page.locator('.curator-film-guide')).toHaveCount(1)
+  await expect(page.locator('.curator-film-guide')).toContainText('Fjord')
+  await expect(page.locator('.curator-film-guide')).toContainText('146분')
+  await expect(page.locator('.curator-body')).toContainText('보드나리우')
+  await expect(page.locator('.curator-article-footer')).toHaveCount(0)
+
+  await page.locator('.curator-film-guide').getByRole('button', { name: '영화 찾기에서 보기' }).click()
+  await expect(page.getByLabel('영화 검색')).toHaveValue('피오르')
+  await expect(page.getByText('피오르', { exact: true }).first()).toBeVisible()
 })
 
 test('keeps the curator within a narrow mobile viewport', async ({ page }) => {
