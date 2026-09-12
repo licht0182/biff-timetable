@@ -11,6 +11,7 @@ import { STAY_OCT_10_11_2026_ARTICLE, STAY_OCT_10_12_2026_ARTICLE, STAY_OCT_09_1
 import { LEE_CHANG_DONG_2026_ARTICLE, HAMAGUCHI_RYUSUKE_2026_ARTICLE } from './curator-director-guides'
 import { CRISTIAN_MUNGIU_2026_ARTICLE } from './curator-director-guide-mungiu'
 import { ANDREY_ZVYAGINTSEV_2026_ARTICLE } from './curator-director-guide-zvyagintsev'
+import { PAWEL_PAWLIKOWSKI_2026_ARTICLE } from './curator-director-guide-pawlikowski'
 
 export type CuratorStat = {
   value: string
@@ -51,6 +52,7 @@ export const CURATOR_ARTICLES: CuratorArticle[] = [
   HAMAGUCHI_RYUSUKE_2026_ARTICLE,
   CRISTIAN_MUNGIU_2026_ARTICLE,
   ANDREY_ZVYAGINTSEV_2026_ARTICLE,
+  PAWEL_PAWLIKOWSKI_2026_ARTICLE,
   STAY_OCT_10_11_2026_ARTICLE,
   STAY_OCT_10_12_2026_ARTICLE,
   STAY_OCT_09_11_2026_ARTICLE,

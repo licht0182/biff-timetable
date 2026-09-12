@@ -104,7 +104,7 @@ test('shows the 2026 director guide with the Lee Chang-dong analysis first', asy
   await expect(directorGuideFilter).toBeVisible()
   await directorGuideFilter.click()
 
-  await expect(page.locator('.curator-card')).toHaveCount(4)
+  await expect(page.locator('.curator-card')).toHaveCount(5)
   const leeCard = page.getByRole('button', { name: /이창동: 고통을 설명하지 않고 끝까지 바라보는 영화/ })
   await expect(leeCard).toBeVisible()
   await expect(leeCard).toContainText('예상 읽는 시간 : 약 14분')
@@ -228,6 +228,40 @@ test('shows the Andrey Zvyagintsev director guide and opens Minotaur', async ({ 
   await page.locator('.curator-film-guide').getByRole('button', { name: '영화 찾기에서 보기' }).click()
   await expect(page.getByLabel('영화 검색')).toHaveValue('미노타우로스')
   await expect(page.getByText('미노타우로스', { exact: true }).first()).toBeVisible()
+})
+
+test('shows the Pawel Pawlikowski director guide and opens Fatherland', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
+
+  const categoryFilters = page.locator('.curator-filter-chips button')
+  await categoryFilters.filter({ hasText: '2026 감독 가이드' }).first().click()
+
+  const pawlikowskiCard = page.getByRole('button', { name: /파벨 파블리코프스키: 망명과 기억을 가장 짧고 아름다운 이미지로 압축하는 영화/ })
+  await expect(pawlikowskiCard).toBeVisible()
+  await expect(pawlikowskiCard).toContainText('예상 읽는 시간 : 약 15분')
+  await pawlikowskiCard.click()
+
+  await expect(page.getByRole('heading', { name: '파벨 파블리코프스키: 망명과 기억을 가장 짧고 아름다운 이미지로 압축하는 영화' })).toBeVisible()
+  await expect(page.locator('.curator-meta')).toContainText('예상 읽는 시간 : 약 15분')
+  await expect(page.locator('.curator-body')).toContainText('라스트 리조트')
+  await expect(page.locator('.curator-body')).toContainText('마이 썸머 오브 러브')
+  await expect(page.locator('.curator-body')).toContainText('우먼 인 더 피프스')
+  await expect(page.locator('.curator-body')).toContainText('이다')
+  await expect(page.locator('.curator-body')).toContainText('콜드 워')
+  await expect(page.locator('.curator-body')).toContainText('파더랜드')
+  await expect(page.locator('.curator-stats')).toContainText('2015')
+  await expect(page.locator('.curator-stats')).toContainText('82분')
+  await expect(page.locator('.curator-film-guide')).toHaveCount(1)
+  await expect(page.locator('.curator-film-guide')).toContainText('Fatherland')
+  await expect(page.locator('.curator-film-guide')).toContainText('82분')
+  await expect(page.locator('.curator-body')).toContainText('토마스 만')
+  await expect(page.locator('.curator-body')).toContainText('에리카')
+  await expect(page.locator('.curator-article-footer')).toHaveCount(0)
+
+  await page.locator('.curator-film-guide').getByRole('button', { name: '영화 찾기에서 보기' }).click()
+  await expect(page.getByLabel('영화 검색')).toHaveValue('파더랜드')
+  await expect(page.getByText('파더랜드', { exact: true }).first()).toBeVisible()
 })
 
 test('keeps the curator within a narrow mobile viewport', async ({ page }) => {
