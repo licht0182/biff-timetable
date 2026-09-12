@@ -1,0 +1,19 @@
+.film-search-autocomplete{position:relative;z-index:70;min-width:0}
+.film-search-suggestions{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:80;max-height:420px;overflow-y:auto;background:#fff;border:1px solid #d8d8d8;border-radius:7px;box-shadow:0 12px 30px rgba(0,0,0,.14);padding:4px}
+.film-search-suggestion{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;width:100%;min-width:0;border:0;border-bottom:1px solid #f0f0f0;border-radius:4px;background:#fff;color:#333;text-align:left;padding:10px 11px;cursor:pointer}
+.film-search-suggestion:last-child{border-bottom:0}
+.film-search-suggestion:hover,.film-search-suggestion.active{background:var(--accent-soft)}
+.film-search-suggestion-main{display:grid;gap:2px;min-width:0}
+.film-search-suggestion-main strong{font-size:14px;line-height:1.3;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.film-search-suggestion-main em{font-style:normal;font-size:10px;line-height:1.25;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.film-search-suggestion-match{align-self:start;border:1px solid #edd0cc;border-radius:999px;padding:2px 6px;color:var(--accent);background:#fff9f8;font-size:9px;font-weight:800;white-space:nowrap}
+.film-search-suggestion-meta,.film-search-suggestion-screening{grid-column:1 / -1;min-width:0;font-size:10px;line-height:1.35;color:#777;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.film-search-suggestion-screening{color:#555;font-weight:700}
+.film-search-no-suggestions{padding:14px 12px;color:#888;font-size:11px;text-align:center}
+@media(max-width:700px){
+  .film-search-suggestions{max-height:min(52dvh,340px);top:calc(100% + 4px);border-radius:6px;padding:3px}
+  .film-search-suggestion{gap:2px 7px;padding:9px 9px}
+  .film-search-suggestion-main strong{font-size:12px}
+  .film-search-suggestion-main em,.film-search-suggestion-meta,.film-search-suggestion-screening{font-size:9px}
+  .film-search-suggestion-match{font-size:8px;padding:2px 5px}
+}
