@@ -25,10 +25,10 @@ test('previews related films while typing and commits a clicked suggestion', asy
   const partial = candidate!.title.trim().slice(0, Math.max(1, candidate!.title.trim().length - 1))
   await page.goto('./')
 
-  const input = page.getByLabel('영화 검색')
+  const input = page.getByRole('combobox', { name: '영화 검색' })
   await input.fill(partial)
 
-  const listbox = page.getByRole('listbox', { name: '영화 검색 미리보기' })
+  const listbox = page.getByRole('listbox', { name: '검색 추천 영화' })
   await expect(listbox).toBeVisible()
   const option = listbox.getByRole('option').filter({ hasText: candidate!.title }).first()
   await expect(option).toBeVisible()
@@ -46,16 +46,16 @@ test('supports keyboard selection in film search autocomplete', async ({ page, r
   test.skip(!candidate, '키보드 자동완성 테스트에 사용할 영화가 없습니다.')
 
   await page.goto('./')
-  const input = page.getByLabel('영화 검색')
+  const input = page.getByRole('combobox', { name: '영화 검색' })
   await input.fill(candidate!.title)
-  await expect(page.getByRole('listbox', { name: '영화 검색 미리보기' })).toBeVisible()
+  await expect(page.getByRole('listbox', { name: '검색 추천 영화' })).toBeVisible()
 
   await input.press('ArrowDown')
   await expect(page.getByRole('option').first()).toHaveAttribute('aria-selected', 'true')
   await input.press('Enter')
 
   await expect(input).toHaveValue(candidate!.title)
-  await expect(page.getByRole('listbox', { name: '영화 검색 미리보기' })).toBeHidden()
+  await expect(page.getByRole('listbox', { name: '검색 추천 영화' })).toBeHidden()
 })
 
 test('respects the active date filter and stays inside a 320px viewport', async ({ page, request }) => {
@@ -74,7 +74,7 @@ test('respects the active date filter and stays inside a 320px viewport', async 
   await page.getByLabel('날짜').selectOption(pair!.excludedDate!)
   await page.getByLabel('영화 검색').fill(pair!.film.title)
 
-  await expect(page.getByRole('listbox', { name: '영화 검색 미리보기' })).toBeVisible()
+  await expect(page.getByRole('listbox', { name: '검색 추천 영화' })).toBeVisible()
   await expect(page.getByRole('option').filter({ hasText: pair!.film.title })).toHaveCount(0)
   await expect(page.getByText('현재 필터 조건에서 일치하는 영화가 없습니다.')).toBeVisible()
 
