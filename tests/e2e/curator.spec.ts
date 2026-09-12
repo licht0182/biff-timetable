@@ -104,7 +104,7 @@ test('shows the 2026 director guide with the Lee Chang-dong analysis first', asy
   await expect(directorGuideFilter).toBeVisible()
   await directorGuideFilter.click()
 
-  await expect(page.locator('.curator-card')).toHaveCount(8)
+  await expect(page.locator('.curator-card')).toHaveCount(9)
   const leeCard = page.getByRole('button', { name: /이창동: 고통을 설명하지 않고 끝까지 바라보는 영화/ })
   await expect(leeCard).toBeVisible()
   await expect(leeCard).toContainText('예상 읽는 시간 : 약 14분')
@@ -373,6 +373,44 @@ test('shows the Tsai Ming-liang director guide and opens Dust', async ({ page })
   await page.locator('.curator-film-guide').getByRole('button', { name: '영화 찾기에서 보기' }).click()
   await expect(page.getByLabel('영화 검색')).toHaveValue('더스트')
   await expect(page.getByText('더스트', { exact: true }).first()).toBeVisible()
+})
+
+test('shows the Lav Diaz director guide and opens Let Us Through, Dear Ancestors', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
+
+  const categoryFilters = page.locator('.curator-filter-chips button')
+  await categoryFilters.filter({ hasText: '2026 감독 가이드' }).first().click()
+
+  const lavCard = page.getByRole('button', { name: /라브 디아즈: 역사를 오래 바라볼수록 지워진 사람들이 돌아오는 영화/ })
+  await expect(lavCard).toBeVisible()
+  await expect(lavCard).toContainText('예상 읽는 시간 : 약 16분')
+  await lavCard.click()
+
+  await expect(page.getByRole('heading', { name: '라브 디아즈: 역사를 오래 바라볼수록 지워진 사람들이 돌아오는 영화' })).toBeVisible()
+  await expect(page.locator('.curator-meta')).toContainText('예상 읽는 시간 : 약 16분')
+  await expect(page.locator('.curator-body')).toContainText('에볼루션 오브 어 필리피노 패밀리')
+  await expect(page.locator('.curator-body')).toContainText('멜랑콜리아')
+  await expect(page.locator('.curator-body')).toContainText('노르테, 역사의 종말')
+  await expect(page.locator('.curator-body')).toContainText('프롬 왓 이즈 비포')
+  await expect(page.locator('.curator-body')).toContainText('슬픔의 미스터리')
+  await expect(page.locator('.curator-body')).toContainText('떠난 여인')
+  await expect(page.locator('.curator-body')).toContainText('마젤란')
+  await expect(page.locator('.curator-body')).toContainText('마키키란 포')
+  await expect(page.locator('.curator-stats')).toContainText('643분')
+  await expect(page.locator('.curator-stats')).toContainText('151분')
+  await expect(page.locator('.curator-film-guide')).toHaveCount(1)
+  await expect(page.locator('.curator-film-guide')).toContainText('Let Us Through, Dear Ancestors')
+  await expect(page.locator('.curator-film-guide')).toContainText('151분')
+  await expect(page.locator('.curator-film-guide')).toContainText('아이콘')
+  await expect(page.locator('.curator-body')).toContainText('1617년')
+  await expect(page.locator('.curator-body')).toContainText('강제노동')
+  await expect(page.locator('.curator-body')).toContainText('50km')
+  await expect(page.locator('.curator-article-footer')).toHaveCount(0)
+
+  await page.locator('.curator-film-guide').getByRole('button', { name: '영화 찾기에서 보기' }).click()
+  await expect(page.getByLabel('영화 검색')).toHaveValue('마키키란 포')
+  await expect(page.getByText('마키키란 포', { exact: true }).first()).toBeVisible()
 })
 
 test('keeps the curator within a narrow mobile viewport', async ({ page }) => {
