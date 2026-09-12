@@ -104,7 +104,7 @@ test('shows the 2026 director guide with the Lee Chang-dong analysis first', asy
   await expect(directorGuideFilter).toBeVisible()
   await directorGuideFilter.click()
 
-  await expect(page.locator('.curator-card')).toHaveCount(5)
+  await expect(page.locator('.curator-card')).toHaveCount(6)
   const leeCard = page.getByRole('button', { name: /이창동: 고통을 설명하지 않고 끝까지 바라보는 영화/ })
   await expect(leeCard).toBeVisible()
   await expect(leeCard).toContainText('예상 읽는 시간 : 약 14분')
@@ -262,6 +262,40 @@ test('shows the Pawel Pawlikowski director guide and opens Fatherland', async ({
   await page.locator('.curator-film-guide').getByRole('button', { name: '영화 찾기에서 보기' }).click()
   await expect(page.getByLabel('영화 검색')).toHaveValue('파더랜드')
   await expect(page.getByText('파더랜드', { exact: true }).first()).toBeVisible()
+})
+
+test('shows the Na Hong-jin director guide and opens HOPE', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
+
+  const categoryFilters = page.locator('.curator-filter-chips button')
+  await categoryFilters.filter({ hasText: '2026 감독 가이드' }).first().click()
+
+  const naCard = page.getByRole('button', { name: /나홍진: 인간의 오판이 비극을 키우는 순간을 끝까지 추격하는 영화/ })
+  await expect(naCard).toBeVisible()
+  await expect(naCard).toContainText('예상 읽는 시간 : 약 16분')
+  await naCard.click()
+
+  await expect(page.getByRole('heading', { name: '나홍진: 인간의 오판이 비극을 키우는 순간을 끝까지 추격하는 영화' })).toBeVisible()
+  await expect(page.locator('.curator-meta')).toContainText('예상 읽는 시간 : 약 16분')
+  await expect(page.locator('.curator-body')).toContainText('추격자')
+  await expect(page.locator('.curator-body')).toContainText('황해')
+  await expect(page.locator('.curator-body')).toContainText('곡성')
+  await expect(page.locator('.curator-body')).toContainText('랑종')
+  await expect(page.locator('.curator-body')).toContainText('호프')
+  await expect(page.locator('.curator-stats')).toContainText('4편')
+  await expect(page.locator('.curator-stats')).toContainText('10년')
+  await expect(page.locator('.curator-film-guide')).toHaveCount(1)
+  await expect(page.locator('.curator-film-guide')).toContainText('HOPE')
+  await expect(page.locator('.curator-film-guide')).toContainText('156분')
+  await expect(page.locator('.curator-film-guide')).toContainText('한국영화의 오늘 - 파노라마')
+  await expect(page.locator('.curator-body')).toContainText('호포항')
+  await expect(page.locator('.curator-body')).toContainText('칸 경쟁부문')
+  await expect(page.locator('.curator-article-footer')).toHaveCount(0)
+
+  await page.locator('.curator-film-guide').getByRole('button', { name: '영화 찾기에서 보기' }).click()
+  await expect(page.getByLabel('영화 검색')).toHaveValue('호프')
+  await expect(page.getByText('호프', { exact: true }).first()).toBeVisible()
 })
 
 test('keeps the curator within a narrow mobile viewport', async ({ page }) => {
