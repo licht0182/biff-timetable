@@ -104,7 +104,7 @@ test('shows the 2026 director guide with the Lee Chang-dong analysis first', asy
   await expect(directorGuideFilter).toBeVisible()
   await directorGuideFilter.click()
 
-  await expect(page.locator('.curator-card')).toHaveCount(3)
+  await expect(page.locator('.curator-card')).toHaveCount(4)
   const leeCard = page.getByRole('button', { name: /이창동: 고통을 설명하지 않고 끝까지 바라보는 영화/ })
   await expect(leeCard).toBeVisible()
   await expect(leeCard).toContainText('예상 읽는 시간 : 약 14분')
@@ -194,6 +194,40 @@ test('shows the Cristian Mungiu director guide and opens Fjord', async ({ page }
   await page.locator('.curator-film-guide').getByRole('button', { name: '영화 찾기에서 보기' }).click()
   await expect(page.getByLabel('영화 검색')).toHaveValue('피오르')
   await expect(page.getByText('피오르', { exact: true }).first()).toBeVisible()
+})
+
+test('shows the Andrey Zvyagintsev director guide and opens Minotaur', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
+
+  const categoryFilters = page.locator('.curator-filter-chips button')
+  await categoryFilters.filter({ hasText: '2026 감독 가이드' }).first().click()
+
+  const zvyagintsevCard = page.getByRole('button', { name: /안드레이 즈뱌긴체프: 가족의 균열에서 국가의 폭력까지 밀어붙이는 영화/ })
+  await expect(zvyagintsevCard).toBeVisible()
+  await expect(zvyagintsevCard).toContainText('예상 읽는 시간 : 약 15분')
+  await zvyagintsevCard.click()
+
+  await expect(page.getByRole('heading', { name: '안드레이 즈뱌긴체프: 가족의 균열에서 국가의 폭력까지 밀어붙이는 영화' })).toBeVisible()
+  await expect(page.locator('.curator-meta')).toContainText('예상 읽는 시간 : 약 15분')
+  await expect(page.locator('.curator-body')).toContainText('리턴')
+  await expect(page.locator('.curator-body')).toContainText('추방')
+  await expect(page.locator('.curator-body')).toContainText('엘레나')
+  await expect(page.locator('.curator-body')).toContainText('리바이어던')
+  await expect(page.locator('.curator-body')).toContainText('러브리스')
+  await expect(page.locator('.curator-body')).toContainText('미노타우로스')
+  await expect(page.locator('.curator-stats')).toContainText('황금사자상')
+  await expect(page.locator('.curator-stats')).toContainText('141분')
+  await expect(page.locator('.curator-film-guide')).toHaveCount(1)
+  await expect(page.locator('.curator-film-guide')).toContainText('Minotaur')
+  await expect(page.locator('.curator-film-guide')).toContainText('141분')
+  await expect(page.locator('.curator-body')).toContainText('직원 14명')
+  await expect(page.locator('.curator-body')).toContainText('부정한 여인')
+  await expect(page.locator('.curator-article-footer')).toHaveCount(0)
+
+  await page.locator('.curator-film-guide').getByRole('button', { name: '영화 찾기에서 보기' }).click()
+  await expect(page.getByLabel('영화 검색')).toHaveValue('미노타우로스')
+  await expect(page.getByText('미노타우로스', { exact: true }).first()).toBeVisible()
 })
 
 test('keeps the curator within a narrow mobile viewport', async ({ page }) => {
