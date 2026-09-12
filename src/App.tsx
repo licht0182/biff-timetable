@@ -10,6 +10,7 @@ import { getTransferBuffer } from './transfer-buffer'
 import { exportTimetablePng } from './png-export'
 import { BASE_END_HOUR, START_HOUR, clockMinutes, endLabel, screeningAbsoluteWindow, screeningEndOffsetMinutes, screeningsOverlap, timetableDate, timetableEndMinutes, timetableStartMinutes } from './screening-time'
 import { hasNavigationState, pushNavigationState, readNavigationState, replaceNavigationState } from './navigation-history'
+import { programNoteForDisplay } from './program-note'
 import { filmMatchesQuery, rankFilmSearchMatches } from './film-search'
 
 type FilmData = { films: Film[]; note?: string; source?: string }
@@ -1080,7 +1081,7 @@ export default function App() {
             {detailFilm.language && <><dt>언어</dt><dd>{detailFilm.language}</dd></>}
             <dt>상영 회차</dt><dd>{detailFilm.screenings.length}회</dd>
           </dl>
-          {detailFilm.synopsis && <p className="synopsis">{detailFilm.synopsis}</p>}
+          {detailFilm.synopsis && <p className="synopsis">{programNoteForDisplay(detailFilm.synopsis)}</p>}
           <div className="modal-screenings">{detailFilm.screenings.map((screening) => {
             const isSelected = selected.includes(screening.id)
             const isCurrentScreening = screening.id === detailScreeningId
