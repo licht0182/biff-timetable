@@ -81,3 +81,22 @@ test('respects the active date filter and stays inside a 320px viewport', async 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
   expect(overflow).toBeLessThanOrEqual(1)
 })
+
+
+test('keeps the mobile search input at 16px to prevent iOS focus zoom', async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 })
+  await page.goto('./')
+
+  const input = page.getByRole('combobox', { name: '영화 검색' })
+  await expect(input).toBeVisible()
+
+  const fontSize = await input.evaluate((element) => getComputedStyle(element).fontSize)
+  expect(Number.parseFloat(fontSize)).toBeGreaterThanOrEqual(16)
+
+  await input.focus()
+  const focusedFontSize = await input.evaluate((element) => getComputedStyle(element).fontSize)
+  expect(Number.parseFloat(focusedFontSize)).toBeGreaterThanOrEqual(16)
+
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+  expect(overflow).toBeLessThanOrEqual(1)
+})
