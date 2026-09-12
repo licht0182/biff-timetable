@@ -15,6 +15,7 @@ import { PAWEL_PAWLIKOWSKI_2026_ARTICLE } from './curator-director-guide-pawliko
 import { NA_HONG_JIN_2026_ARTICLE } from './curator-director-guide-na-hong-jin'
 import { KOREEDA_HIROKAZU_2026_ARTICLE } from './curator-director-guide-koreeda'
 import { TSAI_MING_LIANG_2026_ARTICLE } from './curator-director-guide-tsai-ming-liang'
+import { LAV_DIAZ_2026_ARTICLE } from './curator-director-guide-lav-diaz'
 
 export type CuratorStat = {
   value: string
@@ -59,6 +60,7 @@ export const CURATOR_ARTICLES: CuratorArticle[] = [
   NA_HONG_JIN_2026_ARTICLE,
   KOREEDA_HIROKAZU_2026_ARTICLE,
   TSAI_MING_LIANG_2026_ARTICLE,
+  LAV_DIAZ_2026_ARTICLE,
   STAY_OCT_10_11_2026_ARTICLE,
   STAY_OCT_10_12_2026_ARTICLE,
   STAY_OCT_09_11_2026_ARTICLE,
