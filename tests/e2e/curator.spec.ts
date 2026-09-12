@@ -94,6 +94,41 @@ test('supports browser back and forward across menus and docent articles', async
   await expect(page.getByRole('heading', { name: '경쟁 13편 전작 분석: 올해 BIFF가 새롭게 발견하려는 영화들' })).toBeVisible()
 })
 
+
+test('shows the 2026 director guide with the Lee Chang-dong analysis first', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
+
+  const categoryFilters = page.locator('.curator-filter-chips button')
+  const directorGuideFilter = categoryFilters.filter({ hasText: '2026 감독 가이드' }).first()
+  await expect(directorGuideFilter).toBeVisible()
+  await directorGuideFilter.click()
+
+  await expect(page.locator('.curator-card')).toHaveCount(1)
+  const leeCard = page.getByRole('button', { name: /이창동: 고통을 설명하지 않고 끝까지 바라보는 영화/ })
+  await expect(leeCard).toBeVisible()
+  await expect(leeCard).toContainText('예상 읽는 시간 : 약 14분')
+  await leeCard.click()
+
+  await expect(page.getByRole('heading', { name: '이창동: 고통을 설명하지 않고 끝까지 바라보는 영화' })).toBeVisible()
+  await expect(page.locator('.curator-meta')).toContainText('예상 읽는 시간 : 약 14분')
+  await expect(page.locator('.curator-body')).toContainText('초록물고기')
+  await expect(page.locator('.curator-body')).toContainText('박하사탕')
+  await expect(page.locator('.curator-body')).toContainText('오아시스')
+  await expect(page.locator('.curator-body')).toContainText('밀양')
+  await expect(page.locator('.curator-body')).toContainText('시')
+  await expect(page.locator('.curator-body')).toContainText('버닝')
+  await expect(page.locator('.curator-body')).toContainText('가능한 사랑')
+  await expect(page.locator('.curator-stats')).toContainText('7편')
+  await expect(page.locator('.curator-film-guide')).toHaveCount(1)
+  await expect(page.locator('.curator-film-guide')).toContainText('Possible Love')
+  await expect(page.locator('.curator-film-guide')).toContainText('164분')
+  await expect(page.locator('.curator-article-footer')).toHaveCount(0)
+
+  await page.locator('.curator-film-guide').getByRole('button', { name: '영화 찾기에서 보기' }).click()
+  await expect(page.getByLabel('영화 검색')).toHaveValue('가능한 사랑')
+})
+
 test('keeps the curator within a narrow mobile viewport', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 760 })
   await page.goto('./')

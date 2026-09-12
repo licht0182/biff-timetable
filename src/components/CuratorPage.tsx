@@ -93,6 +93,7 @@ function ArticleDetail({ article, onBack, onOpenFilms, onOpenFilm }: { article: 
 
 const CATEGORY_ORDER = [
   '2026 섹션 가이드',
+  '2026 감독 가이드',
   '체류 일정별 추천',
   '선택 전략',
   '관람 경험',
