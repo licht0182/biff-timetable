@@ -112,7 +112,7 @@ export default function FilmSearchAutocomplete({
       />
 
       {showPanel && (
-        <div className="film-search-suggestions" id={LISTBOX_ID} role="listbox" aria-label="영화 검색 미리보기">
+        <div className="film-search-suggestions" id={LISTBOX_ID} role="listbox" aria-label="검색 추천 영화">
           {suggestions.length > 0 ? suggestions.map((suggestion, index) => {
             const { film, earliest, matchLabel } = suggestion
             const meta = [film.director, film.section].filter(Boolean).join(' · ')
