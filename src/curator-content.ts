@@ -12,6 +12,7 @@ import { LEE_CHANG_DONG_2026_ARTICLE, HAMAGUCHI_RYUSUKE_2026_ARTICLE } from './c
 import { CRISTIAN_MUNGIU_2026_ARTICLE } from './curator-director-guide-mungiu'
 import { ANDREY_ZVYAGINTSEV_2026_ARTICLE } from './curator-director-guide-zvyagintsev'
 import { PAWEL_PAWLIKOWSKI_2026_ARTICLE } from './curator-director-guide-pawlikowski'
+import { NA_HONG_JIN_2026_ARTICLE } from './curator-director-guide-na-hong-jin'
 
 export type CuratorStat = {
   value: string
@@ -53,6 +54,7 @@ export const CURATOR_ARTICLES: CuratorArticle[] = [
   CRISTIAN_MUNGIU_2026_ARTICLE,
   ANDREY_ZVYAGINTSEV_2026_ARTICLE,
   PAWEL_PAWLIKOWSKI_2026_ARTICLE,
+  NA_HONG_JIN_2026_ARTICLE,
   STAY_OCT_10_11_2026_ARTICLE,
   STAY_OCT_10_12_2026_ARTICLE,
   STAY_OCT_09_11_2026_ARTICLE,
