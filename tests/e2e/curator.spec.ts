@@ -104,7 +104,7 @@ test('shows the 2026 director guide with the Lee Chang-dong analysis first', asy
   await expect(directorGuideFilter).toBeVisible()
   await directorGuideFilter.click()
 
-  await expect(page.locator('.curator-card')).toHaveCount(1)
+  await expect(page.locator('.curator-card')).toHaveCount(2)
   const leeCard = page.getByRole('button', { name: /이창동: 고통을 설명하지 않고 끝까지 바라보는 영화/ })
   await expect(leeCard).toBeVisible()
   await expect(leeCard).toContainText('예상 읽는 시간 : 약 14분')
@@ -127,6 +127,40 @@ test('shows the 2026 director guide with the Lee Chang-dong analysis first', asy
 
   await page.locator('.curator-film-guide').getByRole('button', { name: '영화 찾기에서 보기' }).click()
   await expect(page.getByLabel('영화 검색')).toHaveValue('가능한 사랑')
+})
+
+test('shows the Hamaguchi Ryusuke director guide and opens the 2026 BIFF film', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
+
+  const categoryFilters = page.locator('.curator-filter-chips button')
+  await categoryFilters.filter({ hasText: '2026 감독 가이드' }).first().click()
+
+  const hamaguchiCard = page.getByRole('button', { name: /하마구치 류스케: 대화를 끝까지 듣는 영화가 관계를 바꾸는 순간/ })
+  await expect(hamaguchiCard).toBeVisible()
+  await expect(hamaguchiCard).toContainText('예상 읽는 시간 : 약 16분')
+  await hamaguchiCard.click()
+
+  await expect(page.getByRole('heading', { name: '하마구치 류스케: 대화를 끝까지 듣는 영화가 관계를 바꾸는 순간' })).toBeVisible()
+  await expect(page.locator('.curator-meta')).toContainText('예상 읽는 시간 : 약 16분')
+  await expect(page.locator('.curator-body')).toContainText('도호쿠 다큐멘터리 3부작')
+  await expect(page.locator('.curator-body')).toContainText('해피 아워')
+  await expect(page.locator('.curator-body')).toContainText('아사코 I & II')
+  await expect(page.locator('.curator-body')).toContainText('우연과 상상')
+  await expect(page.locator('.curator-body')).toContainText('드라이브 마이 카')
+  await expect(page.locator('.curator-body')).toContainText('악은 존재하지 않는다')
+  await expect(page.locator('.curator-body')).toContainText('갑자기 병세가 악화되다')
+  await expect(page.locator('.curator-stats')).toContainText('317분')
+  await expect(page.locator('.curator-stats')).toContainText('196분')
+  await expect(page.locator('.curator-film-guide')).toHaveCount(1)
+  await expect(page.locator('.curator-film-guide')).toContainText('All of a Sudden')
+  await expect(page.locator('.curator-film-guide')).toContainText('196분')
+  await expect(page.locator('.curator-body')).toContainText('위마니튀드')
+  await expect(page.locator('.curator-article-footer')).toHaveCount(0)
+
+  await page.locator('.curator-film-guide').getByRole('button', { name: '영화 찾기에서 보기' }).click()
+  await expect(page.getByLabel('영화 검색')).toHaveValue('갑자기 병세가 악화되다')
+  await expect(page.getByText('갑자기 병세가 악화되다', { exact: true }).first()).toBeVisible()
 })
 
 test('keeps the curator within a narrow mobile viewport', async ({ page }) => {

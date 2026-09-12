@@ -8,7 +8,7 @@ import { WIDE_ANGLE_2026_ARTICLE } from './curator-section-guide-wide-angle'
 import { GALA_2026_ARTICLE, OPEN_CINEMA_2026_ARTICLE, MIDNIGHT_PASSION_2026_ARTICLE } from './curator-section-guides-gala-open-midnight'
 import { ON_SCREEN_2026_ARTICLE, SPECIAL_PROGRAM_2026_ARTICLE, SPECIAL_SCREENING_2026_ARTICLE, OPENING_FILM_2026_ARTICLE } from './curator-section-guides-final'
 import { STAY_OCT_10_11_2026_ARTICLE, STAY_OCT_10_12_2026_ARTICLE, STAY_OCT_09_11_2026_ARTICLE, STAY_OCT_09_12_2026_ARTICLE } from './curator-stay-guides'
-import { LEE_CHANG_DONG_2026_ARTICLE } from './curator-director-guides'
+import { LEE_CHANG_DONG_2026_ARTICLE, HAMAGUCHI_RYUSUKE_2026_ARTICLE } from './curator-director-guides'
 
 export type CuratorStat = {
   value: string
@@ -46,6 +46,7 @@ export type CuratorArticle = {
 
 export const CURATOR_ARTICLES: CuratorArticle[] = [
   LEE_CHANG_DONG_2026_ARTICLE,
+  HAMAGUCHI_RYUSUKE_2026_ARTICLE,
   STAY_OCT_10_11_2026_ARTICLE,
   STAY_OCT_10_12_2026_ARTICLE,
   STAY_OCT_09_11_2026_ARTICLE,
