@@ -11,6 +11,7 @@
 .film-search-suggestion-screening{color:#555;font-weight:700}
 .film-search-no-suggestions{padding:14px 12px;color:#888;font-size:11px;text-align:center}
 @media(max-width:700px){
+  .film-search-autocomplete input{font-size:16px}
   .film-search-suggestions{max-height:min(52dvh,340px);top:calc(100% + 4px);border-radius:6px;padding:3px}
   .film-search-suggestion{gap:2px 7px;padding:9px 9px}
   .film-search-suggestion-main strong{font-size:12px}
