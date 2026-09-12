@@ -1,6 +1,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
 import CustomEventDialog from './components/CustomEventDialog'
 import FilmList from './components/FilmList'
+import FilmSearchAutocomplete from './components/FilmSearchAutocomplete'
 import CuratorPage from './components/CuratorPage'
 import type { Film, Screening, TicketStatus, TicketStatusMap } from './components/film-types'
 import { createCustomEventId, customEventAbsoluteWindow, customEventCategoryLabel, customEventPaletteIndex, customEventTimetableDate, customEventTimetableEndMinutes, customEventTimetableStartMinutes, normalizeCustomEvents, windowsOverlap, type CustomEvent, type CustomEventDraft } from './custom-events'
@@ -9,6 +10,7 @@ import { getTransferBuffer } from './transfer-buffer'
 import { exportTimetablePng } from './png-export'
 import { BASE_END_HOUR, START_HOUR, clockMinutes, endLabel, screeningAbsoluteWindow, screeningEndOffsetMinutes, screeningsOverlap, timetableDate, timetableEndMinutes, timetableStartMinutes } from './screening-time'
 import { hasNavigationState, pushNavigationState, readNavigationState, replaceNavigationState } from './navigation-history'
+import { filmMatchesQuery, rankFilmSearchMatches } from './film-search'
 
 type FilmData = { films: Film[]; note?: string; source?: string }
 type BackupData = {
@@ -357,29 +359,30 @@ export default function App() {
   const selectedSet = useMemo(() => new Set(selected), [selected])
   const favoriteSet = useMemo(() => new Set(favorites), [favorites])
 
-  const filteredFilms = useMemo(() => {
-    const q = deferredQuery.trim().toLowerCase()
-    return films
+  const filterEligibleFilms = useMemo(() => (
+    films
       .map((film, sourceIndex) => {
-        const haystack = [film.title, film.englishTitle, film.director, film.country, film.genre, film.section].filter(Boolean).join(' ').toLowerCase()
         if (section !== '전체' && film.section !== section) return null
         if (favoritesOnly && !favoriteSet.has(film.id)) return null
-        if (q && !haystack.includes(q)) return null
 
-        const matchingScreenings = film.screenings.filter((screening) => {
-          if (dateFilter !== '전체' && screening.date !== dateFilter) return false
-          if (venueFilter !== '전체' && screening.venue !== venueFilter) return false
-          if (!screeningMatchesTimeRange(screening.start, startTimeFilter, endTimeFilter)) return false
-          if (gvOnly && !screening.gv) return false
-          return true
-        })
+        const matchingScreenings = visibleScreenings(film)
         const earliest = earliestScreening(matchingScreenings)
         return earliest ? { film, earliest, sourceIndex } : null
       })
       .filter((item): item is { film: Film; earliest: Screening; sourceIndex: number } => item !== null)
       .sort((a, b) => compareScreeningsByStart(a.earliest, b.earliest) || a.sourceIndex - b.sourceIndex)
+  ), [films, section, favoritesOnly, favoriteSet, visibleScreenings])
+
+  const filteredFilms = useMemo(() => (
+    filterEligibleFilms
+      .filter(({ film }) => filmMatchesQuery(film, deferredQuery))
       .map(({ film }) => film)
-  }, [films, deferredQuery, section, dateFilter, venueFilter, startTimeFilter, endTimeFilter, gvOnly, favoritesOnly, favoriteSet])
+  ), [filterEligibleFilms, deferredQuery])
+
+  const searchSuggestions = useMemo(
+    () => rankFilmSearchMatches(filterEligibleFilms, query, viewport.width <= 700 ? 5 : 6),
+    [filterEligibleFilms, query, viewport.width],
+  )
 
   const selectedItems = useMemo<TimetableItem[]>(
     () => films.flatMap((film) => film.screenings.filter((screening) => selectedSet.has(screening.id)).map((screening) => ({ film, screening }))),
@@ -916,7 +919,13 @@ export default function App() {
 
       {!settingsOpen && (activeTab === 'films' ? <main>
         <section className="controls enhanced-controls">
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="제목, 감독, 국가, 장르 검색" aria-label="영화 검색" />
+          <FilmSearchAutocomplete
+            query={query}
+            suggestions={searchSuggestions}
+            onQueryChange={setQuery}
+            onSelect={() => window.setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }), 0)}
+            formatDate={formatDate}
+          />
           <div className="filter-row">
             <label><span>날짜</span><select value={dateFilter} onChange={(event) => setDateFilter(event.target.value)}><option value="전체">전체 날짜</option>{allDates.map((date) => <option key={date} value={date}>{formatDate(date)}</option>)}</select></label>
             <label><span>상영관</span><select value={venueFilter} onChange={(event) => setVenueFilter(event.target.value)}><option value="전체">전체 상영관</option>{allVenues.map((venue) => <option key={venue} value={venue}>{venue}</option>)}</select></label>
