@@ -532,6 +532,12 @@ export default function App() {
       delete next[screeningId]
       return next
     })
+    setTicketStatus((current) => {
+      if (!current[screeningId]) return current
+      const next = { ...current }
+      delete next[screeningId]
+      return next
+    })
     setToast('예매 대안을 해제했습니다.')
   }, [])
 
