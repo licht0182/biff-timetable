@@ -101,3 +101,34 @@ export function bookingPrioritySymbol(priority?: BookingPriority) {
   if (priority === 3) return '③'
   return ''
 }
+
+
+export function nextFallbackIds(
+  plan: BookingPlanMap,
+  ticketStatus: Record<string, string | undefined>,
+  selectedIds: ReadonlySet<string>,
+) {
+  const next = new Set<string>()
+  const failedOriginIds = Object.entries(ticketStatus)
+    .filter(([, status]) => status === 'failed')
+    .map(([screeningId]) => screeningId)
+
+  for (const originId of failedOriginIds) {
+    const chain = Object.entries(plan)
+      .filter(([, entry]) => entry.fallbackFor?.includes(originId))
+      .sort((a, b) => a[1].priority - b[1].priority)
+
+    for (const [screeningId] of chain) {
+      const status = ticketStatus[screeningId]
+      if (selectedIds.has(screeningId)) {
+        if (status !== 'failed') break
+        continue
+      }
+      if (status === 'failed') continue
+      next.add(screeningId)
+      break
+    }
+  }
+
+  return next
+}
