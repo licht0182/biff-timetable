@@ -357,12 +357,12 @@ test('runs the complete 1-to-2-to-3 fallback journey through the visible UI', as
   await expect.poll(() => page.evaluate(({ statusKey, planKey, secondId }) => {
     const statuses = JSON.parse(localStorage.getItem(statusKey) ?? '{}') as Record<string, string>
     const plan = JSON.parse(localStorage.getItem(planKey) ?? '{}') as Record<string, unknown>
-    return { status: statuses[secondId], inPlan: Boolean(plan[secondId]) }
+    return { status: statuses[secondId] ?? null, inPlan: Boolean(plan[secondId]) }
   }, {
     statusKey: STATUS_KEY,
     planKey: BOOKING_PLAN_KEY,
     secondId: second.screening.id,
-  })).toEqual({ status: undefined, inPlan: false })
+  })).toEqual({ status: null, inPlan: false })
 
   await page.reload()
   await page.getByRole('button', { name: '내 시간표' }).click()
