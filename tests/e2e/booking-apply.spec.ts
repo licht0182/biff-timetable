@@ -357,3 +357,39 @@ test('runs the complete 1-to-2-to-3 fallback journey through the visible UI', as
   await expect(page.locator('.event-block').filter({ hasText: third.film.title })).toHaveCount(1)
   await expect(page.locator('.event-block').filter({ hasText: second.film.title })).toHaveCount(0)
 })
+
+
+test('activates every option in the same next-priority tier', async ({ page, request }) => {
+  const data = await screeningData(request)
+  const chain = findFallbackChain(data)
+  test.skip(!chain, '동일 순위 대안 테스트에 필요한 회차 조합이 없습니다.')
+  const [origin, optionA, optionB] = chain!
+
+  await page.addInitScript(({ selectedKey, statusKey, planKey, originId, optionAId, optionBId }) => {
+    localStorage.setItem(selectedKey, JSON.stringify([originId]))
+    localStorage.setItem(statusKey, JSON.stringify({ [originId]: 'failed' }))
+    localStorage.setItem(planKey, JSON.stringify({
+      [originId]: { priority: 1 },
+      [optionAId]: { priority: 2, fallbackFor: [originId] },
+      [optionBId]: { priority: 2, fallbackFor: [originId] },
+    }))
+  }, {
+    selectedKey: SELECTED_KEY,
+    statusKey: STATUS_KEY,
+    planKey: BOOKING_PLAN_KEY,
+    originId: origin.screening.id,
+    optionAId: optionA.screening.id,
+    optionBId: optionB.screening.id,
+  })
+
+  await page.goto('./')
+  await page.getByRole('button', { name: '내 시간표' }).click()
+  const panel = page.locator('.booking-plan-panel')
+  await expect(panel.locator('summary')).toContainText('다음 대안 2')
+  await panel.locator('summary').click()
+
+  const optionAPlan = panel.locator('.booking-plan-item').filter({ hasText: optionA.film.title }).first()
+  const optionBPlan = panel.locator('.booking-plan-item').filter({ hasText: optionB.film.title }).first()
+  await expect(optionAPlan.getByRole('button', { name: /시간표에 적용/ })).toBeVisible()
+  await expect(optionBPlan.getByRole('button', { name: /시간표에 적용/ })).toBeVisible()
+})
