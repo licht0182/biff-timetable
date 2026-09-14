@@ -132,3 +132,34 @@ export function nextFallbackIds(
 
   return next
 }
+
+
+export function failedFallbackPredecessorIds(
+  plan: BookingPlanMap,
+  candidateId: string,
+  ticketStatus: Record<string, string | undefined>,
+  selectedIds: ReadonlySet<string>,
+) {
+  const result = new Set<string>()
+  const candidate = plan[candidateId]
+  if (!candidate?.fallbackFor?.length) return result
+
+  const originIds = new Set(candidate.fallbackFor)
+
+  for (const [screeningId, entry] of Object.entries(plan)) {
+    if (screeningId === candidateId || !selectedIds.has(screeningId)) continue
+    if (ticketStatus[screeningId] !== 'failed') continue
+
+    if (originIds.has(screeningId)) {
+      result.add(screeningId)
+      continue
+    }
+
+    if (entry.priority >= candidate.priority) continue
+    if (entry.fallbackFor?.some((originId) => originIds.has(originId))) {
+      result.add(screeningId)
+    }
+  }
+
+  return result
+}
