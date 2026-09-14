@@ -24,8 +24,14 @@ export type Film = {
   screenings: Screening[]
 }
 
-export type TicketStatus = 'none' | 'planned' | 'booked'
+export type TicketStatus = 'none' | 'planned' | 'booked' | 'failed'
 export type TicketStatusMap = Record<string, Exclude<TicketStatus, 'none'>>
+
+export type BookingPriority = 1 | 2 | 3
+export type BookingPlanEntry = {
+  priority: BookingPriority
+}
+export type BookingPlanMap = Record<string, BookingPlanEntry>
 
 export type TravelWarning = {
   gap: number
