@@ -351,6 +351,19 @@ test('runs the complete 1-to-2-to-3 fallback journey through the visible UI', as
   await expect(page.locator('.event-block').filter({ hasText: second.film.title })).toHaveCount(0)
   await expect(page.locator('.event-block').filter({ hasText: third.film.title })).toHaveCount(1)
 
+  await expect(secondPlan).toContainText('실패한 대안')
+  await secondPlan.getByRole('button', { name: /대안 해제/ }).click()
+  await expect(secondPlan).toHaveCount(0)
+  await expect.poll(() => page.evaluate(({ statusKey, planKey, secondId }) => {
+    const statuses = JSON.parse(localStorage.getItem(statusKey) ?? '{}') as Record<string, string>
+    const plan = JSON.parse(localStorage.getItem(planKey) ?? '{}') as Record<string, unknown>
+    return { status: statuses[secondId], inPlan: Boolean(plan[secondId]) }
+  }, {
+    statusKey: STATUS_KEY,
+    planKey: BOOKING_PLAN_KEY,
+    secondId: second.screening.id,
+  })).toEqual({ status: undefined, inPlan: false })
+
   await page.reload()
   await page.getByRole('button', { name: '내 시간표' }).click()
   await expect(page.locator('.selection-count')).toHaveText('총 1개 선택')
