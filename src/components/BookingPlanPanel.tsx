@@ -37,7 +37,7 @@ export default function BookingPlanPanel({
     <details className="booking-plan-panel">
       <summary>
         <span>예매 계획</span>
-        <small>{`1순위 ${counts[0]} · 2순위 ${counts[1]} · 3순위 ${counts[2]}`}</small>
+        <small aria-live="polite">{`1순위 ${counts[0]} · 2순위 ${counts[1]} · 3순위 ${counts[2]}${nextFallbackIds.size ? ` · 다음 대안 ${nextFallbackIds.size}` : ''}`}</small>
       </summary>
       <div className="booking-plan-groups">
         {PRIORITIES.map((priority) => {
