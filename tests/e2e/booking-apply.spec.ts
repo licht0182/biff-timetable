@@ -229,6 +229,7 @@ test('activates the third priority only after the applied second priority also f
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
   const panel = page.locator('.booking-plan-panel')
+  await expect(panel.locator('summary')).toContainText('다음 대안 1')
   await panel.locator('summary').click()
 
   const secondPlan = panel.locator('.booking-plan-item').filter({ hasText: second.film.title }).first()
@@ -247,6 +248,7 @@ test('activates the third priority only after the applied second priority also f
   await statusSelect.selectOption('failed')
   await page.getByRole('button', { name: '상세보기 닫기' }).click()
 
+  await expect(panel.locator('summary')).toContainText('다음 대안 1')
   await expect(thirdPlan.getByRole('button', { name: /시간표에 적용/ })).toBeVisible()
   await thirdPlan.getByRole('button', { name: /시간표에 적용/ }).click()
 
