@@ -3,7 +3,9 @@ import CustomEventDialog from './components/CustomEventDialog'
 import FilmList from './components/FilmList'
 import FilmSearchAutocomplete from './components/FilmSearchAutocomplete'
 import CuratorPage from './components/CuratorPage'
-import type { Film, Screening, TicketStatus, TicketStatusMap } from './components/film-types'
+import BookingPlanPanel from './components/BookingPlanPanel'
+import BookingStatusSelect from './components/BookingStatusSelect'
+import type { BookingPlanMap, BookingPriority, Film, Screening, TicketStatus, TicketStatusMap } from './components/film-types'
 import { createCustomEventId, customEventAbsoluteWindow, customEventCategoryLabel, customEventPaletteIndex, customEventTimetableDate, customEventTimetableEndMinutes, customEventTimetableStartMinutes, normalizeCustomEvents, windowsOverlap, type CustomEvent, type CustomEventDraft } from './custom-events'
 import { REST_BREAK_MINUTES, VENUE_TRANSFER_SITES, getVenueSiteTransferMinutes } from './venue-travel'
 import { getTransferBuffer } from './transfer-buffer'
@@ -12,6 +14,7 @@ import { BASE_END_HOUR, START_HOUR, clockMinutes, endLabel, screeningAbsoluteWin
 import { hasNavigationState, pushNavigationState, readNavigationState, replaceNavigationState } from './navigation-history'
 import { programNoteForDisplay } from './program-note'
 import { filmMatchesQuery, rankFilmSearchMatches } from './film-search'
+import { bookingPrioritySymbol, filterBookingPlan, normalizeBookingPlan } from './booking-plan'
 
 type FilmData = { films: Film[]; note?: string; source?: string }
 type BackupData = {
@@ -40,6 +43,7 @@ type UserTimetableSettings = {
 const STORAGE_KEY = 'biff-timetable:selected-screenings:v1'
 const FAVORITES_KEY = 'biff-timetable:favorites:v1'
 const TICKET_STATUS_KEY = 'biff-timetable:ticket-status:v1'
+const BOOKING_PLAN_KEY = 'biff-timetable:booking-plan:v1'
 const CUSTOM_EVENTS_KEY = 'biff-timetable:custom-events:v1'
 const USER_SETTINGS_KEY = 'biff-timetable:user-settings:v1'
 const DATA_VERSION_STORAGE_KEY = 'biff-timetable:data-version:v1'
@@ -69,7 +73,7 @@ function normalizeStringArray(value: unknown): string[] {
 function normalizeTicketStatus(value: unknown): TicketStatusMap {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
   const entries = Object.entries(value).filter(([id, status]) => (
-    id.trim().length > 0 && (status === 'planned' || status === 'booked')
+    id.trim().length > 0 && (status === 'planned' || status === 'booked' || status === 'failed')
   ))
   return Object.fromEntries(entries) as TicketStatusMap
 }
@@ -202,6 +206,7 @@ export default function App() {
   const [selected, setSelected] = useState<string[]>(() => normalizeStringArray(readStorageValue(STORAGE_KEY)))
   const [favorites, setFavorites] = useState<string[]>(() => normalizeStringArray(readStorageValue(FAVORITES_KEY)))
   const [ticketStatus, setTicketStatus] = useState<TicketStatusMap>(() => normalizeTicketStatus(readStorageValue(TICKET_STATUS_KEY)))
+  const [bookingPlan, setBookingPlan] = useState<BookingPlanMap>(() => normalizeBookingPlan(readStorageValue(BOOKING_PLAN_KEY)))
   const [customEvents, setCustomEvents] = useState<CustomEvent[]>(() => normalizeCustomEvents(readStorageValue(CUSTOM_EVENTS_KEY)))
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
@@ -265,6 +270,7 @@ export default function App() {
         setTicketStatus((current) => Object.fromEntries(
           Object.entries(current).filter(([id]) => validScreeningIds.has(id)),
         ) as TicketStatusMap)
+        setBookingPlan((current) => filterBookingPlan(current, validScreeningIds))
         setTimetableDeleteSelection((current) => current.filter((id) => validScreeningIds.has(id) || id.startsWith('custom-')))
         localStorage.setItem(DATA_VERSION_STORAGE_KEY, JSON.stringify(DATA_VERSION))
 
@@ -278,6 +284,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(selected)) }, [selected])
   useEffect(() => { localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites)) }, [favorites])
   useEffect(() => { localStorage.setItem(TICKET_STATUS_KEY, JSON.stringify(ticketStatus)) }, [ticketStatus])
+  useEffect(() => { localStorage.setItem(BOOKING_PLAN_KEY, JSON.stringify(bookingPlan)) }, [bookingPlan])
   useEffect(() => { localStorage.setItem(CUSTOM_EVENTS_KEY, JSON.stringify(customEvents)) }, [customEvents])
   useEffect(() => { localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(userSettings)) }, [userSettings])
 
@@ -286,7 +293,7 @@ export default function App() {
       let changed = false
       const next = { ...current }
       for (const id of selected) {
-        if (next[id] !== 'planned' && next[id] !== 'booked') {
+        if (next[id] !== 'planned' && next[id] !== 'booked' && next[id] !== 'failed') {
           next[id] = 'planned'
           changed = true
         }
@@ -490,6 +497,11 @@ export default function App() {
         delete next[screening.id]
         return next
       })
+      setBookingPlan((plan) => {
+        const next = { ...plan }
+        delete next[screening.id]
+        return next
+      })
       return
     }
 
@@ -518,11 +530,16 @@ export default function App() {
     setFavorites((current) => current.includes(filmId) ? current.filter((id) => id !== filmId) : [...current, filmId])
   }, [])
 
-  const setScreeningTicketStatus = useCallback((screeningId: string, status: TicketStatus) => {
-    setTicketStatus((current) => {
+  const setScreeningBookingState = useCallback((
+    screeningId: string,
+    status: Exclude<TicketStatus, 'none'>,
+    priority?: BookingPriority,
+  ) => {
+    setTicketStatus((current) => ({ ...current, [screeningId]: status }))
+    setBookingPlan((current) => {
       const next = { ...current }
-      if (status === 'none') delete next[screeningId]
-      else next[screeningId] = status
+      if (priority) next[screeningId] = { priority }
+      else delete next[screeningId]
       return next
     })
   }, [])
@@ -606,6 +623,7 @@ export default function App() {
     setSelected([])
     setCustomEvents([])
     setTicketStatus({})
+    setBookingPlan({})
     setTimetableSelectionMode(false)
     setTimetableDeleteSelection([])
     setToast('시간표의 모든 일정을 삭제했습니다.')
@@ -637,6 +655,11 @@ export default function App() {
     setSelected((current) => current.filter((id) => !targets.has(id)))
     setCustomEvents((current) => current.filter((event) => !targets.has(event.id)))
     setTicketStatus((current) => {
+      const next = { ...current }
+      for (const id of targets) delete next[id]
+      return next
+    })
+    setBookingPlan((current) => {
       const next = { ...current }
       for (const id of targets) delete next[id]
       return next
@@ -674,6 +697,7 @@ export default function App() {
         setSelected(nextSelected)
         setCustomEvents([])
         setTicketStatus(Object.fromEntries(nextSelected.map((id) => [id, 'planned'])) as TicketStatusMap)
+        setBookingPlan({})
         setToast('기존 형식의 선택 회차를 가져왔습니다.')
         return
       }
@@ -688,7 +712,7 @@ export default function App() {
 
       if (parsed.ticketStatus && typeof parsed.ticketStatus === 'object') {
         for (const [id, status] of Object.entries(parsed.ticketStatus)) {
-          if (validScreeningIds.has(id) && (status === 'planned' || status === 'booked')) nextStatuses[id] = status
+          if (validScreeningIds.has(id) && (status === 'planned' || status === 'booked' || status === 'failed')) nextStatuses[id] = status
         }
       }
       for (const id of nextSelected) {
@@ -698,6 +722,7 @@ export default function App() {
       setSelected(nextSelected)
       setFavorites(nextFavorites)
       setTicketStatus(nextStatuses)
+      setBookingPlan({})
       setCustomEvents(normalizeCustomEvents(parsed.customEvents))
       setToast('백업한 시간표를 가져왔습니다.')
     } catch {
@@ -786,7 +811,15 @@ export default function App() {
   } as CSSProperties
 
   const bookedCount = selected.filter((id) => ticketStatus[id] === 'booked').length
-  const plannedCount = selected.filter((id) => ticketStatus[id] !== 'booked').length
+  const failedCount = selected.filter((id) => ticketStatus[id] === 'failed').length
+  const plannedCount = selected.filter((id) => ticketStatus[id] !== 'booked' && ticketStatus[id] !== 'failed').length
+  const priorityCounts = ([1, 2, 3] as const).map((priority) => (
+    selected.filter((id) => bookingPlan[id]?.priority === priority).length
+  ))
+  const hasBookingPriorities = priorityCounts.some((count) => count > 0)
+  const bookingSummaryText = hasBookingPriorities
+    ? `1순위 ${priorityCounts[0]} · 2순위 ${priorityCounts[1]} · 3순위 ${priorityCounts[2]} · 완료 ${bookedCount} · 실패 ${failedCount} · 사용자 일정 ${customEvents.length}`
+    : `예매 완료 ${bookedCount} · 예정 ${plannedCount} · 실패 ${failedCount} · 사용자 일정 ${customEvents.length}`
   const totalTimetableCount = selected.length + customEvents.length
   const defaultCustomDate = dates[0] ?? allDates[0] ?? todayLocal()
   const dialogCustomEvent = customEventDialog?.eventId ? customEvents.find((event) => event.id === customEventDialog.eventId) ?? null : null
@@ -912,7 +945,7 @@ export default function App() {
           <div className="settings-card-head"><div><h3>시간표 표시</h3><p>작은 화면에서 필요한 정보만 남길 수 있습니다.</p></div></div>
           <div className="settings-list">
             <label className="settings-toggle-row"><span><strong>상영관명 표시</strong><small>내 시간표 영화 블록 안에 상영관명을 표시합니다.</small></span><span className="settings-switch"><input type="checkbox" checked={userSettings.showVenueInTimetable} onChange={(event) => setUserSettings((current) => ({ ...current, showVenueInTimetable: event.target.checked }))} /><i /></span></label>
-            <label className="settings-toggle-row"><span><strong>예매 상태 기호 표시</strong><small>예매 완료 ✓, 예매 예정 ○ 기호를 영화 제목 앞에 표시합니다.</small></span><span className="settings-switch"><input type="checkbox" checked={userSettings.showBookingStatusInTimetable} onChange={(event) => setUserSettings((current) => ({ ...current, showBookingStatusInTimetable: event.target.checked }))} /><i /></span></label>
+            <label className="settings-toggle-row"><span><strong>예매 상태·순위 기호 표시</strong><small>1·2·3순위와 예매 완료/실패 기호를 영화 제목 앞에 표시합니다.</small></span><span className="settings-switch"><input type="checkbox" checked={userSettings.showBookingStatusInTimetable} onChange={(event) => setUserSettings((current) => ({ ...current, showBookingStatusInTimetable: event.target.checked }))} /><i /></span></label>
           </div>
         </section>
         <section className="settings-card settings-reset-card"><div><h3>기본 설정</h3><p>이동 시간과 표시 설정을 처음 값으로 되돌립니다.</p></div><button type="button" className="settings-reset-button" onClick={() => setUserSettings({ ...DEFAULT_USER_SETTINGS })}>기본값으로 초기화</button></section>
@@ -958,6 +991,7 @@ export default function App() {
             favoriteSet={favoriteSet}
             selectedSet={selectedSet}
             ticketStatus={ticketStatus}
+            bookingPlan={bookingPlan}
             visibleScreenings={visibleScreenings}
             hasConflict={conflicts}
             transitionWarning={transitionWarning}
@@ -966,13 +1000,13 @@ export default function App() {
             onFavorite={toggleFavorite}
             onDetail={(film) => { setDetailScreeningId(null); setDetailFilm(film) }}
             onToggleScreening={toggle}
-            onStatusChange={setScreeningTicketStatus}
+            onBookingChange={setScreeningBookingState}
           />
         ) : !loadError && <div className="empty">조건에 맞는 상영작이 없습니다.</div>}
       </main> : activeTab === 'curator' ? <CuratorPage key={curatorPageKey} onOpenFilms={openFilms} onOpenFilm={openFilmFromCurator} /> : <main className="timetable-page">
         {selectedItems.length === 0 && customEvents.length === 0 ? <div className="empty timetable-empty"><strong>아직 시간표에 일정이 없습니다.</strong><span>영화 회차를 고르거나 직접 일정을 추가해 주세요.</span><div className="timetable-empty-actions"><button onClick={openFilms}>영화 찾기</button><button type="button" className="custom-event-add-button" onClick={openCreateCustomEvent}>+ 일정 추가</button></div></div> : <>
           <div className="timetable-actions enhanced-timetable-actions">
-            <div><span className="booking-summary">{timetableSelectionMode ? `삭제할 일정 ${timetableDeleteSelection.length}개 선택` : `예매 완료 ${bookedCount} · 예정 ${plannedCount} · 사용자 일정 ${customEvents.length}`}</span></div>
+            <div><span className="booking-summary">{timetableSelectionMode ? `삭제할 일정 ${timetableDeleteSelection.length}개 선택` : bookingSummaryText}</span></div>
             <div className="timetable-action-buttons">
               <button type="button" className="custom-event-add-button" onClick={openCreateCustomEvent}>+ 일정</button>
               <button
@@ -990,6 +1024,12 @@ export default function App() {
             </div>
             <input ref={importInputRef} type="file" accept="application/json,.json" className="visually-hidden" onChange={importBackup} />
           </div>
+          <BookingPlanPanel
+            items={selectedItems}
+            bookingPlan={bookingPlan}
+            ticketStatus={ticketStatus}
+            formatDate={formatDate}
+          />
           <div className={`timetable-scroll ${timetableMetrics.dense ? 'dense' : ''} ${timetableMetrics.ultraDense ? 'ultra-dense' : ''} ${timetableSelectionMode ? 'timetable-selection-mode' : ''}`}>
             <div className="timetable" style={timetableStyle}>
               <div className="corner" />
@@ -1005,7 +1045,16 @@ export default function App() {
                   const travel = transitionWarning(film, screening)
                   const timeConflict = conflictingCustomEventsForScreening(film, screening).length > 0
                   const status = ticketStatus[screening.id] ?? 'planned'
-                  const statusPrefix = userSettings.showBookingStatusInTimetable ? (status === 'booked' ? '✓ ' : status === 'planned' ? '○ ' : '') : ''
+                  const priority = bookingPlan[screening.id]?.priority
+                  const statusPrefix = userSettings.showBookingStatusInTimetable
+                    ? status === 'booked'
+                      ? '✓ '
+                      : status === 'failed'
+                        ? '× '
+                        : priority
+                          ? `${bookingPrioritySymbol(priority)} `
+                          : '○ '
+                    : ''
                   const isMarkedForDelete = timetableDeleteSelection.includes(screening.id)
                   return <button
                     type="button"
@@ -1098,7 +1147,7 @@ export default function App() {
               hasConflict ? 'conflict' : '',
               travel ? 'travel-warning' : '',
             ].filter(Boolean).join(' ')
-            return <div className={rowClassName} key={screening.id}><div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}{isCurrentScreening && <em className="current-screening-badge">현재 회차</em>}</strong><span>{screening.venue} · {screening.start}–{endLabel(detailFilm, screening)}{screening.gv ? ' · GV' : ''}</span>{rowNote && <small className={`modal-screening-note ${travel ? 'travel-text' : ''}`} title={rowNoteTitle}>{rowNote}</small>}</div><div className="modal-screening-actions">{isSelected && <select className={`ticket-select ${ticketStatus[screening.id] ?? 'planned'}`} value={ticketStatus[screening.id] ?? 'planned'} onChange={(event) => setScreeningTicketStatus(screening.id, event.target.value as TicketStatus)} aria-label={`${detailFilm.title} ${formatDate(screening.date)} ${screening.start} 예매 상태`}><option value="planned">예매 예정</option><option value="booked">예매 완료</option></select>}<button className={isSelected ? 'selected' : ''} onClick={() => toggle(detailFilm, screening)}>{isSelected ? '선택됨' : '+ 추가'}</button></div></div>
+            return <div className={rowClassName} key={screening.id}><div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}{isCurrentScreening && <em className="current-screening-badge">현재 회차</em>}</strong><span>{screening.venue} · {screening.start}–{endLabel(detailFilm, screening)}{screening.gv ? ' · GV' : ''}</span>{rowNote && <small className={`modal-screening-note ${travel ? 'travel-text' : ''}`} title={rowNoteTitle}>{rowNote}</small>}</div><div className="modal-screening-actions">{isSelected && <BookingStatusSelect status={ticketStatus[screening.id] ?? 'planned'} priority={bookingPlan[screening.id]?.priority} ariaLabel={`${detailFilm.title} ${formatDate(screening.date)} ${screening.start} 예매 상태와 우선순위`} onChange={(status, priority) => setScreeningBookingState(screening.id, status, priority)} />}<button className={isSelected ? 'selected' : ''} onClick={() => toggle(detailFilm, screening)}>{isSelected ? '선택됨' : '+ 추가'}</button></div></div>
           })}</div>
           <div className="modal-footer"><button className={`favorite-button wide ${favorites.includes(detailFilm.id) ? 'active' : ''}`} onClick={() => toggleFavorite(detailFilm.id)}>{favorites.includes(detailFilm.id) ? '★ 관심작 해제' : '☆ 관심작 추가'}</button>{detailFilm.url && <a href={detailFilm.url} target="_blank" rel="noreferrer">BIFF 공식 작품정보 ↗</a>}</div>
         </section>
