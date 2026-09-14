@@ -1,0 +1,33 @@
+.booking-plan-panel{margin:0 0 7px;background:#fff;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.booking-plan-panel>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 11px;cursor:pointer;font-size:11px;font-weight:800;color:#555;user-select:none}
+.booking-plan-panel>summary::-webkit-details-marker{display:none}
+.booking-plan-panel>summary:before{content:"▸";margin-right:-4px;color:#999;font-size:10px;transition:transform .12s}
+.booking-plan-panel[open]>summary:before{transform:rotate(90deg)}
+.booking-plan-panel>summary>span{margin-right:auto}
+.booking-plan-panel>summary>small{font-size:9px;color:#888;font-weight:700;white-space:nowrap}
+.booking-plan-groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border-top:1px solid #eee}
+.booking-plan-group{padding:10px;border-right:1px solid #eee;min-width:0}
+.booking-plan-group:last-child{border-right:0}
+.booking-plan-group h3{margin:0 0 7px;font-size:11px;color:#555}
+.booking-plan-list{display:grid;gap:6px}
+.booking-plan-item{position:relative;display:grid;gap:2px;padding:7px 8px;border:1px solid #ececec;border-radius:5px;background:#fafafa;min-width:0}
+.booking-plan-item strong{font-size:10px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.booking-plan-item>span{font-size:8px;line-height:1.35;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.booking-plan-status{justify-self:start;margin-top:2px;padding:2px 5px;border-radius:999px;font-size:8px;font-style:normal;font-weight:800}
+.booking-plan-status.booked{background:#f3fbf5;color:#39704a}
+.booking-plan-status.failed{background:#fff2f0;color:#a92a1b}
+.booking-plan-empty{margin:0;color:#aaa;font-size:9px;line-height:1.4}
+.ticket-select.failed{border-color:#e1a29a;background:#fff5f3;color:#9b2b1d}
+.event-block.status-failed{box-shadow:inset 0 0 0 1px rgba(169,42,27,.34);filter:saturate(.72)}
+@media(max-width:700px){
+  .booking-plan-panel{margin-bottom:5px}
+  .booking-plan-panel>summary{padding:8px 9px;font-size:10px}
+  .booking-plan-panel>summary>small{font-size:8px}
+  .booking-plan-groups{grid-template-columns:1fr}
+  .booking-plan-group{padding:8px 9px;border-right:0;border-bottom:1px solid #eee}
+  .booking-plan-group:last-child{border-bottom:0}
+  .booking-plan-group h3{font-size:10px;margin-bottom:6px}
+  .booking-plan-item{padding:6px 7px}
+  .booking-plan-item strong{font-size:9px}
+  .booking-plan-item>span,.booking-plan-status,.booking-plan-empty{font-size:8px}
+}
