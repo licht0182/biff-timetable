@@ -26,6 +26,7 @@ export default function BookingFallbackApplyDialog({
 }: BookingFallbackApplyDialogProps) {
   const bookedConflicts = conflicts.filter(({ screening }) => ticketStatus[screening.id] === 'booked')
   const replaceableConflicts = conflicts.filter(({ screening }) => ticketStatus[screening.id] !== 'booked')
+  const activeReplacements = replaceableConflicts.filter(({ screening }) => ticketStatus[screening.id] !== 'failed')
   const blocked = bookedConflicts.length > 0
 
   return (
@@ -59,6 +60,11 @@ export default function BookingFallbackApplyDialog({
                 <span>{formatDate(screening.date)} {screening.start}–{endLabel(film, screening)} · {screening.venue}</span>
               </div>
             ))}
+            {activeReplacements.length > 0 && (
+              <small className="booking-apply-cleanup-note">
+                아직 실패하지 않은 회차를 교체하면 해당 회차의 예매 상태·우선순위와 연결된 대안 계획도 함께 정리됩니다.
+              </small>
+            )}
           </div>
         )}
 
