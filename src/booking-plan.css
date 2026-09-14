@@ -112,3 +112,5 @@
   .booking-apply-head h2{font-size:17px}
   .booking-apply-actions button{flex:1 1 0}
 }
+
+.booking-apply-cleanup-note{margin-top:3px;padding-top:7px;border-top:1px dashed #ddd;color:#9b5d22;font-size:8px;line-height:1.45}
