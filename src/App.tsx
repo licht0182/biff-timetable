@@ -16,7 +16,7 @@ import { BASE_END_HOUR, START_HOUR, clockMinutes, endLabel, screeningAbsoluteWin
 import { hasNavigationState, pushNavigationState, readNavigationState, replaceNavigationState } from './navigation-history'
 import { programNoteForDisplay } from './program-note'
 import { filmMatchesQuery, rankFilmSearchMatches } from './film-search'
-import { bookingPrioritySymbol, failedFallbackPredecessorIds, fallbackMinimumPriority, filterBookingPlan, nextFallbackIds, normalizeBookingPlan, recalculateFallbackPriorities, removeBookingPlanEntries } from './booking-plan'
+import { bookingPrioritySymbol, detachBookingPlanEntry, failedFallbackPredecessorIds, fallbackMinimumPriority, filterBookingPlan, nextFallbackIds, normalizeBookingPlan, recalculateFallbackPriorities, removeBookingPlanEntries } from './booking-plan'
 
 type FilmData = { films: Film[]; note?: string; source?: string }
 type BackupData = {
@@ -527,19 +527,24 @@ export default function App() {
   }, [selectedItems, userSettings])
 
   const removeAlternative = useCallback((screeningId: string) => {
-    setBookingPlan((current) => {
-      const next = { ...current }
-      delete next[screeningId]
-      return next
-    })
+    const nextPlan = detachBookingPlanEntry(bookingPlan, screeningId, selectedSet)
+    const removedIds = new Set(
+      Object.keys(bookingPlan).filter((id) => !nextPlan[id] && !selectedSet.has(id)),
+    )
+
+    setBookingPlan(nextPlan)
     setTicketStatus((current) => {
-      if (!current[screeningId]) return current
       const next = { ...current }
-      delete next[screeningId]
-      return next
+      let changed = false
+      for (const id of removedIds) {
+        if (!next[id]) continue
+        delete next[id]
+        changed = true
+      }
+      return changed ? next : current
     })
     setToast('예매 대안을 해제했습니다.')
-  }, [])
+  }, [bookingPlan, selectedSet])
 
   const saveConflictAlternative = useCallback((priority: BookingPriority) => {
     if (!bookingConflictDialog) return
