@@ -59,7 +59,7 @@ export default function BookingPlanPanel({
                     <div className="booking-plan-item-main">
                       <strong>{film.title}</strong>
                       <span>{formatDate(screening.date)} {screening.start} · {screening.venue}</span>
-                      {isAlternative && <em className="booking-plan-alternative">{isNextFallback ? '다음 대안' : '대안'}</em>}
+                      {isAlternative && <em className="booking-plan-alternative">{isNextFallback ? '다음 대안' : status === 'failed' ? '실패한 대안' : '대안'}</em>}
                       {status === 'booked' && <em className="booking-plan-status booked">예매 완료</em>}
                       {status === 'failed' && <em className="booking-plan-status failed">예매 실패</em>}
                       {isAlternative && fallbackTitles.length > 0 && (
