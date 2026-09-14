@@ -617,7 +617,7 @@ export default function App() {
   function clearSelected() {
     const total = selected.length + customEvents.length
     if (!total) return
-    const confirmed = window.confirm(`시간표의 ${total}개 일정을 모두 삭제하시겠습니까?\n영화 회차의 예매 상태도 함께 제거됩니다.`)
+    const confirmed = window.confirm(`시간표의 ${total}개 일정을 모두 삭제하시겠습니까?\n영화 회차의 예매 상태와 우선순위도 함께 제거됩니다.`)
     if (!confirmed) return
 
     setSelected([])
@@ -648,7 +648,7 @@ export default function App() {
   function deleteTimetableSelection() {
     const count = timetableDeleteSelection.length
     if (!count) return
-    const confirmed = window.confirm(`선택한 ${count}개 일정을 정말 삭제하시겠습니까?\n영화 회차를 삭제하면 해당 예매 상태도 함께 제거됩니다.`)
+    const confirmed = window.confirm(`선택한 ${count}개 일정을 정말 삭제하시겠습니까?\n영화 회차를 삭제하면 해당 예매 상태와 우선순위도 함께 제거됩니다.`)
     if (!confirmed) return
 
     const targets = new Set(timetableDeleteSelection)
