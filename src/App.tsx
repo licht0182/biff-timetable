@@ -16,7 +16,7 @@ import { BASE_END_HOUR, START_HOUR, clockMinutes, endLabel, screeningAbsoluteWin
 import { hasNavigationState, pushNavigationState, readNavigationState, replaceNavigationState } from './navigation-history'
 import { programNoteForDisplay } from './program-note'
 import { filmMatchesQuery, rankFilmSearchMatches } from './film-search'
-import { bookingPrioritySymbol, fallbackMinimumPriority, filterBookingPlan, nextFallbackIds, normalizeBookingPlan, recalculateFallbackPriorities, removeBookingPlanEntries } from './booking-plan'
+import { bookingPrioritySymbol, failedFallbackPredecessorIds, fallbackMinimumPriority, filterBookingPlan, nextFallbackIds, normalizeBookingPlan, recalculateFallbackPriorities, removeBookingPlanEntries } from './booking-plan'
 
 type FilmData = { films: Film[]; note?: string; source?: string }
 type BackupData = {
@@ -631,12 +631,19 @@ export default function App() {
       return
     }
 
+    const timeConflicts = conflictingSelections(candidate.film, candidate.screening)
+    const predecessorIds = failedFallbackPredecessorIds(bookingPlan, screeningId, ticketStatus, selectedSet)
+    const predecessorItems = allScreeningItems.filter(({ screening }) => predecessorIds.has(screening.id))
+    const replacements = new Map(
+      [...timeConflicts, ...predecessorItems].map((item) => [item.screening.id, item] as const),
+    )
+
     setFallbackApplyDialog({
       candidate,
-      conflicts: conflictingSelections(candidate.film, candidate.screening),
+      conflicts: Array.from(replacements.values()),
       customOverlaps: conflictingCustomEventsForScreening(candidate.film, candidate.screening),
     })
-  }, [nextFallbackSet, allScreeningItems, conflictingSelections, conflictingCustomEventsForScreening])
+  }, [nextFallbackSet, allScreeningItems, bookingPlan, ticketStatus, selectedSet, conflictingSelections, conflictingCustomEventsForScreening])
 
   const applyFallbackToTimetable = useCallback(() => {
     if (!fallbackApplyDialog) return
@@ -653,23 +660,26 @@ export default function App() {
     const freshConflicts = conflictingSelections(candidate.film, candidate.screening)
     const bookedConflicts = freshConflicts.filter(({ screening }) => ticketStatus[screening.id] === 'booked')
     const customOverlaps = conflictingCustomEventsForScreening(candidate.film, candidate.screening)
+    const predecessorIds = failedFallbackPredecessorIds(bookingPlan, candidateId, ticketStatus, selectedSet)
+    const predecessorItems = allScreeningItems.filter(({ screening }) => predecessorIds.has(screening.id))
+    const replacementItems = new Map(
+      [...freshConflicts, ...predecessorItems].map((item) => [item.screening.id, item] as const),
+    )
 
     if (bookedConflicts.length) {
-      setFallbackApplyDialog({ candidate, conflicts: freshConflicts, customOverlaps })
+      setFallbackApplyDialog({ candidate, conflicts: Array.from(replacementItems.values()), customOverlaps })
       setToast('예매 완료 회차와 겹쳐 대안을 적용할 수 없습니다.')
       return
     }
 
-    const conflictIds = new Set(freshConflicts.map(({ screening }) => screening.id))
-    const failedConflictIds = new Set(
-      freshConflicts
-        .filter(({ screening }) => ticketStatus[screening.id] === 'failed')
-        .map(({ screening }) => screening.id),
+    const removalIds = new Set(replacementItems.keys())
+    const failedHistoryIds = new Set(
+      Array.from(removalIds).filter((id) => ticketStatus[id] === 'failed'),
     )
-    const cleanupIds = new Set(Array.from(conflictIds).filter((id) => !failedConflictIds.has(id)))
+    const cleanupIds = new Set(Array.from(removalIds).filter((id) => !failedHistoryIds.has(id)))
 
     setSelected((current) => {
-      const next = current.filter((id) => !conflictIds.has(id) && id !== candidateId)
+      const next = current.filter((id) => !removalIds.has(id) && id !== candidateId)
       return [...next, candidateId]
     })
     setTicketStatus((current) => {
@@ -686,7 +696,7 @@ export default function App() {
     })
     setFallbackApplyDialog(null)
     setToast(`${candidate.film.title} 회차를 시간표에 적용했습니다.`)
-  }, [fallbackApplyDialog, bookingPlan, ticketStatus, selectedSet, conflictingSelections, conflictingCustomEventsForScreening])
+  }, [fallbackApplyDialog, bookingPlan, ticketStatus, selectedSet, allScreeningItems, conflictingSelections, conflictingCustomEventsForScreening])
 
   function applyTimeRangeFilter() {
     setStartTimeFilter(draftStartTime)
