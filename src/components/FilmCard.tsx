@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import ScreeningRow from './ScreeningRow'
-import type { Film, Screening, TicketStatus, TicketStatusMap, TravelWarning } from './film-types'
+import type { BookingPlanMap, BookingPriority, Film, Screening, TicketStatus, TicketStatusMap, TravelWarning } from './film-types'
 
 type FilmCardProps = {
   film: Film
@@ -8,6 +8,7 @@ type FilmCardProps = {
   isFavorite: boolean
   selectedSet: ReadonlySet<string>
   ticketStatus: TicketStatusMap
+  bookingPlan: BookingPlanMap
   hasConflict: (film: Film, screening: Screening) => boolean
   transitionWarning: (film: Film, screening: Screening) => TravelWarning | null
   formatDate: (date: string, compact?: boolean) => string
@@ -15,7 +16,7 @@ type FilmCardProps = {
   onFavorite: (filmId: string) => void
   onDetail: (film: Film) => void
   onToggleScreening: (film: Film, screening: Screening) => void
-  onStatusChange: (screeningId: string, status: TicketStatus) => void
+  onBookingChange: (screeningId: string, status: Exclude<TicketStatus, 'none'>, priority?: BookingPriority) => void
 }
 
 function FilmCard({
@@ -24,6 +25,7 @@ function FilmCard({
   isFavorite,
   selectedSet,
   ticketStatus,
+  bookingPlan,
   hasConflict,
   transitionWarning,
   formatDate,
@@ -31,7 +33,7 @@ function FilmCard({
   onFavorite,
   onDetail,
   onToggleScreening,
-  onStatusChange,
+  onBookingChange,
 }: FilmCardProps) {
   return (
     <article className="film-card">
@@ -61,19 +63,24 @@ function FilmCard({
           const conflict = !isSelected && hasConflict(film, screening)
           const travel = !conflict ? transitionWarning(film, screening) : null
           const status = ticketStatus[screening.id] ?? 'planned'
+          const planEntry = bookingPlan[screening.id]
+          const priority = planEntry?.priority
+          const isAlternative = !isSelected && Boolean(planEntry?.fallbackFor?.length)
           return (
             <ScreeningRow
               key={screening.id}
               film={film}
               screening={screening}
               isSelected={isSelected}
+              isAlternative={isAlternative}
               hasConflict={conflict}
               travel={travel}
               status={status}
+              priority={priority}
               formatDate={formatDate}
               endLabel={endLabel}
               onToggle={onToggleScreening}
-              onStatusChange={onStatusChange}
+              onBookingChange={onBookingChange}
             />
           )
         })}

@@ -233,7 +233,7 @@ test('includes custom events in JSON backup and calendar export', async ({ page 
   const backupPath = await backupDownload.path()
   expect(backupPath).not.toBeNull()
   const backup = JSON.parse(await readFile(backupPath!, 'utf8')) as { version: number; customEvents: Array<{ title: string }> }
-  expect(backup.version).toBe(2)
+  expect(backup.version).toBe(3)
   expect(backup.customEvents.some((event) => event.title === '백업할 일정')).toBeTruthy()
 
   await page.locator('.backup-menu > summary').click()
