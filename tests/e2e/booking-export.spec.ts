@@ -193,17 +193,18 @@ test('excludes failed screenings from ICS export', async ({ page, request }) => 
   const download = await downloadPromise
   const ics = await streamText(await download.createReadStream())
 
-  expect(ics).toContain(`SUMMARY:${plannedItem.film.title}`)
-  expect(ics).not.toContain(`SUMMARY:${failedItem.film.title}`)
+  expect(ics).toContain(`UID:${plannedItem.screening.id}@biff-timetable`)
+  expect(ics).not.toContain(`UID:${failedItem.screening.id}@biff-timetable`)
 })
 
 test('shows priority and failure symbols in PNG while excluding unselected alternatives', async ({ page, request }) => {
   const data = await screeningData(request)
   const selectedPair = findNonOverlappingPair(data)
-  const fallbackPair = findOverlappingPair(data)
-  test.skip(!selectedPair || !fallbackPair, 'PNG 예매 계획 테스트에 필요한 회차 조합이 없습니다.')
+  test.skip(!selectedPair, 'PNG 예매 계획 테스트에 필요한 회차 조합이 없습니다.')
   const [priorityItem, failedItem] = selectedPair!
-  const [, alternativeItem] = fallbackPair!
+  const selectedIds = new Set([priorityItem.screening.id, failedItem.screening.id])
+  const alternativeItem = flatten(data).find(({ screening }) => !selectedIds.has(screening.id))
+  test.skip(!alternativeItem, 'PNG 대안 제외 테스트에 사용할 추가 회차가 없습니다.')
 
   await emulateAppleAndPreserveExportHost(page)
   await seedState(
