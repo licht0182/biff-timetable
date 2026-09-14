@@ -63,13 +63,16 @@ function FilmCard({
           const conflict = !isSelected && hasConflict(film, screening)
           const travel = !conflict ? transitionWarning(film, screening) : null
           const status = ticketStatus[screening.id] ?? 'planned'
-          const priority = bookingPlan[screening.id]?.priority
+          const planEntry = bookingPlan[screening.id]
+          const priority = planEntry?.priority
+          const isAlternative = !isSelected && Boolean(planEntry?.fallbackFor?.length)
           return (
             <ScreeningRow
               key={screening.id}
               film={film}
               screening={screening}
               isSelected={isSelected}
+              isAlternative={isAlternative}
               hasConflict={conflict}
               travel={travel}
               status={status}
