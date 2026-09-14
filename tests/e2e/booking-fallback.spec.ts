@@ -60,9 +60,9 @@ function findOverlappingPair(data: FilmData): [Item, Item] | null {
 
 async function seedOrigin(page: Page, originId: string, priority?: 1 | 2 | 3) {
   await page.addInitScript(({ selectedKey, statusKey, planKey, originId, priority }) => {
-    localStorage.setItem(selectedKey, JSON.stringify([originId]))
-    localStorage.setItem(statusKey, JSON.stringify({ [originId]: 'planned' }))
-    localStorage.setItem(planKey, JSON.stringify(priority ? { [originId]: { priority } } : {}))
+    if (!localStorage.getItem(selectedKey)) localStorage.setItem(selectedKey, JSON.stringify([originId]))
+    if (!localStorage.getItem(statusKey)) localStorage.setItem(statusKey, JSON.stringify({ [originId]: 'planned' }))
+    if (!localStorage.getItem(planKey)) localStorage.setItem(planKey, JSON.stringify(priority ? { [originId]: { priority } } : {}))
   }, { selectedKey: SELECTED_KEY, statusKey: STATUS_KEY, planKey: BOOKING_PLAN_KEY, originId, priority })
 }
 
