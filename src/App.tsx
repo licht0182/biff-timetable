@@ -6,6 +6,7 @@ import CuratorPage from './components/CuratorPage'
 import BookingPlanPanel from './components/BookingPlanPanel'
 import BookingStatusSelect from './components/BookingStatusSelect'
 import BookingConflictDialog from './components/BookingConflictDialog'
+import BookingFallbackApplyDialog from './components/BookingFallbackApplyDialog'
 import type { BookingPlanMap, BookingPriority, Film, Screening, TicketStatus, TicketStatusMap } from './components/film-types'
 import { createCustomEventId, customEventAbsoluteWindow, customEventCategoryLabel, customEventPaletteIndex, customEventTimetableDate, customEventTimetableEndMinutes, customEventTimetableStartMinutes, normalizeCustomEvents, windowsOverlap, type CustomEvent, type CustomEventDraft } from './custom-events'
 import { REST_BREAK_MINUTES, VENUE_TRANSFER_SITES, getVenueSiteTransferMinutes } from './venue-travel'
@@ -15,21 +16,27 @@ import { BASE_END_HOUR, START_HOUR, clockMinutes, endLabel, screeningAbsoluteWin
 import { hasNavigationState, pushNavigationState, readNavigationState, replaceNavigationState } from './navigation-history'
 import { programNoteForDisplay } from './program-note'
 import { filmMatchesQuery, rankFilmSearchMatches } from './film-search'
-import { bookingPrioritySymbol, fallbackMinimumPriority, filterBookingPlan, normalizeBookingPlan, recalculateFallbackPriorities, removeBookingPlanEntries } from './booking-plan'
+import { bookingPrioritySymbol, fallbackMinimumPriority, filterBookingPlan, nextFallbackIds, normalizeBookingPlan, recalculateFallbackPriorities, removeBookingPlanEntries } from './booking-plan'
 
 type FilmData = { films: Film[]; note?: string; source?: string }
 type BackupData = {
-  version: 2
+  version: 3
   exportedAt: string
   selected: string[]
   favorites: string[]
   ticketStatus: TicketStatusMap
+  bookingPlan: BookingPlanMap
   customEvents: CustomEvent[]
 }
 
 type TimetableItem = { film: Film; screening: Screening }
 type CustomEventDialogState = { mode: 'create' | 'detail' | 'edit'; eventId?: string }
 type BookingConflictDialogState = { film: Film; screening: Screening; overlapping: TimetableItem[] }
+type BookingFallbackApplyDialogState = {
+  candidate: TimetableItem
+  conflicts: TimetableItem[]
+  customOverlaps: CustomEvent[]
+}
 type CalendarExportItem =
   | { kind: 'screening'; date: string; start: string; film: Film; screening: Screening }
   | { kind: 'custom'; date: string; start: string; event: CustomEvent }
@@ -227,6 +234,7 @@ export default function App() {
   const [detailScreeningId, setDetailScreeningId] = useState<string | null>(null)
   const [customEventDialog, setCustomEventDialog] = useState<CustomEventDialogState | null>(null)
   const [bookingConflictDialog, setBookingConflictDialog] = useState<BookingConflictDialogState | null>(null)
+  const [fallbackApplyDialog, setFallbackApplyDialog] = useState<BookingFallbackApplyDialogState | null>(null)
   const [loadError, setLoadError] = useState('')
   const [toast, setToast] = useState('')
   const [pngExportState, setPngExportState] = useState<'idle' | 'working' | 'ready' | 'done' | 'error'>('idle')
@@ -250,6 +258,7 @@ export default function App() {
       setDetailScreeningId(null)
       setCustomEventDialog(null)
       setBookingConflictDialog(null)
+      setFallbackApplyDialog(null)
       if (navigation.tab === 'curator' && !navigation.settingsOpen) {
         setCuratorPageKey((current) => current + 1)
       }
@@ -333,6 +342,15 @@ export default function App() {
   }, [bookingConflictDialog])
 
   useEffect(() => {
+    if (!fallbackApplyDialog) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setFallbackApplyDialog(null)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [fallbackApplyDialog])
+
+  useEffect(() => {
     if (!customEventDialog) return
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setCustomEventDialog(null)
@@ -412,6 +430,10 @@ export default function App() {
   const selectedItems = useMemo<TimetableItem[]>(
     () => allScreeningItems.filter(({ screening }) => selectedSet.has(screening.id)),
     [allScreeningItems, selectedSet],
+  )
+  const nextFallbackSet = useMemo(
+    () => nextFallbackIds(bookingPlan, ticketStatus, selectedSet),
+    [bookingPlan, ticketStatus, selectedSet],
   )
   const dates = useMemo(() => Array.from(new Set([
     ...selectedItems.map(({ screening }) => timetableDate(screening)),
@@ -598,6 +620,74 @@ export default function App() {
     })
   }, [bookingPlan])
 
+  const prepareApplyFallback = useCallback((screeningId: string) => {
+    if (!nextFallbackSet.has(screeningId)) {
+      setToast('현재 적용할 수 있는 다음 대안이 아닙니다.')
+      return
+    }
+    const candidate = allScreeningItems.find(({ screening }) => screening.id === screeningId)
+    if (!candidate) {
+      setToast('대안 회차 정보를 찾지 못했습니다.')
+      return
+    }
+
+    setFallbackApplyDialog({
+      candidate,
+      conflicts: conflictingSelections(candidate.film, candidate.screening),
+      customOverlaps: conflictingCustomEventsForScreening(candidate.film, candidate.screening),
+    })
+  }, [nextFallbackSet, allScreeningItems, conflictingSelections, conflictingCustomEventsForScreening])
+
+  const applyFallbackToTimetable = useCallback(() => {
+    if (!fallbackApplyDialog) return
+
+    const { candidate } = fallbackApplyDialog
+    const candidateId = candidate.screening.id
+    const freshNext = nextFallbackIds(bookingPlan, ticketStatus, selectedSet)
+    if (!freshNext.has(candidateId)) {
+      setFallbackApplyDialog(null)
+      setToast('예매 계획이 변경되어 대안을 다시 확인해 주세요.')
+      return
+    }
+
+    const freshConflicts = conflictingSelections(candidate.film, candidate.screening)
+    const bookedConflicts = freshConflicts.filter(({ screening }) => ticketStatus[screening.id] === 'booked')
+    const customOverlaps = conflictingCustomEventsForScreening(candidate.film, candidate.screening)
+
+    if (bookedConflicts.length) {
+      setFallbackApplyDialog({ candidate, conflicts: freshConflicts, customOverlaps })
+      setToast('예매 완료 회차와 겹쳐 대안을 적용할 수 없습니다.')
+      return
+    }
+
+    const conflictIds = new Set(freshConflicts.map(({ screening }) => screening.id))
+    const failedConflictIds = new Set(
+      freshConflicts
+        .filter(({ screening }) => ticketStatus[screening.id] === 'failed')
+        .map(({ screening }) => screening.id),
+    )
+    const cleanupIds = new Set(Array.from(conflictIds).filter((id) => !failedConflictIds.has(id)))
+
+    setSelected((current) => {
+      const next = current.filter((id) => !conflictIds.has(id) && id !== candidateId)
+      return [...next, candidateId]
+    })
+    setTicketStatus((current) => {
+      const next = { ...current }
+      for (const id of cleanupIds) delete next[id]
+      next[candidateId] = 'planned'
+      return next
+    })
+    setBookingPlan((current) => {
+      const candidateEntry = current[candidateId]
+      const next = removeBookingPlanEntries(current, cleanupIds)
+      if (candidateEntry) next[candidateId] = { ...candidateEntry }
+      return recalculateFallbackPriorities(next)
+    })
+    setFallbackApplyDialog(null)
+    setToast(`${candidate.film.title} 회차를 시간표에 적용했습니다.`)
+  }, [fallbackApplyDialog, bookingPlan, ticketStatus, selectedSet, conflictingSelections, conflictingCustomEventsForScreening])
+
   function applyTimeRangeFilter() {
     setStartTimeFilter(draftStartTime)
     setEndTimeFilter(draftEndTime)
@@ -721,11 +811,12 @@ export default function App() {
 
   function exportBackup() {
     const payload: BackupData = {
-      version: 2,
+      version: 3,
       exportedAt: new Date().toISOString(),
       selected,
       favorites,
       ticketStatus,
+      bookingPlan,
       customEvents,
     }
     downloadText('biff-timetable-backup.json', JSON.stringify(payload, null, 2), 'application/json;charset=utf-8')
@@ -769,10 +860,14 @@ export default function App() {
         if (!nextStatuses[id]) nextStatuses[id] = 'planned'
       }
 
+      const nextBookingPlan = recalculateFallbackPriorities(
+        filterBookingPlan(normalizeBookingPlan(parsed.bookingPlan), validScreeningIds),
+      )
+
       setSelected(nextSelected)
       setFavorites(nextFavorites)
       setTicketStatus(nextStatuses)
-      setBookingPlan({})
+      setBookingPlan(nextBookingPlan)
       setCustomEvents(normalizeCustomEvents(parsed.customEvents))
       setToast('백업한 시간표를 가져왔습니다.')
     } catch {
@@ -784,7 +879,7 @@ export default function App() {
     if (pngExportState === 'working' || (!selectedItems.length && !customEvents.length)) return
     setPngExportState('working')
     try {
-      const result = await exportTimetablePng(selectedItems, ticketStatus, userSettings, customEvents, viewport)
+      const result = await exportTimetablePng(selectedItems, ticketStatus, bookingPlan, userSettings, customEvents, viewport)
       setPngExportState(result === 'apple-ready' ? 'ready' : 'done')
       if (result === 'downloaded') setToast('시간표 PNG를 저장했습니다.')
     } catch (error) {
@@ -797,9 +892,13 @@ export default function App() {
   }
 
   function exportIcs() {
-    if (!selectedItems.length && !customEvents.length) return
+    const exportableScreenings = selectedItems.filter(({ screening }) => ticketStatus[screening.id] !== 'failed')
+    if (!exportableScreenings.length && !customEvents.length) {
+      setToast('예매 실패 회차를 제외하면 캘린더로 내보낼 일정이 없습니다.')
+      return
+    }
     const sorted: CalendarExportItem[] = [
-      ...selectedItems.map(({ film, screening }) => ({ kind: 'screening' as const, date: screening.date, start: screening.start, film, screening })),
+      ...exportableScreenings.map(({ film, screening }) => ({ kind: 'screening' as const, date: screening.date, start: screening.start, film, screening })),
       ...customEvents.map((event) => ({ kind: 'custom' as const, date: event.date, start: event.start, event })),
     ].sort((a, b) => `${a.date} ${a.start}`.localeCompare(`${b.date} ${b.start}`))
     const lines = [
@@ -1077,10 +1176,12 @@ export default function App() {
           <BookingPlanPanel
             items={allScreeningItems}
             selectedSet={selectedSet}
+            nextFallbackIds={nextFallbackSet}
             bookingPlan={bookingPlan}
             ticketStatus={ticketStatus}
             formatDate={formatDate}
             onRemoveAlternative={removeAlternative}
+            onApplyAlternative={prepareApplyFallback}
           />
           <div className={`timetable-scroll ${timetableMetrics.dense ? 'dense' : ''} ${timetableMetrics.ultraDense ? 'ultra-dense' : ''} ${timetableSelectionMode ? 'timetable-selection-mode' : ''}`}>
             <div className="timetable" style={timetableStyle}>
@@ -1206,6 +1307,17 @@ export default function App() {
           <div className="modal-footer"><button className={`favorite-button wide ${favorites.includes(detailFilm.id) ? 'active' : ''}`} onClick={() => toggleFavorite(detailFilm.id)}>{favorites.includes(detailFilm.id) ? '★ 관심작 해제' : '☆ 관심작 추가'}</button>{detailFilm.url && <a href={detailFilm.url} target="_blank" rel="noreferrer">BIFF 공식 작품정보 ↗</a>}</div>
         </section>
       </div>}
+
+      {fallbackApplyDialog && <BookingFallbackApplyDialog
+        candidate={fallbackApplyDialog.candidate}
+        conflicts={fallbackApplyDialog.conflicts}
+        customOverlaps={fallbackApplyDialog.customOverlaps}
+        ticketStatus={ticketStatus}
+        formatDate={formatDate}
+        endLabel={endLabel}
+        onApply={applyFallbackToTimetable}
+        onClose={() => setFallbackApplyDialog(null)}
+      />}
 
       {bookingConflictDialog && <BookingConflictDialog
         film={bookingConflictDialog.film}
