@@ -1,5 +1,6 @@
 import { toBlob } from 'html-to-image'
-import type { Film, Screening, TicketStatusMap } from './components/film-types'
+import type { BookingPlanMap, Film, Screening, TicketStatusMap } from './components/film-types'
+import { bookingPrioritySymbol } from './booking-plan'
 import { customEventAbsoluteWindow, customEventCategoryLabel, customEventPaletteIndex, customEventTimetableDate, customEventTimetableEndMinutes, customEventTimetableStartMinutes, windowsOverlap, type CustomEvent } from './custom-events'
 import { BASE_END_HOUR, START_HOUR, screeningAbsoluteWindow, timetableDate, timetableEndMinutes, timetableStartMinutes } from './screening-time'
 import { getTransferBuffer, type TransferSettings } from './transfer-buffer'
@@ -139,6 +140,7 @@ function element<K extends keyof HTMLElementTagNameMap>(tag: K, className?: stri
 function buildExportBoard(
   items: ExportItem[],
   ticketStatus: TicketStatusMap,
+  bookingPlan: BookingPlanMap,
   settings: PngExportSettings,
   customEvents: readonly CustomEvent[],
   profile: PngExportProfile,
@@ -187,6 +189,8 @@ function buildExportBoard(
   const legend = element('div', 'png-export-legend')
   const mobileLegend = profile.mode === 'mobile'
   legend.append(element('span', 'booked', mobileLegend ? '✓ 완료' : '✓ 예매 완료'))
+  legend.append(element('span', 'priority', mobileLegend ? '①②③ 순위' : '①②③ 예매 순위'))
+  legend.append(element('span', 'failed', mobileLegend ? '× 실패' : '× 예매 실패'))
   legend.append(element('span', 'planned', mobileLegend ? '○ 예정' : '○ 예매 예정'))
   legend.append(element('span', '', mobileLegend ? 'GV' : 'GV 게스트 방문'))
   legend.append(element('span', 'custom', mobileLegend ? '◆ 일정' : '◆ 사용자 일정'))
@@ -223,7 +227,14 @@ function buildExportBoard(
         const top = profile.edgeSpace + ((start - START_HOUR * 60) / 60) * profile.hourHeight
         const height = Math.max(((end - start) / 60) * profile.hourHeight, profile.minimumEventHeight)
         const status = ticketStatus[screening.id]
-        const statusPrefix = status === 'booked' ? '✓ ' : status === 'planned' ? '○ ' : ''
+        const priority = bookingPlan[screening.id]?.priority
+        const statusPrefix = status === 'booked'
+          ? '✓ '
+          : status === 'failed'
+            ? '× '
+            : priority
+              ? `${bookingPrioritySymbol(priority)} `
+              : '○ '
         const event = element('div', `png-export-event palette-${paletteIndex(film.id)}${status ? ` status-${status}` : ''}${hasTransferWarning(item, items, settings) ? ' transfer-warning' : ''}${screeningHasCustomConflict(item, customEvents) ? ' time-conflict' : ''}`)
         event.style.top = `${top}px`
         event.style.height = `${height}px`
@@ -388,6 +399,7 @@ function showAppleSaveSheet(blob: Blob) {
 export async function exportTimetablePng(
   sourceItems: readonly ExportItem[],
   ticketStatus: TicketStatusMap,
+  bookingPlan: BookingPlanMap,
   settings: PngExportSettings,
   customEvents: readonly CustomEvent[] = [],
   viewport: PngExportViewport = { width: window.innerWidth, height: window.innerHeight },
@@ -402,7 +414,7 @@ export async function exportTimetablePng(
   let host: HTMLElement | null = null
 
   try {
-    const board = buildExportBoard(items, ticketStatus, settings, sortedCustomEvents, profile)
+    const board = buildExportBoard(items, ticketStatus, bookingPlan, settings, sortedCustomEvents, profile)
     host = element('div', 'png-export-host')
     host.style.width = `${profile.width}px`
     host.dataset.exportMode = profile.mode
