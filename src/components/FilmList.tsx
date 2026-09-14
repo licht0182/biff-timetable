@@ -1,12 +1,13 @@
 import { Virtuoso } from 'react-virtuoso'
 import FilmCard from './FilmCard'
-import type { Film, Screening, TicketStatus, TicketStatusMap, TravelWarning } from './film-types'
+import type { BookingPlanMap, BookingPriority, Film, Screening, TicketStatus, TicketStatusMap, TravelWarning } from './film-types'
 
 type FilmListProps = {
   films: Film[]
   favoriteSet: ReadonlySet<string>
   selectedSet: ReadonlySet<string>
   ticketStatus: TicketStatusMap
+  bookingPlan: BookingPlanMap
   visibleScreenings: (film: Film) => Screening[]
   hasConflict: (film: Film, screening: Screening) => boolean
   transitionWarning: (film: Film, screening: Screening) => TravelWarning | null
@@ -15,7 +16,7 @@ type FilmListProps = {
   onFavorite: (filmId: string) => void
   onDetail: (film: Film) => void
   onToggleScreening: (film: Film, screening: Screening) => void
-  onStatusChange: (screeningId: string, status: TicketStatus) => void
+  onBookingChange: (screeningId: string, status: Exclude<TicketStatus, 'none'>, priority?: BookingPriority) => void
 }
 
 export default function FilmList({
@@ -23,6 +24,7 @@ export default function FilmList({
   favoriteSet,
   selectedSet,
   ticketStatus,
+  bookingPlan,
   visibleScreenings,
   hasConflict,
   transitionWarning,
@@ -31,7 +33,7 @@ export default function FilmList({
   onFavorite,
   onDetail,
   onToggleScreening,
-  onStatusChange,
+  onBookingChange,
 }: FilmListProps) {
   return (
     <section className="film-list-shell" data-total-films={films.length}>
@@ -49,6 +51,7 @@ export default function FilmList({
               isFavorite={favoriteSet.has(film.id)}
               selectedSet={selectedSet}
               ticketStatus={ticketStatus}
+              bookingPlan={bookingPlan}
               hasConflict={hasConflict}
               transitionWarning={transitionWarning}
               formatDate={formatDate}
@@ -56,7 +59,7 @@ export default function FilmList({
               onFavorite={onFavorite}
               onDetail={onDetail}
               onToggleScreening={onToggleScreening}
-              onStatusChange={onStatusChange}
+              onBookingChange={onBookingChange}
             />
           </div>
         )}
