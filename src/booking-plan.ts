@@ -158,7 +158,6 @@ export function failedFallbackPredecessorIds(
       continue
     }
 
-    if (entry.priority >= candidate.priority) continue
     if (entry.fallbackFor?.some((originId) => originIds.has(originId))) {
       result.add(screeningId)
     }
