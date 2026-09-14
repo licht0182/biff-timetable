@@ -1,5 +1,6 @@
 import { memo } from 'react'
-import type { Film, Screening, TicketStatus, TravelWarning } from './film-types'
+import BookingStatusSelect from './BookingStatusSelect'
+import type { BookingPriority, Film, Screening, TicketStatus, TravelWarning } from './film-types'
 
 type ScreeningRowProps = {
   film: Film
@@ -8,10 +9,11 @@ type ScreeningRowProps = {
   hasConflict: boolean
   travel: TravelWarning | null
   status: Exclude<TicketStatus, 'none'>
+  priority?: BookingPriority
   formatDate: (date: string, compact?: boolean) => string
   endLabel: (film: Film, screening: Screening) => string
   onToggle: (film: Film, screening: Screening) => void
-  onStatusChange: (screeningId: string, status: TicketStatus) => void
+  onBookingChange: (screeningId: string, status: Exclude<TicketStatus, 'none'>, priority?: BookingPriority) => void
 }
 
 function ScreeningRow({
@@ -21,10 +23,11 @@ function ScreeningRow({
   hasConflict,
   travel,
   status,
+  priority,
   formatDate,
   endLabel,
   onToggle,
-  onStatusChange,
+  onBookingChange,
 }: ScreeningRowProps) {
   const rowNote = hasConflict
     ? '내 시간표의 다른 일정과 시간이 겹칩니다.'
@@ -42,15 +45,12 @@ function ScreeningRow({
       </div>
       <div className={`screening-actions ${isSelected ? 'selected-actions' : ''}`}>
         {isSelected && (
-          <select
-            className={`ticket-select ${status}`}
-            value={status}
-            onChange={(event) => onStatusChange(screening.id, event.target.value as TicketStatus)}
-            aria-label={`${film.title} 예매 상태`}
-          >
-            <option value="planned">예매 예정</option>
-            <option value="booked">예매 완료</option>
-          </select>
+          <BookingStatusSelect
+            status={status}
+            priority={priority}
+            ariaLabel={`${film.title} 예매 상태와 우선순위`}
+            onChange={(nextStatus, nextPriority) => onBookingChange(screening.id, nextStatus, nextPriority)}
+          />
         )}
         <button className={isSelected ? 'selected' : ''} onClick={() => onToggle(film, screening)}>
           {isSelected ? '선택됨' : '+ 추가'}
