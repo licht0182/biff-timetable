@@ -5,10 +5,12 @@ type BookingPlanItem = { film: Film; screening: Screening }
 type BookingPlanPanelProps = {
   items: BookingPlanItem[]
   selectedSet: ReadonlySet<string>
+  nextFallbackIds: ReadonlySet<string>
   bookingPlan: BookingPlanMap
   ticketStatus: TicketStatusMap
   formatDate: (date: string, compact?: boolean) => string
   onRemoveAlternative: (screeningId: string) => void
+  onApplyAlternative: (screeningId: string) => void
 }
 
 const PRIORITIES: BookingPriority[] = [1, 2, 3]
@@ -16,10 +18,12 @@ const PRIORITIES: BookingPriority[] = [1, 2, 3]
 export default function BookingPlanPanel({
   items,
   selectedSet,
+  nextFallbackIds,
   bookingPlan,
   ticketStatus,
   formatDate,
   onRemoveAlternative,
+  onApplyAlternative,
 }: BookingPlanPanelProps) {
   const plannedItems = items.filter(({ screening }) => bookingPlan[screening.id])
   if (!plannedItems.length) return null
@@ -46,15 +50,16 @@ export default function BookingPlanPanel({
                   const status = ticketStatus[screening.id] ?? 'planned'
                   const entry = bookingPlan[screening.id]
                   const isAlternative = Boolean(entry?.fallbackFor?.length) && !selectedSet.has(screening.id)
+                  const isNextFallback = isAlternative && nextFallbackIds.has(screening.id)
                   const fallbackTitles = entry?.fallbackFor
                     ?.map((id) => itemByScreeningId.get(id)?.film.title)
                     .filter((title): title is string => Boolean(title)) ?? []
 
-                  return <article className={`booking-plan-item status-${status} ${isAlternative ? 'is-alternative' : ''}`} key={screening.id}>
+                  return <article className={`booking-plan-item status-${status} ${isAlternative ? 'is-alternative' : ''} ${isNextFallback ? 'is-next-fallback' : ''}`} key={screening.id}>
                     <div className="booking-plan-item-main">
                       <strong>{film.title}</strong>
                       <span>{formatDate(screening.date)} {screening.start} · {screening.venue}</span>
-                      {isAlternative && <em className="booking-plan-alternative">대안</em>}
+                      {isAlternative && <em className="booking-plan-alternative">{isNextFallback ? '다음 대안' : '대안'}</em>}
                       {status === 'booked' && <em className="booking-plan-status booked">예매 완료</em>}
                       {status === 'failed' && <em className="booking-plan-status failed">예매 실패</em>}
                       {isAlternative && fallbackTitles.length > 0 && (
@@ -62,14 +67,26 @@ export default function BookingPlanPanel({
                       )}
                     </div>
                     {isAlternative && (
-                      <button
-                        type="button"
-                        className="booking-plan-remove"
-                        onClick={() => onRemoveAlternative(screening.id)}
-                        aria-label={`${film.title} 대안 해제`}
-                      >
-                        대안 해제
-                      </button>
+                      <div className="booking-plan-item-actions">
+                        {isNextFallback && (
+                          <button
+                            type="button"
+                            className="booking-plan-apply"
+                            onClick={() => onApplyAlternative(screening.id)}
+                            aria-label={`${film.title} 시간표에 적용`}
+                          >
+                            시간표에 적용
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="booking-plan-remove"
+                          onClick={() => onRemoveAlternative(screening.id)}
+                          aria-label={`${film.title} 대안 해제`}
+                        >
+                          대안 해제
+                        </button>
+                      </div>
                     )}
                   </article>
                 })}
