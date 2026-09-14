@@ -6,6 +6,7 @@ type ScreeningRowProps = {
   film: Film
   screening: Screening
   isSelected: boolean
+  isAlternative: boolean
   hasConflict: boolean
   travel: TravelWarning | null
   status: Exclude<TicketStatus, 'none'>
@@ -20,6 +21,7 @@ function ScreeningRow({
   film,
   screening,
   isSelected,
+  isAlternative,
   hasConflict,
   travel,
   status,
@@ -29,21 +31,24 @@ function ScreeningRow({
   onToggle,
   onBookingChange,
 }: ScreeningRowProps) {
-  const rowNote = hasConflict
-    ? '내 시간표의 다른 일정과 시간이 겹칩니다.'
-    : travel
-      ? `${travel.routeLabel ? `${travel.routeLabel} · ` : ''}이동 여유 ${travel.gap}분 · 필요 ${travel.buffer}분`
-      : ''
-  const rowNoteTitle = travel?.transferDetail ? `${rowNote}\n${travel.transferDetail}` : rowNote || undefined
+  const rowNote = isAlternative
+    ? '현재 시간표 회차 실패 시 예매 대안으로 저장되어 있습니다.'
+    : hasConflict
+      ? '내 시간표의 다른 일정과 시간이 겹칩니다.'
+      : travel
+        ? `${travel.routeLabel ? `${travel.routeLabel} · ` : ''}이동 여유 ${travel.gap}분 · 필요 ${travel.buffer}분`
+        : ''
+  const rowNoteTitle = travel?.transferDetail && !isAlternative ? `${rowNote}\n${travel.transferDetail}` : rowNote || undefined
+  const alternativeLabel = priority === 2 ? '② 대안' : priority === 3 ? '③ 대안' : '대안'
 
   return (
-    <div className={`screening-row ${hasConflict ? 'conflict' : ''} ${travel ? 'travel-warning' : ''}`}>
+    <div className={`screening-row ${hasConflict ? 'conflict' : ''} ${travel ? 'travel-warning' : ''} ${isAlternative ? 'booking-alternative' : ''}`}>
       <div>
         <strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}</strong>
         <span>{screening.venue} · {screening.start}–{endLabel(film, screening)}{screening.gv ? ' · GV' : ''}</span>
         <small className={`screening-note ${travel && !hasConflict ? 'travel-text' : ''}`} title={rowNoteTitle}>{rowNote}</small>
       </div>
-      <div className={`screening-actions ${isSelected ? 'selected-actions' : ''}`}>
+      <div className={`screening-actions ${isSelected ? 'selected-actions' : ''} ${isAlternative ? 'alternative-actions' : ''}`}>
         {isSelected && (
           <BookingStatusSelect
             status={status}
@@ -52,8 +57,12 @@ function ScreeningRow({
             onChange={(nextStatus, nextPriority) => onBookingChange(screening.id, nextStatus, nextPriority)}
           />
         )}
-        <button className={isSelected ? 'selected' : ''} onClick={() => onToggle(film, screening)}>
-          {isSelected ? '선택됨' : '+ 추가'}
+        <button
+          className={isSelected ? 'selected' : isAlternative ? 'alternative' : ''}
+          onClick={() => onToggle(film, screening)}
+          aria-label={isAlternative ? `${film.title} ${alternativeLabel} 해제` : undefined}
+        >
+          {isSelected ? '선택됨' : isAlternative ? alternativeLabel : '+ 추가'}
         </button>
       </div>
     </div>
