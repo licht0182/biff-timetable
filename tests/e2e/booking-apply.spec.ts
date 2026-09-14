@@ -78,6 +78,18 @@ function findFallbackChain(data: FilmData): [Item, Item, Item] | null {
   return null
 }
 
+function distinctFilmItems(data: FilmData, count: number) {
+  const result: Item[] = []
+  const filmIds = new Set<string>()
+  for (const item of flatten(data)) {
+    if (filmIds.has(item.film.id)) continue
+    filmIds.add(item.film.id)
+    result.push(item)
+    if (result.length === count) break
+  }
+  return result
+}
+
 function findBookedGuardTriple(data: FilmData): [Item, Item, Item] | null {
   const items = flatten(data)
   for (const candidate of items) {
@@ -424,4 +436,66 @@ test('activates every option in the same next-priority tier', async ({ page, req
   await expect(page.locator('.event-block').filter({ hasText: optionA.film.title })).toHaveCount(0)
   await expect(page.locator('.event-block').filter({ hasText: optionB.film.title })).toHaveCount(1)
   await expect(page.locator('.selection-count')).toHaveText('총 1개 선택')
+})
+
+
+test('detaches failed fallback history without leaving dangling references', async ({ page, request }) => {
+  const data = await screeningData(request)
+  const [origin, failedAlternative, current] = distinctFilmItems(data, 3)
+  test.skip(!origin || !failedAlternative || !current, '대안 참조 정리 테스트에 필요한 회차가 없습니다.')
+
+  await page.addInitScript(({ selectedKey, statusKey, planKey, originId, failedId, currentId }) => {
+    localStorage.setItem(selectedKey, JSON.stringify([currentId]))
+    localStorage.setItem(statusKey, JSON.stringify({
+      [failedId]: 'failed',
+      [currentId]: 'planned',
+    }))
+    localStorage.setItem(planKey, JSON.stringify({
+      [originId]: { priority: 1 },
+      [failedId]: { priority: 2, fallbackFor: [originId] },
+      [currentId]: { priority: 3, fallbackFor: [failedId] },
+    }))
+  }, {
+    selectedKey: SELECTED_KEY,
+    statusKey: STATUS_KEY,
+    planKey: BOOKING_PLAN_KEY,
+    originId: origin.screening.id,
+    failedId: failedAlternative.screening.id,
+    currentId: current.screening.id,
+  })
+
+  await page.goto('./')
+  await page.getByRole('button', { name: '내 시간표' }).click()
+  const panel = page.locator('.booking-plan-panel')
+  await panel.locator('summary').click()
+
+  const failedPlan = panel.locator('.booking-plan-item').filter({ hasText: failedAlternative.film.title }).first()
+  await expect(failedPlan).toContainText('실패한 대안')
+  await failedPlan.getByRole('button', { name: /대안 해제/ }).click()
+  await expect(failedPlan).toHaveCount(0)
+
+  await expect.poll(() => page.evaluate(({ selectedKey, statusKey, planKey, failedId, currentId }) => {
+    const selected = JSON.parse(localStorage.getItem(selectedKey) ?? '[]') as string[]
+    const statuses = JSON.parse(localStorage.getItem(statusKey) ?? '{}') as Record<string, string>
+    const plan = JSON.parse(localStorage.getItem(planKey) ?? '{}') as Record<string, { priority?: number; fallbackFor?: string[] }>
+    return {
+      selected,
+      failedStatus: statuses[failedId] ?? null,
+      failedInPlan: Boolean(plan[failedId]),
+      currentPriority: plan[currentId]?.priority,
+      currentFallbackFor: plan[currentId]?.fallbackFor ?? [],
+    }
+  }, {
+    selectedKey: SELECTED_KEY,
+    statusKey: STATUS_KEY,
+    planKey: BOOKING_PLAN_KEY,
+    failedId: failedAlternative.screening.id,
+    currentId: current.screening.id,
+  })).toEqual({
+    selected: [current.screening.id],
+    failedStatus: null,
+    failedInPlan: false,
+    currentPriority: 3,
+    currentFallbackFor: [],
+  })
 })
