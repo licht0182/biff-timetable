@@ -116,17 +116,20 @@ export function nextFallbackIds(
   for (const originId of failedOriginIds) {
     const chain = Object.entries(plan)
       .filter(([, entry]) => entry.fallbackFor?.includes(originId))
-      .sort((a, b) => a[1].priority - b[1].priority)
 
-    for (const [screeningId] of chain) {
-      const status = ticketStatus[screeningId]
-      if (selectedIds.has(screeningId)) {
-        if (status !== 'failed') break
-        continue
-      }
-      if (status === 'failed') continue
-      next.add(screeningId)
-      break
+    const hasActiveSelection = chain.some(([screeningId]) => (
+      selectedIds.has(screeningId) && ticketStatus[screeningId] !== 'failed'
+    ))
+    if (hasActiveSelection) continue
+
+    const candidates = chain.filter(([screeningId]) => (
+      !selectedIds.has(screeningId) && ticketStatus[screeningId] !== 'failed'
+    ))
+    if (!candidates.length) continue
+
+    const nextPriority = Math.min(...candidates.map(([, entry]) => entry.priority))
+    for (const [screeningId, entry] of candidates) {
+      if (entry.priority === nextPriority) next.add(screeningId)
     }
   }
 
