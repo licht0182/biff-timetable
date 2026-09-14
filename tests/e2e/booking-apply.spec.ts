@@ -392,4 +392,23 @@ test('activates every option in the same next-priority tier', async ({ page, req
   const optionBPlan = panel.locator('.booking-plan-item').filter({ hasText: optionB.film.title }).first()
   await expect(optionAPlan.getByRole('button', { name: /시간표에 적용/ })).toBeVisible()
   await expect(optionBPlan.getByRole('button', { name: /시간표에 적용/ })).toBeVisible()
+
+  await optionAPlan.getByRole('button', { name: /시간표에 적용/ }).click()
+  await page.locator('.booking-apply-dialog').getByRole('button', { name: '시간표에 적용', exact: true }).click()
+  await expect(page.locator('.event-block').filter({ hasText: optionA.film.title })).toHaveCount(1)
+  await expect(optionBPlan.getByRole('button', { name: /시간표에 적용/ })).toHaveCount(0)
+
+  await page.locator('.event-block').filter({ hasText: optionA.film.title }).first().click()
+  await page.locator('.film-modal .current-screening .ticket-select').selectOption('failed')
+  await page.getByRole('button', { name: '상세보기 닫기' }).click()
+
+  await expect(optionBPlan.getByRole('button', { name: /시간표에 적용/ })).toBeVisible()
+  await optionBPlan.getByRole('button', { name: /시간표에 적용/ }).click()
+  const replacementDialog = page.locator('.booking-apply-dialog')
+  await expect(replacementDialog).toContainText(optionA.film.title)
+  await replacementDialog.getByRole('button', { name: '시간표에 적용', exact: true }).click()
+
+  await expect(page.locator('.event-block').filter({ hasText: optionA.film.title })).toHaveCount(0)
+  await expect(page.locator('.event-block').filter({ hasText: optionB.film.title })).toHaveCount(1)
+  await expect(page.locator('.selection-count')).toHaveText('총 1개 선택')
 })
