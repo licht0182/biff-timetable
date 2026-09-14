@@ -91,6 +91,14 @@ function findBookedGuardTriple(data: FilmData): [Item, Item, Item] | null {
   return null
 }
 
+async function finderRow(page: Page, item: Item) {
+  await page.getByLabel('영화 검색').fill(item.film.title)
+  const card = page.locator('.film-card').filter({ hasText: item.film.title }).first()
+  const row = card.locator('.screening-row').filter({ hasText: `${item.screening.venue} · ${item.screening.start}` }).first()
+  await expect(row).toBeVisible()
+  return row
+}
+
 async function seedFallbackState(
   page: Page,
   origin: Item,
@@ -278,4 +286,74 @@ test('activates the third priority only after the applied second priority also f
     secondStatus: 'failed',
     thirdStatus: 'planned',
   })
+})
+
+
+test('runs the complete 1-to-2-to-3 fallback journey through the visible UI', async ({ page, request }) => {
+  const data = await screeningData(request)
+  const chain = findFallbackChain(data)
+  test.skip(!chain, '전체 예매 대안 여정 테스트에 필요한 회차 조합이 없습니다.')
+  const [origin, second, third] = chain!
+
+  await page.goto('./')
+
+  const originRow = await finderRow(page, origin)
+  await originRow.getByRole('button', { name: '+ 추가' }).click()
+  await originRow.locator('.ticket-select').selectOption('priority-1')
+
+  const secondRow = await finderRow(page, second)
+  await secondRow.getByRole('button', { name: '+ 추가' }).click()
+  const secondConflict = page.locator('.booking-conflict-dialog')
+  await expect(secondConflict).toBeVisible()
+  await secondConflict.locator('select').selectOption('2')
+  await secondConflict.getByRole('button', { name: '2순위 대안으로 저장' }).click()
+  await expect(secondRow.getByRole('button')).toContainText('② 대안')
+
+  const thirdRow = await finderRow(page, third)
+  await thirdRow.getByRole('button', { name: '+ 추가' }).click()
+  const thirdConflict = page.locator('.booking-conflict-dialog')
+  await expect(thirdConflict).toBeVisible()
+  await thirdConflict.locator('select').selectOption('3')
+  await thirdConflict.getByRole('button', { name: '3순위 대안으로 저장' }).click()
+  await expect(thirdRow.getByRole('button')).toContainText('③ 대안')
+
+  const originRowAgain = await finderRow(page, origin)
+  await originRowAgain.locator('.ticket-select').selectOption('failed')
+
+  await page.getByRole('button', { name: '내 시간표' }).click()
+  const panel = page.locator('.booking-plan-panel')
+  await expect(panel.locator('summary')).toContainText('다음 대안 1')
+  await panel.locator('summary').click()
+
+  const secondPlan = panel.locator('.booking-plan-item').filter({ hasText: second.film.title }).first()
+  const thirdPlan = panel.locator('.booking-plan-item').filter({ hasText: third.film.title }).first()
+  await expect(secondPlan).toContainText('다음 대안')
+  await expect(thirdPlan.getByRole('button', { name: /시간표에 적용/ })).toHaveCount(0)
+
+  await secondPlan.getByRole('button', { name: /시간표에 적용/ }).click()
+  await page.locator('.booking-apply-dialog').getByRole('button', { name: '시간표에 적용', exact: true }).click()
+  await expect(page.locator('.event-block').filter({ hasText: second.film.title })).toHaveCount(1)
+  await expect(page.locator('.event-block').filter({ hasText: origin.film.title })).toHaveCount(0)
+
+  await page.locator('.event-block').filter({ hasText: second.film.title }).first().click()
+  await page.locator('.film-modal .current-screening .ticket-select').selectOption('failed')
+  await page.getByRole('button', { name: '상세보기 닫기' }).click()
+
+  await expect(panel.locator('summary')).toContainText('다음 대안 1')
+  await expect(thirdPlan).toContainText('다음 대안')
+  await thirdPlan.getByRole('button', { name: /시간표에 적용/ }).click()
+
+  const finalDialog = page.locator('.booking-apply-dialog')
+  await expect(finalDialog).toContainText(second.film.title)
+  await finalDialog.getByRole('button', { name: '시간표에 적용', exact: true }).click()
+
+  await expect(page.locator('.selection-count')).toHaveText('총 1개 선택')
+  await expect(page.locator('.event-block').filter({ hasText: second.film.title })).toHaveCount(0)
+  await expect(page.locator('.event-block').filter({ hasText: third.film.title })).toHaveCount(1)
+
+  await page.reload()
+  await page.getByRole('button', { name: '내 시간표' }).click()
+  await expect(page.locator('.selection-count')).toHaveText('총 1개 선택')
+  await expect(page.locator('.event-block').filter({ hasText: third.film.title })).toHaveCount(1)
+  await expect(page.locator('.event-block').filter({ hasText: second.film.title })).toHaveCount(0)
 })
