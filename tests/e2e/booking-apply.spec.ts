@@ -58,6 +58,19 @@ function findOverlappingPair(data: FilmData): [Item, Item] | null {
   return null
 }
 
+function findFallbackChain(data: FilmData): [Item, Item, Item] | null {
+  const items = flatten(data)
+  for (const origin of items) {
+    const alternatives = items.filter((item) => (
+      item.screening.id !== origin.screening.id
+      && item.film.id !== origin.film.id
+      && overlaps(origin, item)
+    ))
+    if (alternatives.length >= 2) return [origin, alternatives[0], alternatives[1]]
+  }
+  return null
+}
+
 function findBookedGuardTriple(data: FilmData): [Item, Item, Item] | null {
   const items = flatten(data)
   for (const candidate of items) {
@@ -180,4 +193,52 @@ test('blocks fallback application when it now conflicts with a booked screening'
 
   await expect.poll(() => page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? '[]') as string[], SELECTED_KEY))
     .toEqual([origin.screening.id, booked.screening.id])
+})
+
+
+test('activates the third priority only after the applied second priority also fails', async ({ page, request }) => {
+  const data = await screeningData(request)
+  const chain = findFallbackChain(data)
+  test.skip(!chain, '연속 대안 테스트에 필요한 겹치는 회차가 부족합니다.')
+  const [origin, second, third] = chain!
+
+  await page.addInitScript(({ selectedKey, statusKey, planKey, originId, secondId, thirdId }) => {
+    localStorage.setItem(selectedKey, JSON.stringify([originId]))
+    localStorage.setItem(statusKey, JSON.stringify({ [originId]: 'failed' }))
+    localStorage.setItem(planKey, JSON.stringify({
+      [originId]: { priority: 1 },
+      [secondId]: { priority: 2, fallbackFor: [originId] },
+      [thirdId]: { priority: 3, fallbackFor: [originId] },
+    }))
+  }, {
+    selectedKey: SELECTED_KEY,
+    statusKey: STATUS_KEY,
+    planKey: BOOKING_PLAN_KEY,
+    originId: origin.screening.id,
+    secondId: second.screening.id,
+    thirdId: third.screening.id,
+  })
+
+  await page.goto('./')
+  await page.getByRole('button', { name: '내 시간표' }).click()
+  const panel = page.locator('.booking-plan-panel')
+  await panel.locator('summary').click()
+
+  const secondPlan = panel.locator('.booking-plan-item').filter({ hasText: second.film.title }).first()
+  const thirdPlan = panel.locator('.booking-plan-item').filter({ hasText: third.film.title }).first()
+  await expect(secondPlan.getByRole('button', { name: /시간표에 적용/ })).toBeVisible()
+  await expect(thirdPlan.getByRole('button', { name: /시간표에 적용/ })).toHaveCount(0)
+
+  await secondPlan.getByRole('button', { name: /시간표에 적용/ }).click()
+  await page.locator('.booking-apply-dialog').getByRole('button', { name: '시간표에 적용', exact: true }).click()
+
+  const secondEvent = page.locator('.event-block').filter({ hasText: second.film.title }).first()
+  await expect(secondEvent).toBeVisible()
+  await secondEvent.click()
+
+  const statusSelect = page.locator('.film-modal .ticket-select').filter({ has: page.locator('option[value="failed"]') }).first()
+  await statusSelect.selectOption('failed')
+  await page.getByRole('button', { name: '상세보기 닫기' }).click()
+
+  await expect(thirdPlan.getByRole('button', { name: /시간표에 적용/ })).toBeVisible()
 })
