@@ -130,6 +130,8 @@ test('exports booking plan backup v3 and still imports a v2 backup', async ({ pa
   const downloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: 'JSON 저장' }).click()
   const download = await downloadPromise
+  const backupPath = await download.path()
+  expect(backupPath).not.toBeNull()
   const backupText = await streamText(await download.createReadStream())
   const backup = JSON.parse(backupText) as {
     version: number
@@ -163,6 +165,32 @@ test('exports booking plan backup v3 and still imports a v2 backup', async ({ pa
   }), { selectedKey: SELECTED_KEY, planKey: BOOKING_PLAN_KEY })).toEqual({
     selected: [origin.screening.id],
     plan: {},
+  })
+
+  await page.locator('input[type="file"][accept*=".json"]').setInputFiles(backupPath!)
+  await expect.poll(() => page.evaluate(({ selectedKey, statusKey, planKey, originId, candidateId }) => {
+    const selected = JSON.parse(localStorage.getItem(selectedKey) ?? '[]') as string[]
+    const statuses = JSON.parse(localStorage.getItem(statusKey) ?? '{}') as Record<string, string>
+    const plan = JSON.parse(localStorage.getItem(planKey) ?? '{}') as Record<string, { priority?: number; fallbackFor?: string[] }>
+    return {
+      selected,
+      originStatus: statuses[originId],
+      originPriority: plan[originId]?.priority,
+      candidatePriority: plan[candidateId]?.priority,
+      candidateFallbackFor: plan[candidateId]?.fallbackFor ?? [],
+    }
+  }, {
+    selectedKey: SELECTED_KEY,
+    statusKey: STATUS_KEY,
+    planKey: BOOKING_PLAN_KEY,
+    originId: origin.screening.id,
+    candidateId: candidate.screening.id,
+  })).toEqual({
+    selected: [origin.screening.id],
+    originStatus: 'failed',
+    originPriority: 1,
+    candidatePriority: 2,
+    candidateFallbackFor: [origin.screening.id],
   })
 })
 
