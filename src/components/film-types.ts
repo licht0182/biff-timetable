@@ -30,6 +30,7 @@ export type TicketStatusMap = Record<string, Exclude<TicketStatus, 'none'>>
 export type BookingPriority = 1 | 2 | 3
 export type BookingPlanEntry = {
   priority: BookingPriority
+  fallbackFor?: string[]
 }
 export type BookingPlanMap = Record<string, BookingPlanEntry>
 
