@@ -2,6 +2,14 @@ import type { BookingPlanMap, BookingPriority, TicketStatus } from './components
 
 export type BookingSelectValue = 'planned' | 'priority-1' | 'priority-2' | 'priority-3' | 'booked' | 'failed'
 
+function normalizeFallbackFor(value: unknown, screeningId: string) {
+  if (!Array.isArray(value)) return undefined
+  const fallbackFor = Array.from(new Set(value.filter((item): item is string => (
+    typeof item === 'string' && item.trim().length > 0 && item !== screeningId
+  ))))
+  return fallbackFor.length ? fallbackFor : undefined
+}
+
 export function normalizeBookingPlan(value: unknown): BookingPlanMap {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
 
@@ -9,16 +17,66 @@ export function normalizeBookingPlan(value: unknown): BookingPlanMap {
     if (!screeningId.trim() || !raw || typeof raw !== 'object' || Array.isArray(raw)) return []
     const priority = (raw as { priority?: unknown }).priority
     if (priority !== 1 && priority !== 2 && priority !== 3) return []
-    return [[screeningId, { priority }] as const]
+    const fallbackFor = normalizeFallbackFor((raw as { fallbackFor?: unknown }).fallbackFor, screeningId)
+    return [[screeningId, fallbackFor ? { priority, fallbackFor } : { priority }] as const]
   })
 
   return Object.fromEntries(entries) as BookingPlanMap
 }
 
 export function filterBookingPlan(plan: BookingPlanMap, validScreeningIds: ReadonlySet<string>): BookingPlanMap {
-  return Object.fromEntries(
-    Object.entries(plan).filter(([screeningId]) => validScreeningIds.has(screeningId)),
-  ) as BookingPlanMap
+  const next: BookingPlanMap = {}
+
+  for (const [screeningId, entry] of Object.entries(plan)) {
+    if (!validScreeningIds.has(screeningId)) continue
+    if (!entry.fallbackFor?.length) {
+      next[screeningId] = { priority: entry.priority }
+      continue
+    }
+
+    const fallbackFor = entry.fallbackFor.filter((id) => validScreeningIds.has(id) && id !== screeningId)
+    if (fallbackFor.length) next[screeningId] = { priority: entry.priority, fallbackFor }
+  }
+
+  return next
+}
+
+export function removeBookingPlanEntries(plan: BookingPlanMap, screeningIds: ReadonlySet<string>): BookingPlanMap {
+  const next: BookingPlanMap = {}
+
+  for (const [screeningId, entry] of Object.entries(plan)) {
+    if (screeningIds.has(screeningId)) continue
+    if (!entry.fallbackFor?.length) {
+      next[screeningId] = entry
+      continue
+    }
+
+    const fallbackFor = entry.fallbackFor.filter((id) => !screeningIds.has(id))
+    if (fallbackFor.length) next[screeningId] = { ...entry, fallbackFor }
+  }
+
+  return next
+}
+
+export function fallbackMinimumPriority(plan: BookingPlanMap, originIds: string[]): BookingPriority | null {
+  if (!originIds.length) return null
+  const highestOriginPriority = originIds.reduce<BookingPriority>((highest, id) => {
+    const priority = plan[id]?.priority ?? 1
+    return priority > highest ? priority : highest
+  }, 1)
+
+  if (highestOriginPriority >= 3) return null
+  return (highestOriginPriority + 1) as BookingPriority
+}
+
+export function recalculateFallbackPriorities(plan: BookingPlanMap): BookingPlanMap {
+  const next: BookingPlanMap = { ...plan }
+  for (const [screeningId, entry] of Object.entries(plan)) {
+    if (!entry.fallbackFor?.length) continue
+    const minimum = fallbackMinimumPriority(next, entry.fallbackFor)
+    if (minimum) next[screeningId] = { ...entry, priority: Math.max(entry.priority, minimum) as BookingPriority }
+  }
+  return next
 }
 
 export function bookingSelectValue(status: Exclude<TicketStatus, 'none'>, priority?: BookingPriority): BookingSelectValue {
