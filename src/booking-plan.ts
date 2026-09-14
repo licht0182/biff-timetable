@@ -41,6 +41,31 @@ export function filterBookingPlan(plan: BookingPlanMap, validScreeningIds: Reado
   return next
 }
 
+export function detachBookingPlanEntry(
+  plan: BookingPlanMap,
+  screeningId: string,
+  preserveScreeningIds: ReadonlySet<string>,
+): BookingPlanMap {
+  const next: BookingPlanMap = {}
+
+  for (const [currentId, entry] of Object.entries(plan)) {
+    if (currentId === screeningId) continue
+    if (!entry.fallbackFor?.length) {
+      next[currentId] = entry
+      continue
+    }
+
+    const fallbackFor = entry.fallbackFor.filter((id) => id !== screeningId)
+    if (fallbackFor.length) {
+      next[currentId] = { ...entry, fallbackFor }
+    } else if (preserveScreeningIds.has(currentId)) {
+      next[currentId] = { priority: entry.priority }
+    }
+  }
+
+  return next
+}
+
 export function removeBookingPlanEntries(plan: BookingPlanMap, screeningIds: ReadonlySet<string>): BookingPlanMap {
   const next: BookingPlanMap = {}
 
