@@ -71,3 +71,39 @@ test('keeps the booking plan usable without horizontal overflow at 320px', async
   const timetableOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
   expect(timetableOverflow).toBeLessThanOrEqual(1)
 })
+
+
+test('keeps a pending fallback action inside the 320px viewport', async ({ page, request }) => {
+  const response = await request.get('./screenings.json')
+  expect(response.ok()).toBeTruthy()
+  const data = await response.json() as { films: Array<{ screenings: Array<{ id: string }> }> }
+  const ids = data.films.flatMap((film) => film.screenings.map((screening) => screening.id))
+  test.skip(ids.length < 2, '모바일 대안 테스트에 필요한 회차가 없습니다.')
+  const [originId, candidateId] = ids
+
+  await page.addInitScript(({ selectedKey, statusKey, planKey, originId, candidateId }) => {
+    localStorage.setItem(selectedKey, JSON.stringify([originId]))
+    localStorage.setItem(statusKey, JSON.stringify({ [originId]: 'failed' }))
+    localStorage.setItem(planKey, JSON.stringify({
+      [originId]: { priority: 1 },
+      [candidateId]: { priority: 2, fallbackFor: [originId] },
+    }))
+  }, {
+    selectedKey: 'biff-timetable:selected-screenings:v1',
+    statusKey: STATUS_KEY,
+    planKey: BOOKING_PLAN_KEY,
+    originId,
+    candidateId,
+  })
+
+  await page.setViewportSize({ width: 320, height: 740 })
+  await page.goto('./')
+  await page.getByRole('button', { name: '내 시간표' }).click()
+  const panel = page.locator('.booking-plan-panel')
+  await expect(panel.locator('summary')).toContainText('다음 대안 1')
+  await panel.locator('summary').click()
+  await expect(panel.getByRole('button', { name: /시간표에 적용/ })).toBeVisible()
+
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+  expect(overflow).toBeLessThanOrEqual(1)
+})
