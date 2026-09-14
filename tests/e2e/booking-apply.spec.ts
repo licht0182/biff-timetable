@@ -1,0 +1,183 @@
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
+
+type Screening = { id: string; date: string; start: string; end?: string; venue: string }
+type Film = { id: string; title: string; runtime?: number; screenings: Screening[] }
+type FilmData = { films: Film[] }
+type Item = { film: Film; screening: Screening }
+
+const SELECTED_KEY = 'biff-timetable:selected-screenings:v1'
+const STATUS_KEY = 'biff-timetable:ticket-status:v1'
+const BOOKING_PLAN_KEY = 'biff-timetable:booking-plan:v1'
+
+function clockMinutes(time: string) {
+  const [hour, minute] = time.split(':').map(Number)
+  return hour * 60 + minute
+}
+
+function dayIndex(date: string) {
+  const [year, month, day] = date.split('-').map(Number)
+  return Math.floor(Date.UTC(year, month - 1, day) / 86_400_000)
+}
+
+function absoluteWindow(item: Item) {
+  const start = dayIndex(item.screening.date) * 1440 + clockMinutes(item.screening.start)
+  const startClock = clockMinutes(item.screening.start)
+  let duration = item.film.runtime ?? 120
+  if (item.screening.end) {
+    let endClock = clockMinutes(item.screening.end)
+    while (endClock <= startClock) endClock += 1440
+    duration = endClock - startClock
+  }
+  return { start, end: start + duration }
+}
+
+function overlaps(a: Item, b: Item) {
+  const aw = absoluteWindow(a)
+  const bw = absoluteWindow(b)
+  return aw.start < bw.end && bw.start < aw.end
+}
+
+async function screeningData(request: APIRequestContext) {
+  const response = await request.get('./screenings.json')
+  expect(response.ok()).toBeTruthy()
+  return await response.json() as FilmData
+}
+
+function flatten(data: FilmData) {
+  return data.films.flatMap((film) => film.screenings.map((screening) => ({ film, screening })))
+}
+
+function findOverlappingPair(data: FilmData): [Item, Item] | null {
+  const items = flatten(data)
+  for (let i = 0; i < items.length; i += 1) {
+    for (let j = i + 1; j < items.length; j += 1) {
+      if (items[i].film.id === items[j].film.id) continue
+      if (overlaps(items[i], items[j])) return [items[i], items[j]]
+    }
+  }
+  return null
+}
+
+function findBookedGuardTriple(data: FilmData): [Item, Item, Item] | null {
+  const items = flatten(data)
+  for (const candidate of items) {
+    const conflicts = items.filter((item) => item.screening.id !== candidate.screening.id && overlaps(candidate, item))
+    for (let i = 0; i < conflicts.length; i += 1) {
+      for (let j = i + 1; j < conflicts.length; j += 1) {
+        if (conflicts[i].screening.id !== conflicts[j].screening.id) return [conflicts[i], candidate, conflicts[j]]
+      }
+    }
+  }
+  return null
+}
+
+async function seedFallbackState(
+  page: Page,
+  origin: Item,
+  candidate: Item,
+  extraBooked?: Item,
+) {
+  await page.addInitScript(({ selectedKey, statusKey, planKey, originId, candidateId, extraBookedId }) => {
+    const selected = extraBookedId ? [originId, extraBookedId] : [originId]
+    const statuses: Record<string, string> = { [originId]: 'failed' }
+    if (extraBookedId) statuses[extraBookedId] = 'booked'
+
+    localStorage.setItem(selectedKey, JSON.stringify(selected))
+    localStorage.setItem(statusKey, JSON.stringify(statuses))
+    localStorage.setItem(planKey, JSON.stringify({
+      [originId]: { priority: 1 },
+      [candidateId]: { priority: 2, fallbackFor: [originId] },
+    }))
+  }, {
+    selectedKey: SELECTED_KEY,
+    statusKey: STATUS_KEY,
+    planKey: BOOKING_PLAN_KEY,
+    originId: origin.screening.id,
+    candidateId: candidate.screening.id,
+    extraBookedId: extraBooked?.screening.id,
+  })
+}
+
+test('applies the next fallback to the real timetable while preserving failed history', async ({ page, request }) => {
+  const data = await screeningData(request)
+  const pair = findOverlappingPair(data)
+  test.skip(!pair, '대안 적용 테스트에 필요한 겹치는 회차가 없습니다.')
+  const [origin, candidate] = pair!
+
+  await seedFallbackState(page, origin, candidate)
+  await page.goto('./')
+  await page.getByRole('button', { name: '내 시간표' }).click()
+
+  const panel = page.locator('.booking-plan-panel')
+  await expect(panel).toBeVisible()
+  await panel.locator('summary').click()
+
+  const candidatePlan = panel.locator('.booking-plan-item').filter({ hasText: candidate.film.title }).first()
+  await expect(candidatePlan).toContainText('다음 대안')
+  await candidatePlan.getByRole('button', { name: /시간표에 적용/ }).click()
+
+  const dialog = page.locator('.booking-apply-dialog')
+  await expect(dialog).toBeVisible()
+  await expect(dialog).toContainText(candidate.film.title)
+  await expect(dialog).toContainText(origin.film.title)
+  await dialog.getByRole('button', { name: '시간표에 적용', exact: true }).click()
+  await expect(dialog).toBeHidden()
+
+  await expect(page.locator('.selection-count')).toHaveText('총 1개 선택')
+  await expect(page.locator('.event-block').filter({ hasText: candidate.film.title })).toHaveCount(1)
+  await expect(page.locator('.event-block').filter({ hasText: origin.film.title })).toHaveCount(0)
+
+  await expect.poll(() => page.evaluate(({ selectedKey, statusKey, planKey, originId, candidateId }) => {
+    const selected = JSON.parse(localStorage.getItem(selectedKey) ?? '[]') as string[]
+    const statuses = JSON.parse(localStorage.getItem(statusKey) ?? '{}') as Record<string, string>
+    const plan = JSON.parse(localStorage.getItem(planKey) ?? '{}') as Record<string, { priority?: number; fallbackFor?: string[] }>
+    return {
+      selected,
+      originStatus: statuses[originId],
+      candidateStatus: statuses[candidateId],
+      originPriority: plan[originId]?.priority,
+      candidatePriority: plan[candidateId]?.priority,
+      candidateFallbackFor: plan[candidateId]?.fallbackFor ?? [],
+    }
+  }, {
+    selectedKey: SELECTED_KEY,
+    statusKey: STATUS_KEY,
+    planKey: BOOKING_PLAN_KEY,
+    originId: origin.screening.id,
+    candidateId: candidate.screening.id,
+  })).toEqual({
+    selected: [candidate.screening.id],
+    originStatus: 'failed',
+    candidateStatus: 'planned',
+    originPriority: 1,
+    candidatePriority: 2,
+    candidateFallbackFor: [origin.screening.id],
+  })
+
+  await expect(candidatePlan.getByRole('button', { name: /시간표에 적용/ })).toHaveCount(0)
+})
+
+test('blocks fallback application when it now conflicts with a booked screening', async ({ page, request }) => {
+  const data = await screeningData(request)
+  const triple = findBookedGuardTriple(data)
+  test.skip(!triple, '예매 완료 충돌 보호 테스트에 필요한 회차 조합이 없습니다.')
+  const [origin, candidate, booked] = triple!
+
+  await seedFallbackState(page, origin, candidate, booked)
+  await page.goto('./')
+  await page.getByRole('button', { name: '내 시간표' }).click()
+
+  const panel = page.locator('.booking-plan-panel')
+  await panel.locator('summary').click()
+  const candidatePlan = panel.locator('.booking-plan-item').filter({ hasText: candidate.film.title }).first()
+  await candidatePlan.getByRole('button', { name: /시간표에 적용/ }).click()
+
+  const dialog = page.locator('.booking-apply-dialog')
+  await expect(dialog).toBeVisible()
+  await expect(dialog).toContainText('예매 완료 회차와 충돌하여 적용할 수 없습니다')
+  await expect(dialog).toContainText(booked.film.title)
+  await expect(dialog.getByRole('button', { name: '적용 불가' })).toBeDisabled()
+
+  await expect.poll(() => page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? '[]') as string[], SELECTED_KEY))
+    .toEqual([origin.screening.id, booked.screening.id])
+})
