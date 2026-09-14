@@ -126,7 +126,7 @@ test('exports booking plan backup v3 and still imports a v2 backup', async ({ pa
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
 
-  await page.getByText('백업', { exact: true }).click()
+  await page.locator('.backup-menu > summary').click()
   const downloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: 'JSON 저장' }).click()
   const download = await downloadPromise
@@ -187,6 +187,7 @@ test('excludes failed screenings from ICS export', async ({ page, request }) => 
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
 
+  await page.locator('.backup-menu > summary').click()
   const downloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: '캘린더' }).click()
   const download = await downloadPromise
