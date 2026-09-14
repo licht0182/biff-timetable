@@ -66,7 +66,14 @@ function findFallbackChain(data: FilmData): [Item, Item, Item] | null {
       && item.film.id !== origin.film.id
       && overlaps(origin, item)
     ))
-    if (alternatives.length >= 2) return [origin, alternatives[0], alternatives[1]]
+    for (let i = 0; i < alternatives.length; i += 1) {
+      for (let j = i + 1; j < alternatives.length; j += 1) {
+        if (alternatives[i].film.id === alternatives[j].film.id) continue
+        if (!overlaps(alternatives[i], alternatives[j])) {
+          return [origin, alternatives[i], alternatives[j]]
+        }
+      }
+    }
   }
   return null
 }
@@ -241,4 +248,32 @@ test('activates the third priority only after the applied second priority also f
   await page.getByRole('button', { name: '상세보기 닫기' }).click()
 
   await expect(thirdPlan.getByRole('button', { name: /시간표에 적용/ })).toBeVisible()
+  await thirdPlan.getByRole('button', { name: /시간표에 적용/ }).click()
+
+  const thirdDialog = page.locator('.booking-apply-dialog')
+  await expect(thirdDialog).toContainText(second.film.title)
+  await thirdDialog.getByRole('button', { name: '시간표에 적용', exact: true }).click()
+
+  await expect(page.locator('.event-block').filter({ hasText: second.film.title })).toHaveCount(0)
+  await expect(page.locator('.event-block').filter({ hasText: third.film.title })).toHaveCount(1)
+  await expect(page.locator('.selection-count')).toHaveText('총 1개 선택')
+
+  await expect.poll(() => page.evaluate(({ selectedKey, statusKey, secondId, thirdId }) => {
+    const selected = JSON.parse(localStorage.getItem(selectedKey) ?? '[]') as string[]
+    const statuses = JSON.parse(localStorage.getItem(statusKey) ?? '{}') as Record<string, string>
+    return {
+      selected,
+      secondStatus: statuses[secondId],
+      thirdStatus: statuses[thirdId],
+    }
+  }, {
+    selectedKey: SELECTED_KEY,
+    statusKey: STATUS_KEY,
+    secondId: second.screening.id,
+    thirdId: third.screening.id,
+  })).toEqual({
+    selected: [third.screening.id],
+    secondStatus: 'failed',
+    thirdStatus: 'planned',
+  })
 })
