@@ -203,7 +203,10 @@ test('shows priority and failure symbols in PNG while excluding unselected alter
   test.skip(!selectedPair, 'PNG 예매 계획 테스트에 필요한 회차 조합이 없습니다.')
   const [priorityItem, failedItem] = selectedPair!
   const selectedIds = new Set([priorityItem.screening.id, failedItem.screening.id])
-  const alternativeItem = flatten(data).find(({ screening }) => !selectedIds.has(screening.id))
+  const selectedTitles = new Set([priorityItem.film.title, failedItem.film.title])
+  const alternativeItem = flatten(data).find(({ film, screening }) => (
+    !selectedIds.has(screening.id) && !selectedTitles.has(film.title)
+  ))
   test.skip(!alternativeItem, 'PNG 대안 제외 테스트에 사용할 추가 회차가 없습니다.')
 
   await emulateAppleAndPreserveExportHost(page)
