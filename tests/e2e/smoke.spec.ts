@@ -456,7 +456,7 @@ test('changes booking status from a timetable detail and persists it', async ({ 
   await expect(page.locator('.event-block').first()).toHaveClass(/status-booked/)
 })
 
-test('blocks adding an overlapping screening and identifies the existing conflict', async ({ page, request }) => {
+test('keeps an overlapping screening out of the timetable and opens the booking alternative dialog', async ({ page, request }) => {
   const data = await screeningData(request)
   const pair = findOverlappingPair(data)
   test.skip(!pair, '현재 DB에 겹치는 회차 조합이 없습니다.')
@@ -470,14 +470,15 @@ test('blocks adding an overlapping screening and identifies the existing conflic
   const addButton = row.getByRole('button', { name: '+ 추가' })
   await expect(addButton).toBeVisible()
 
-  let message = ''
-  page.once('dialog', async (dialog) => {
-    message = dialog.message()
-    await dialog.accept()
-  })
   await addButton.click()
-  expect(message).toContain(existing.film.title)
-  expect(message).toContain('겹치는 기존 회차를 먼저 제거')
+  const dialog = page.locator('.booking-conflict-dialog')
+  await expect(dialog).toBeVisible()
+  await expect(dialog).toContainText(existing.film.title)
+  await expect(dialog).toContainText(candidate.film.title)
+  await expect(page.locator('.selection-count')).toHaveText('총 1개 선택')
+
+  await dialog.getByRole('button', { name: '취소' }).click()
+  await expect(dialog).toBeHidden()
   await expect(page.locator('.selection-count')).toHaveText('총 1개 선택')
 })
 
