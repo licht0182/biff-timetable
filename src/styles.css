@@ -6,3 +6,18 @@
 .virtual-film-list{display:block!important;width:100%}
 .film-list-item{padding-bottom:8px}
 .film-list-item:last-child{padding-bottom:0}
+
+/* Reliability notices and list navigation added for the virtualized film finder. */
+.data-cache-notice,.data-load-notice{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.data-cache-notice button,.data-load-notice button{flex:0 0 auto;border:1px solid currentColor;border-radius:5px;background:#fff;color:inherit;padding:6px 9px;font-weight:700;cursor:pointer}
+.film-results-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;padding:9px 12px;border:1px solid var(--line);border-radius:7px;background:#fff;color:#666;font-size:12px;font-weight:700}
+.mobile-filter-jump{display:none;border:1px solid #efc9c4;border-radius:5px;background:#fff;color:var(--accent);padding:6px 9px;font-weight:800;cursor:pointer}
+.curator-loading{min-height:260px}
+
+@media(max-width:700px){
+  .tabs{position:sticky;top:0;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+  .film-results-toolbar{position:sticky;top:46px;z-index:40;box-shadow:0 4px 10px rgba(0,0,0,.07)}
+  .mobile-filter-jump{display:inline-flex}
+  #film-controls{scroll-margin-top:100px}
+  .data-cache-notice,.data-load-notice{align-items:flex-start;flex-direction:column}
+}

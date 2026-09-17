@@ -1,8 +1,7 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
+import { lazy, Suspense, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
 import CustomEventDialog from './components/CustomEventDialog'
 import FilmList from './components/FilmList'
 import FilmSearchAutocomplete from './components/FilmSearchAutocomplete'
-import CuratorPage from './components/CuratorPage'
 import BookingPlanPanel from './components/BookingPlanPanel'
 import BookingStatusSelect from './components/BookingStatusSelect'
 import BookingConflictDialog from './components/BookingConflictDialog'
@@ -17,8 +16,10 @@ import { hasNavigationState, pushNavigationState, readNavigationState, replaceNa
 import { programNoteForDisplay } from './program-note'
 import { filmMatchesQuery, rankFilmSearchMatches } from './film-search'
 import { bookingPrioritySymbol, detachBookingPlanEntry, failedFallbackPredecessorIds, fallbackMinimumPriority, filterBookingPlan, nextFallbackIds, normalizeBookingPlan, recalculateFallbackPriorities, removeBookingPlanEntries } from './booking-plan'
+import { loadFilmData } from './film-data'
 
-type FilmData = { films: Film[]; note?: string; source?: string }
+const CuratorPage = lazy(() => import('./components/CuratorPage'))
+
 type BackupData = {
   version: 3
   exportedAt: string
@@ -55,7 +56,6 @@ const TICKET_STATUS_KEY = 'biff-timetable:ticket-status:v1'
 const BOOKING_PLAN_KEY = 'biff-timetable:booking-plan:v1'
 const CUSTOM_EVENTS_KEY = 'biff-timetable:custom-events:v1'
 const USER_SETTINGS_KEY = 'biff-timetable:user-settings:v1'
-const DATA_VERSION_STORAGE_KEY = 'biff-timetable:data-version:v1'
 const DEFAULT_USER_SETTINGS: UserTimetableSettings = {
   sameClusterMinutes: 10,
   differentVenueMinutes: 30,
@@ -63,8 +63,6 @@ const DEFAULT_USER_SETTINGS: UserTimetableSettings = {
   showVenueInTimetable: true,
   showBookingStatusInTimetable: true,
 }
-const DATA_VERSION = '2026-official-20260911-1'
-
 function readStorageValue(key: string): unknown {
   try {
     const raw = localStorage.getItem(key)
@@ -209,9 +207,13 @@ export default function App() {
   const initialNavigation = useMemo(() => readNavigationState(), [])
   const importInputRef = useRef<HTMLInputElement>(null)
   const filmScrollPositionRef = useRef(0)
+  const filmControlsRef = useRef<HTMLElement>(null)
   const [films, setFilms] = useState<Film[]>([])
   const [dataNote, setDataNote] = useState('')
   const [dataSource, setDataSource] = useState('')
+  const [dataStatus, setDataStatus] = useState<'loading' | 'ready' | 'cached' | 'error'>('loading')
+  const [dataCachedAt, setDataCachedAt] = useState('')
+  const [dataReloadKey, setDataReloadKey] = useState(0)
   const [selected, setSelected] = useState<string[]>(() => normalizeStringArray(readStorageValue(STORAGE_KEY)))
   const [favorites, setFavorites] = useState<string[]>(() => normalizeStringArray(readStorageValue(FAVORITES_KEY)))
   const [ticketStatus, setTicketStatus] = useState<TicketStatusMap>(() => normalizeTicketStatus(readStorageValue(TICKET_STATUS_KEY)))
@@ -269,12 +271,13 @@ export default function App() {
   }, [initialNavigation])
 
   useEffect(() => {
-    fetch(`${import.meta.env.BASE_URL}screenings.json?v=${DATA_VERSION}`, { cache: 'no-store' })
-      .then((res) => {
-        if (!res.ok) throw new Error('상영 데이터를 불러오지 못했습니다.')
-        return res.json()
-      })
-      .then((data: FilmData) => {
+    const controller = new AbortController()
+    setLoadError('')
+    setDataStatus('loading')
+
+    loadFilmData(controller.signal)
+      .then((result) => {
+        const data = result.data
         const validFilmIds = new Set(data.films.map((film) => film.id))
         const validScreeningIds = new Set(data.films.flatMap((film) => film.screenings.map((screening) => screening.id)))
 
@@ -285,14 +288,21 @@ export default function App() {
         ) as TicketStatusMap)
         setBookingPlan((current) => filterBookingPlan(current, validScreeningIds))
         setTimetableDeleteSelection((current) => current.filter((id) => validScreeningIds.has(id) || id.startsWith('custom-')))
-        localStorage.setItem(DATA_VERSION_STORAGE_KEY, JSON.stringify(DATA_VERSION))
 
         setFilms(data.films)
         setDataNote(data.note ?? '')
         setDataSource(data.source ?? '')
+        setDataStatus(result.source === 'cache' ? 'cached' : 'ready')
+        setDataCachedAt(result.source === 'cache' ? result.savedAt : '')
       })
-      .catch((err: Error) => setLoadError(err.message))
-  }, [])
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return
+        setDataStatus('error')
+        setLoadError(error instanceof Error ? error.message : '상영 데이터를 불러오지 못했습니다.')
+      })
+
+    return () => controller.abort()
+  }, [dataReloadKey])
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(selected)) }, [selected])
   useEffect(() => { localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites)) }, [favorites])
@@ -994,6 +1004,15 @@ export default function App() {
   const defaultCustomDate = dates[0] ?? allDates[0] ?? todayLocal()
   const dialogCustomEvent = customEventDialog?.eventId ? customEvents.find((event) => event.id === customEventDialog.eventId) ?? null : null
   const filmViewActive = activeTab === 'films' && !settingsOpen
+  const cachedAtLabel = dataCachedAt
+    ? new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(dataCachedAt))
+    : ''
+
+  const retryFilmData = useCallback(() => setDataReloadKey((current) => current + 1), [])
+  const focusFilmFilters = useCallback(() => {
+    filmControlsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    window.setTimeout(() => filmControlsRef.current?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true }), 350)
+  }, [])
 
   const openFilms = useCallback(() => {
     const target = filmScrollPositionRef.current
@@ -1078,14 +1097,15 @@ export default function App() {
       </header>
 
       <nav className="tabs" aria-label="주요 메뉴">
-        <button className={activeTab === 'films' && !settingsOpen ? 'active' : ''} onClick={openFilmsFromMenu}>영화 찾기</button>
-        <button className={activeTab === 'timetable' && !settingsOpen ? 'active' : ''} onClick={openTimetable}>내 시간표</button>
-        <button className={activeTab === 'curator' && !settingsOpen ? 'active' : ''} onClick={openCurator}>AI 도슨트</button>
-        <button className={`settings-tab-trigger ${settingsOpen ? 'active' : ''}`} onClick={openSettings}>설정</button>
+        <button type="button" className={activeTab === 'films' && !settingsOpen ? 'active' : ''} aria-current={activeTab === 'films' && !settingsOpen ? 'page' : undefined} onClick={openFilmsFromMenu}>영화 찾기</button>
+        <button type="button" className={activeTab === 'timetable' && !settingsOpen ? 'active' : ''} aria-current={activeTab === 'timetable' && !settingsOpen ? 'page' : undefined} onClick={openTimetable}>내 시간표</button>
+        <button type="button" className={activeTab === 'curator' && !settingsOpen ? 'active' : ''} aria-current={activeTab === 'curator' && !settingsOpen ? 'page' : undefined} onClick={openCurator}>AI 도슨트</button>
+        <button type="button" className={`settings-tab-trigger ${settingsOpen ? 'active' : ''}`} aria-current={settingsOpen ? 'page' : undefined} onClick={openSettings}>설정</button>
       </nav>
 
       {activeTab === 'films' && !settingsOpen && dataNote && <div className="notice film-data-notice">{dataNote}{dataSource && <> <a href={dataSource} target="_blank" rel="noreferrer">공식 시간표 ↗</a></>}</div>}
-      {loadError && <div className="notice error">{loadError}</div>}
+      {dataStatus === 'cached' && <div className="notice data-cache-notice" role="status"><span>네트워크에 연결할 수 없어 {cachedAtLabel}에 저장한 상영시간표를 표시합니다.</span><button type="button" onClick={retryFilmData}>최신 데이터 다시 확인</button></div>}
+      {loadError && <div className="notice error data-load-notice" role="alert"><span>{loadError}</span><button type="button" onClick={retryFilmData}>다시 시도</button></div>}
       {toast && <div className="toast" role="status">{toast}</div>}
 
       {settingsOpen && <main className="biff-settings-panel react-settings-panel">
@@ -1121,8 +1141,8 @@ export default function App() {
         <section className="settings-card settings-reset-card"><div><h3>기본 설정</h3><p>이동 시간과 표시 설정을 처음 값으로 되돌립니다.</p></div><button type="button" className="settings-reset-button" onClick={() => setUserSettings({ ...DEFAULT_USER_SETTINGS })}>기본값으로 초기화</button></section>
       </main>}
 
-      {!settingsOpen && (activeTab === 'films' ? <main>
-        <section className="controls enhanced-controls">
+      {!settingsOpen && (activeTab === 'films' ? <main aria-busy={dataStatus === 'loading'}>
+        <section ref={filmControlsRef} id="film-controls" className="controls enhanced-controls">
           <FilmSearchAutocomplete
             query={query}
             suggestions={searchSuggestions}
@@ -1152,10 +1172,15 @@ export default function App() {
             <button className={`filter-toggle ${favoritesOnly ? 'active' : ''}`} onClick={() => setFavoritesOnly((value) => !value)} aria-pressed={favoritesOnly}>★ 관심작</button>
             <button className="filter-reset" onClick={resetFilters}>초기화</button>
           </div>
-          <div className="chips">{sections.map((item) => <button key={item} className={section === item ? 'active' : ''} onClick={() => setSection(item)}>{item}</button>)}</div>
+          <div className="chips" aria-label="상영작 섹션">{sections.map((item) => <button type="button" key={item} className={section === item ? 'active' : ''} aria-pressed={section === item} onClick={() => setSection(item)}>{item}</button>)}</div>
         </section>
 
-        {filteredFilms.length > 0 ? (
+        <div className="film-results-toolbar">
+          <span role="status" aria-live="polite">검색 결과 {filteredFilms.length}편</span>
+          <button type="button" className="mobile-filter-jump" onClick={focusFilmFilters}>검색·필터</button>
+        </div>
+
+        {dataStatus === 'loading' && films.length === 0 ? <div className="empty" role="status">상영 데이터를 불러오는 중입니다.</div> : filteredFilms.length > 0 ? (
           <FilmList
             films={filteredFilms}
             favoriteSet={favoriteSet}
@@ -1173,7 +1198,7 @@ export default function App() {
             onBookingChange={setScreeningBookingState}
           />
         ) : !loadError && <div className="empty">조건에 맞는 상영작이 없습니다.</div>}
-      </main> : activeTab === 'curator' ? <CuratorPage key={curatorPageKey} onOpenFilms={openFilms} onOpenFilm={openFilmFromCurator} /> : <main className="timetable-page">
+      </main> : activeTab === 'curator' ? <Suspense fallback={<main className="curator-page curator-loading" aria-busy="true"><div className="empty">AI 도슨트 칼럼을 불러오는 중입니다.</div></main>}><CuratorPage key={curatorPageKey} onOpenFilms={openFilms} onOpenFilm={openFilmFromCurator} /></Suspense> : <main className="timetable-page">
         {selectedItems.length === 0 && customEvents.length === 0 ? <div className="empty timetable-empty"><strong>아직 시간표에 일정이 없습니다.</strong><span>영화 회차를 고르거나 직접 일정을 추가해 주세요.</span><div className="timetable-empty-actions"><button onClick={openFilms}>영화 찾기</button><button type="button" className="custom-event-add-button" onClick={openCreateCustomEvent}>+ 일정 추가</button></div></div> : <>
           <div className="timetable-actions enhanced-timetable-actions">
             <div><span className="booking-summary">{timetableSelectionMode ? `삭제할 일정 ${timetableDeleteSelection.length}개 선택` : bookingSummaryText}</span></div>

@@ -44,6 +44,7 @@ test('opens the AI docent, groups columns, and keeps article navigation anchored
 test('filters AI docent columns by category without showing unrelated cards', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: 'AI 도슨트' }).click()
+  await expect(page.getByRole('heading', { name: 'AI 도슨트 칼럼' })).toBeVisible()
 
   const allCount = await page.locator('.curator-card').count()
   expect(allCount).toBeGreaterThan(5)

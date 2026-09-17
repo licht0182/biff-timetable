@@ -82,7 +82,7 @@ function ArticleDetail({ article, onBack, onOpenFilms, onOpenFilm }: { article: 
             </footer>
           )}
         </article>
-        <p className="curator-disclaimer">AI 도슨트의 글은 작품 선택을 돕기 위한 편집 분석이며 BIFF 공식 안내가 아닙니다. 작품·상영 정보는 BIFF 공식 정보를 우선 확인해 주세요.</p>
+        <p className="curator-disclaimer">AI 도슨트의 글은 미리 작성·검토한 편집 분석이며 실시간 AI 답변이나 BIFF 공식 안내가 아닙니다. 작품·상영 정보는 BIFF 공식 정보를 우선 확인해 주세요.</p>
         <div className="curator-detail-actions">
           <button type="button" className="curator-top-button" onClick={() => scrollPageTop('smooth')}>↑ 맨 위로</button>
         </div>
@@ -159,7 +159,7 @@ export default function CuratorPage({ onOpenFilms, onOpenFilm }: Props) {
         <div>
           <p className="curator-kicker">AI DOCENT · BIFF EDITORIAL</p>
           <h2>영화 고르기 전에 읽는 BIFF 분석</h2>
-          <p>공식 2026 작품 데이터와 상영시간표를 함께 분석해 섹션의 흐름뿐 아니라 체류 날짜별 희소 회차, GV, 충돌과 대체 가능성까지 읽습니다.</p>
+          <p>공식 2026 작품 데이터와 상영시간표를 바탕으로 미리 작성·검토한 편집 칼럼입니다. 섹션의 흐름뿐 아니라 체류 날짜별 희소 회차, GV, 충돌과 대체 가능성까지 읽습니다.</p>
         </div>
         <span className="curator-edition">2026</span>
       </section>
@@ -215,7 +215,7 @@ export default function CuratorPage({ onOpenFilms, onOpenFilm }: Props) {
         </ol>
       </section>
 
-      <p className="curator-disclaimer">2026 공식 작품 데이터베이스와 상영시간표를 함께 사용합니다. 섹션 가이드는 작품 자체를, 체류 일정별 추천은 실제 회차의 희소성·GV·충돌·대체 가능성을 중심으로 분석합니다.</p>
+      <p className="curator-disclaimer">실시간 AI 대화가 아닌 사전 편집 콘텐츠입니다. 2026 공식 작품 데이터베이스와 상영시간표를 사용하며, 작품·상영 정보는 BIFF 공식 안내를 우선 확인해 주세요.</p>
     </main>
   )
 }

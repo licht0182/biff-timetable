@@ -33,8 +33,20 @@ jobs:
       - name: Validate screening data
         run: npm run validate:data
 
+      - name: Validate 2026 film database
+        run: npm run validate:films
+
+      - name: Validate curator analysis
+        run: npm run validate:curator
+
       - name: Build
         run: npm run build
+
+      - name: Install Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Run Chromium and WebKit E2E tests
+        run: npm run test:e2e
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
