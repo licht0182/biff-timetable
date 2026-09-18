@@ -71,6 +71,7 @@ test('respects the active date filter and stays inside a 320px viewport', async 
 
   await page.setViewportSize({ width: 320, height: 740 })
   await page.goto('./')
+  await page.getByRole('button', { name: /상세 필터/ }).click()
   await page.getByLabel('날짜').selectOption(pair!.excludedDate!)
   await page.getByLabel('영화 검색').fill(pair!.film.title)
 

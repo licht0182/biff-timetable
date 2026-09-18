@@ -7,6 +7,7 @@ type BookingConflictDialogProps = {
   film: Film
   screening: Screening
   overlapping: ConflictItem[]
+  alternativeOverlaps: Array<ConflictItem & { priority: BookingPriority }>
   minimumPriority: BookingPriority | null
   formatDate: (date: string, compact?: boolean) => string
   endLabel: (film: Film, screening: Screening) => string
@@ -18,6 +19,7 @@ export default function BookingConflictDialog({
   film,
   screening,
   overlapping,
+  alternativeOverlaps,
   minimumPriority,
   formatDate,
   endLabel,
@@ -56,6 +58,16 @@ export default function BookingConflictDialog({
           ))}
         </div>
 
+        {alternativeOverlaps.length > 0 && <div className="booking-conflict-current booking-conflict-alternatives">
+          <strong>기존 예매 대안과도 시간 겹침</strong>
+          {alternativeOverlaps.map(({ film: otherFilm, screening: other, priority: otherPriority }) => (
+            <div key={other.id}>
+              <b>{otherFilm.title}</b>
+              <span>{otherPriority}순위 · {formatDate(other.date)} {other.start}–{endLabel(otherFilm, other)} · {other.venue}</span>
+            </div>
+          ))}
+        </div>}
+
         <div className="booking-conflict-candidate">
           <strong>대안 후보</strong>
           <b>{film.title}</b>
@@ -69,11 +81,11 @@ export default function BookingConflictDialog({
               {minimumPriority! <= 2 && <option value={2}>2순위</option>}
               <option value={3}>3순위</option>
             </select>
-            <small>겹치는 기존 회차보다 낮은 우선순위만 선택할 수 있습니다.</small>
+            <small>겹치는 현재 회차와 기존 대안보다 낮은 우선순위만 선택할 수 있습니다.</small>
           </label>
         ) : (
           <div className="booking-conflict-limit" role="status">
-            겹치는 회차 중 3순위가 있어 4순위 대안을 만들 수 없습니다. 기존 회차의 우선순위를 조정하거나 대안을 해제한 뒤 다시 시도해 주세요.
+            겹치는 현재 회차 또는 기존 대안 중 3순위가 있어 4순위 대안을 만들 수 없습니다. 기존 회차의 우선순위를 조정하거나 대안을 해제한 뒤 다시 시도해 주세요.
           </div>
         )}
 

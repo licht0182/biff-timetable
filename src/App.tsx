@@ -31,6 +31,7 @@ type BackupData = {
 }
 
 type TimetableItem = { film: Film; screening: Screening }
+type BookingAlternativeConflict = TimetableItem & { priority: BookingPriority }
 type CustomEventDialogState = { mode: 'create' | 'detail' | 'edit'; eventId?: string }
 type BookingConflictDialogState = { film: Film; screening: Screening; overlapping: TimetableItem[] }
 type BookingFallbackApplyDialogState = {
@@ -48,6 +49,39 @@ type UserTimetableSettings = {
   showTransferWarnings: boolean
   showVenueInTimetable: boolean
   showBookingStatusInTimetable: boolean
+}
+
+function repairOverlappingFallbackPriorities(plan: BookingPlanMap, items: TimetableItem[]): BookingPlanMap {
+  const itemByScreeningId = new Map(items.map((item) => [item.screening.id, item] as const))
+  const next = recalculateFallbackPriorities(plan)
+  let changed = Object.entries(plan).some(([screeningId, entry]) => next[screeningId]?.priority !== entry.priority)
+  const alternatives = Object.entries(next)
+    .map(([screeningId, entry], index) => ({ screeningId, entry, index }))
+    .filter(({ entry }) => Boolean(entry.fallbackFor?.length))
+    .sort((a, b) => a.entry.priority - b.entry.priority || a.index - b.index)
+
+  for (let currentIndex = 0; currentIndex < alternatives.length; currentIndex += 1) {
+    const current = alternatives[currentIndex]
+    const currentItem = itemByScreeningId.get(current.screeningId)
+    if (!currentItem) continue
+    let requiredPriority = next[current.screeningId].priority
+
+    for (let previousIndex = 0; previousIndex < currentIndex; previousIndex += 1) {
+      const previous = alternatives[previousIndex]
+      const previousEntry = next[previous.screeningId]
+      if (!previousEntry.fallbackFor?.some((originId) => current.entry.fallbackFor?.includes(originId))) continue
+      const previousItem = itemByScreeningId.get(previous.screeningId)
+      if (!previousItem || !screeningsOverlap(currentItem.film, currentItem.screening, previousItem.film, previousItem.screening)) continue
+      requiredPriority = Math.max(requiredPriority, previousEntry.priority + 1) as BookingPriority
+    }
+
+    const repairedPriority = Math.min(requiredPriority, 3) as BookingPriority
+    if (repairedPriority === next[current.screeningId].priority) continue
+    next[current.screeningId] = { ...next[current.screeningId], priority: repairedPriority }
+    changed = true
+  }
+
+  return changed ? next : plan
 }
 
 const STORAGE_KEY = 'biff-timetable:selected-screenings:v1'
@@ -230,6 +264,7 @@ export default function App() {
   const [draftEndTime, setDraftEndTime] = useState('')
   const [gvOnly, setGvOnly] = useState(false)
   const [favoritesOnly, setFavoritesOnly] = useState(false)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'films' | 'timetable' | 'curator'>(initialNavigation.tab)
   const [curatorPageKey, setCuratorPageKey] = useState(0)
   const [detailFilm, setDetailFilm] = useState<Film | null>(null)
@@ -248,6 +283,11 @@ export default function App() {
   const timeRangeActive = Boolean(startTimeFilter || endTimeFilter)
   const timeRangeHasDraft = Boolean(draftStartTime || draftEndTime)
   const timeRangeStatus = timeRangeStatusLabel(startTimeFilter, endTimeFilter)
+  const activeFilterCount = Number(dateFilter !== '전체')
+    + Number(venueFilter !== '전체')
+    + Number(timeRangeActive)
+    + Number(gvOnly)
+    + Number(favoritesOnly)
 
   useEffect(() => {
     if (!hasNavigationState()) replaceNavigationState(initialNavigation)
@@ -441,6 +481,29 @@ export default function App() {
     () => allScreeningItems.filter(({ screening }) => selectedSet.has(screening.id)),
     [allScreeningItems, selectedSet],
   )
+  const bookingConflictAlternativeOverlaps = useMemo<BookingAlternativeConflict[]>(() => {
+    if (!bookingConflictDialog) return []
+    const originIds = new Set(bookingConflictDialog.overlapping.map(({ screening }) => screening.id))
+
+    return allScreeningItems.flatMap(({ film, screening }) => {
+      if (screening.id === bookingConflictDialog.screening.id) return []
+      const entry = bookingPlan[screening.id]
+      if (!entry?.fallbackFor?.some((originId) => originIds.has(originId))) return []
+      if (!screeningsOverlap(bookingConflictDialog.film, bookingConflictDialog.screening, film, screening)) return []
+      return [{ film, screening, priority: entry.priority }]
+    })
+  }, [allScreeningItems, bookingConflictDialog, bookingPlan])
+  const bookingConflictMinimumPriority = useMemo(() => {
+    if (!bookingConflictDialog) return null
+    return fallbackMinimumPriority(bookingPlan, [
+      ...bookingConflictDialog.overlapping.map(({ screening }) => screening.id),
+      ...bookingConflictAlternativeOverlaps.map(({ screening }) => screening.id),
+    ])
+  }, [bookingConflictAlternativeOverlaps, bookingConflictDialog, bookingPlan])
+  useEffect(() => {
+    if (!allScreeningItems.length) return
+    setBookingPlan((current) => repairOverlappingFallbackPriorities(current, allScreeningItems))
+  }, [allScreeningItems])
   const nextFallbackSet = useMemo(
     () => nextFallbackIds(bookingPlan, ticketStatus, selectedSet),
     [bookingPlan, ticketStatus, selectedSet],
@@ -558,6 +621,10 @@ export default function App() {
 
   const saveConflictAlternative = useCallback((priority: BookingPriority) => {
     if (!bookingConflictDialog) return
+    if (!bookingConflictMinimumPriority || priority < bookingConflictMinimumPriority) {
+      setToast('겹치는 기존 대안 때문에 선택한 우선순위로 저장할 수 없습니다. 예매 대안을 다시 확인해 주세요.')
+      return
+    }
     const originIds = bookingConflictDialog.overlapping.map(({ screening }) => screening.id)
 
     setBookingPlan((current) => {
@@ -574,7 +641,7 @@ export default function App() {
 
     setBookingConflictDialog(null)
     setToast(`${priority}순위 예매 대안으로 저장했습니다.`)
-  }, [bookingConflictDialog])
+  }, [bookingConflictDialog, bookingConflictMinimumPriority])
 
   const toggle = useCallback((film: Film, screening: Screening) => {
     const isSelected = selectedSet.has(screening.id)
@@ -1010,6 +1077,7 @@ export default function App() {
 
   const retryFilmData = useCallback(() => setDataReloadKey((current) => current + 1), [])
   const focusFilmFilters = useCallback(() => {
+    setMobileFiltersOpen(true)
     filmControlsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     window.setTimeout(() => filmControlsRef.current?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true }), 350)
   }, [])
@@ -1114,6 +1182,7 @@ export default function App() {
           <div className="settings-card-head"><div><h3>이동 시간</h3><p>등록된 BIFF 센텀권 상영관은 실제 출발 → 도착 방향에 따라 정밀 이동시간을 적용합니다.</p></div></div>
           <div className="precise-transfer-panel">
             <strong>방향별 권장 이동시간</strong>
+            <p className="travel-matrix-hint">표를 좌우로 밀어 모든 상영관의 이동시간을 확인할 수 있습니다.</p>
             <div className="travel-matrix-wrap">
               <table className="travel-matrix" aria-label="상영관 방향별 권장 이동시간">
                 <thead><tr><th>출발 ↓ / 도착 →</th>{VENUE_TRANSFER_SITES.map((site) => <th key={site.id} title={site.label}>{site.shortLabel}</th>)}</tr></thead>
@@ -1150,7 +1219,17 @@ export default function App() {
             onSelect={() => window.setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }), 0)}
             formatDate={formatDate}
           />
-          <div className="filter-row">
+          <button
+            type="button"
+            className="mobile-advanced-filter-toggle"
+            aria-expanded={mobileFiltersOpen}
+            aria-controls="film-advanced-filters"
+            onClick={() => setMobileFiltersOpen((open) => !open)}
+          >
+            <span>날짜·상영관·시간대</span>
+            <strong>{activeFilterCount > 0 ? `${activeFilterCount}개 적용` : mobileFiltersOpen ? '접기' : '상세 필터'}</strong>
+          </button>
+          <div id="film-advanced-filters" className={`filter-row ${mobileFiltersOpen ? 'mobile-open' : ''}`}>
             <label><span>날짜</span><select value={dateFilter} onChange={(event) => setDateFilter(event.target.value)}><option value="전체">전체 날짜</option>{allDates.map((date) => <option key={date} value={date}>{formatDate(date)}</option>)}</select></label>
             <label><span>상영관</span><select value={venueFilter} onChange={(event) => setVenueFilter(event.target.value)}><option value="전체">전체 상영관</option>{allVenues.map((venue) => <option key={venue} value={venue}>{venue}</option>)}</select></label>
             <div className="time-range-filter">
@@ -1369,7 +1448,8 @@ export default function App() {
         film={bookingConflictDialog.film}
         screening={bookingConflictDialog.screening}
         overlapping={bookingConflictDialog.overlapping}
-        minimumPriority={fallbackMinimumPriority(bookingPlan, bookingConflictDialog.overlapping.map(({ screening }) => screening.id))}
+        alternativeOverlaps={bookingConflictAlternativeOverlaps}
+        minimumPriority={bookingConflictMinimumPriority}
         formatDate={formatDate}
         endLabel={endLabel}
         onSaveAlternative={saveConflictAlternative}

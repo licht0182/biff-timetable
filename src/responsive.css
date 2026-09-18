@@ -1,0 +1,189 @@
+/* Final responsive overrides: keep viewport-specific decisions in one layer. */
+
+@media (min-width:701px) and (max-width:900px){
+  /* The desktop filter grid needs about 850px and otherwise widens the page. */
+  .filter-row{
+    grid-template-columns:minmax(130px,.9fr) minmax(180px,1.25fr) repeat(3,minmax(64px,auto));
+  }
+  .filter-row>.time-range-filter{
+    grid-column:1 / -1;
+    grid-row:2;
+  }
+  .filter-row>.filter-toggle:first-of-type{
+    grid-column:3;
+    grid-row:1;
+  }
+  .filter-row>.filter-toggle:nth-of-type(2){
+    grid-column:4;
+    grid-row:1;
+  }
+  .filter-row>.filter-reset{
+    grid-column:5;
+    grid-row:1;
+  }
+  .filter-row select,
+  .time-range-inputs input,
+  .time-range-action,
+  .filter-toggle,
+  .filter-reset{
+    height:40px;
+    min-height:40px;
+  }
+  .chips{
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    padding-bottom:5px;
+    scroll-snap-type:x proximity;
+    scrollbar-width:thin;
+    overscroll-behavior-inline:contain;
+  }
+  .chips button{
+    flex:0 0 auto;
+    min-height:36px;
+    scroll-snap-align:start;
+  }
+}
+
+.mobile-advanced-filter-toggle{
+  display:none;
+}
+
+@media (max-width:700px){
+  html,
+  body{
+    min-width:0;
+  }
+  .topbar{
+    gap:10px;
+  }
+
+  /* Primary navigation should remain an easy touch target at narrow widths. */
+  .tabs button,
+  .timetable-mode .tabs button{
+    flex:1 1 0;
+    min-width:0;
+    min-height:44px;
+    padding:10px 4px;
+  }
+
+  .controls input{
+    min-height:44px;
+  }
+  .filter-row select,
+  .time-range-inputs input,
+  .time-range-action,
+  .filter-toggle,
+  .filter-reset{
+    height:40px;
+    min-height:40px;
+  }
+  .mobile-advanced-filter-toggle{
+    min-height:40px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    border:1px solid #dedede;
+    border-radius:5px;
+    padding:0 11px;
+    background:#fff;
+    color:#666;
+    font-size:11px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .mobile-advanced-filter-toggle strong{
+    color:var(--accent);
+    font-size:10px;
+  }
+  .filter-row:not(.mobile-open){
+    display:none;
+  }
+
+  /* Keep category discovery to one swipeable row instead of several screenfuls. */
+  .chips{
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    margin-right:-10px;
+    margin-left:-10px;
+    padding:0 10px 5px;
+    scroll-padding-inline:10px;
+    scroll-snap-type:x proximity;
+    scrollbar-width:none;
+    overscroll-behavior-inline:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .chips::-webkit-scrollbar{
+    display:none;
+  }
+  .chips button{
+    flex:0 0 auto;
+    min-height:36px;
+    scroll-snap-align:start;
+  }
+
+  .film-results-toolbar{
+    min-height:48px;
+  }
+  .mobile-filter-jump{
+    min-height:40px;
+    padding:8px 11px;
+  }
+
+  .favorite-button,
+  .detail-button,
+  .screening-row>.screening-actions>button,
+  .screening-row>.screening-actions>.ticket-select{
+    min-height:36px;
+    height:36px;
+  }
+
+  .timetable-action-buttons>button,
+  .timetable-action-buttons>.backup-menu>summary{
+    min-height:36px;
+  }
+
+  /* Preserve useful type sizes; hide secondary data only when columns are tiny. */
+  .event-block strong{
+    font-size:9px;
+  }
+  .event-block span{
+    font-size:7.5px;
+  }
+  .timetable-scroll.dense .event-block strong{
+    font-size:8px;
+  }
+  .timetable-scroll.dense .event-block span{
+    font-size:7px;
+  }
+  .timetable-scroll.ultra-dense .event-block strong{
+    font-size:7.2px;
+  }
+  .timetable-scroll.ultra-dense .event-block span{
+    display:none;
+  }
+  .transfer-note,
+  .timetable-page:has(.timetable-scroll)::after{
+    font-size:8.5px;
+  }
+
+  .travel-matrix-hint{
+    display:block;
+    margin:0 0 7px!important;
+    color:#777!important;
+    font-size:9px!important;
+    font-weight:700;
+  }
+  .travel-matrix-wrap{
+    scrollbar-width:thin;
+    scrollbar-color:#c7c7c7 #f2f2f2;
+    overscroll-behavior-inline:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+}
+
+@media (min-width:701px){
+  .travel-matrix-hint{
+    display:none;
+  }
+}

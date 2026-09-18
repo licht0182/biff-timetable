@@ -368,6 +368,7 @@ test('supports open-ended and overnight time ranges after explicit apply', async
 test('keeps native time inputs compact and separated on iPhone-width WebKit layouts', async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 852 })
   await page.goto('./')
+  await page.getByRole('button', { name: /상세 필터/ }).click()
 
   const range = page.locator('.time-range-inputs')
   const inputs = range.locator('input[type="time"]')
