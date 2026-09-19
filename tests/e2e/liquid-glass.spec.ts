@@ -38,6 +38,37 @@ test('adapts tokens to dark appearance and keeps motion optional', async ({ page
   await expect.poll(() => page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.film-card')!).transitionDuration))).toBeLessThan(0.001)
 })
 
+test('keeps content, controls, and overlays on dark semantic surfaces', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  const expectDarkSurface = async (selector: string) => {
+    await expect(page.locator(selector).first(), `${selector} should be visible`).toBeVisible()
+    const rgb = await page.evaluate((target) => {
+      const element = document.querySelector(target)
+      return element ? getComputedStyle(element).backgroundColor.match(/\d+(?:\.\d+)?/g)?.slice(0, 3).map(Number) : null
+    }, selector)
+    expect(rgb, `${selector} should exist and have an opaque dark surface`).toBeTruthy()
+    expect(Math.max(...rgb!)).toBeLessThan(70)
+  }
+
+  await expectDarkSurface('.favorite-button')
+  await page.getByRole('button', { name: '상세', exact: true }).first().click()
+  await expectDarkSurface('.film-detail-grid')
+  await page.keyboard.press('Escape')
+
+  const tabBar = page.locator('.liquid-tab-bar')
+  await tabBar.getByRole('button', { name: '설정' }).click()
+  await expectDarkSurface('.biff-settings-panel')
+  await expectDarkSurface('.settings-card-head')
+
+  await tabBar.getByRole('button', { name: 'AI 도슨트' }).click()
+  await expectDarkSurface('.curator-card')
+
+  await tabBar.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: /일정 추가/ }).click()
+  await expectDarkSurface('.custom-event-form input[type="text"]')
+  await expectDarkSurface('.custom-event-form-actions button:first-child')
+})
+
 test('publishes an installable scoped web app manifest', async ({ page, request }) => {
   const href = await page.locator('link[rel="manifest"]').getAttribute('href')
   expect(href).toBeTruthy()

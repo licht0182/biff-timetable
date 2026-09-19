@@ -136,11 +136,47 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 @media(min-width:701px) and (max-width:900px){.app-shell{padding-inline:18px}.tabs{top:8px}.topbar{border-radius:24px 24px 0 0}}
 
 @media(prefers-color-scheme:dark){
-  :root{--ios-bg:#000;--ios-bg-elevated:rgba(34,34,38,.86);--ios-surface:#1c1c1e;--ios-surface-soft:#2c2c2e;--ios-label:#f5f5f7;--ios-secondary:#aeaeb2;--ios-separator:rgba(235,235,245,.16);--ios-glass:rgba(35,35,39,.7);--ios-glass-strong:rgba(40,40,44,.88);--ios-glass-border:rgba(255,255,255,.14);--ios-shadow:0 14px 38px rgba(0,0,0,.4),0 1px 1px rgba(255,255,255,.05)}
+  :root{color-scheme:dark;--ios-bg:#000;--ios-bg-elevated:rgba(34,34,38,.86);--ios-surface:#1c1c1e;--ios-surface-soft:#2c2c2e;--ios-label:#f5f5f7;--ios-secondary:#aeaeb2;--ios-tertiary:#8e8e93;--ios-separator:rgba(235,235,245,.16);--ios-fill:rgba(120,120,128,.24);--ios-glass:rgba(35,35,39,.7);--ios-glass-strong:rgba(40,40,44,.88);--ios-glass-border:rgba(255,255,255,.14);--ios-shadow:0 14px 38px rgba(0,0,0,.4),0 1px 1px rgba(255,255,255,.05);--panel:var(--ios-surface);--line:var(--ios-separator);--muted:var(--ios-secondary);--accent-soft:rgba(217,45,32,.16)}
   body::before{background:radial-gradient(circle at 15% -10%,rgba(10,132,255,.2),transparent 34rem),radial-gradient(circle at 95% 12%,rgba(191,90,242,.12),transparent 30rem),var(--ios-bg)}
   .topbar::after,.tabs::after,.liquid-tab-bar-surface::after{opacity:.35}
   .film-card,.schedule-screening-group,.booking-plan-panel,.timetable-scroll,.timetable-empty{box-shadow:0 4px 18px rgba(0,0,0,.28)}
   a{color:#64aaff}
+
+  /* Keep every application surface on the same iOS dark-material scale. */
+  .film-card,.film-modal,.film-detail-grid,.schedule-screening-group,.schedule-list-row,.booking-plan-panel,.booking-plan-group,.booking-plan-item,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal,.biff-settings-panel,.settings-card,.settings-card-head,.settings-intro,.precise-transfer-panel,.travel-matrix-wrap,.curator-hero,.curator-featured,.curator-latest,.curator-method,.curator-article,.curator-featured-card,.curator-card,.curator-film-guide,.curator-stat,.curator-article-footer,.timetable-empty,.timetable-scroll,.png-ios-dialog,.png-ios-preview{background:var(--ios-surface)!important;border-color:var(--ios-separator)!important;color:var(--ios-label)!important}
+  .film-detail-grid,.booking-plan-item,.settings-card-head,.precise-transfer-panel,.travel-matrix th,.travel-matrix td,.curator-body blockquote,.curator-stat,.curator-article-footer,.png-ios-preview{background:var(--ios-surface-soft)!important}
+  .film-list-item,.screenings,.screening-row,.modal-screenings,.modal-screenings>div,.modal-actions,.booking-plan-groups,.booking-plan-group,.settings-number-row,.settings-toggle-row,.travel-matrix th,.travel-matrix td{border-color:var(--ios-separator)!important}
+
+  h1,h2,h3,h4,strong,.film-detail-grid dd,.settings-number-row strong,.settings-toggle-row strong,.precise-transfer-panel>strong{color:var(--ios-label)}
+  .english-title,.meta,.screening-row span,.detail-link,.modal-head p,.film-detail-grid dt,.synopsis,.modal-screenings span,.genre-meta,.booking-plan-panel>summary,.booking-plan-panel>summary small,.booking-plan-group h3,.booking-plan-item>span,.booking-plan-status,.booking-plan-empty,.settings-intro>p:last-child,.settings-card p,.precise-transfer-note,.settings-number-row small,.settings-toggle-row small,.curator-hero>div>p:last-child,.curator-section-heading>span,.curator-featured-card>p,.curator-card-meta,.curator-card>p,.curator-card-tags span,.curator-tags span,.curator-method span,.curator-disclaimer,.curator-back,.curator-deck,.curator-meta,.curator-body p,.curator-body ul,.curator-article-footer p,.curator-stat span{color:var(--ios-secondary)!important}
+  .curator-edition{color:rgba(245,245,247,.12)!important}
+
+  /* Secondary actions no longer flash as white cards in dark mode. */
+  .chips button,.screening-row button,.modal-screenings button,.favorite-button,.detail-button,.timetable-actions button,.timetable-empty button,.timetable-action-buttons button,.timetable-action-buttons summary,.custom-event-add-button,.custom-event-form-actions button,.booking-plan-item-actions button,.booking-conflict-actions button,.booking-apply-actions button,.settings-reset-button,.modal-close,.png-ios-actions button,.schedule-list-remove{background:var(--ios-surface-soft)!important;border-color:var(--ios-separator)!important;color:var(--ios-label)!important}
+  .chips button.active,.screening-row button.selected,.modal-screenings button.selected,.booking-conflict-actions button.primary,.booking-apply-actions button.primary,.custom-event-save,.curator-article-footer button{background:var(--ios-tint)!important;border-color:var(--ios-tint)!important;color:#fff!important}
+  .favorite-button.active{background:rgba(255,159,10,.16)!important;border-color:rgba(255,159,10,.42)!important;color:#ffd60a!important}
+
+  /* Native controls and custom shells share one fill and one focus treatment. */
+  input,select,textarea,.custom-event-control-shell,.settings-number-control input{background:var(--ios-surface-soft)!important;border-color:var(--ios-separator)!important;color:var(--ios-label)!important}
+  input::placeholder,textarea::placeholder{color:var(--ios-tertiary)!important}
+  input:focus,select:focus,textarea:focus,.custom-event-control-shell:focus-within,.settings-number-control input:focus{background:var(--ios-surface-soft)!important;border-color:var(--ios-tint)!important;box-shadow:0 0 0 3px rgba(10,132,255,.18)!important}
+  .filter-row label>span,.time-range-filter-head>span,.time-range-filter-head small,.time-range-separator,.custom-event-kicker,.custom-event-form label>span{color:var(--ios-secondary)!important}
+
+  /* State colors stay meaningful without introducing light surfaces. */
+  .screening-row.conflict,.modal-screenings>div.conflict,.schedule-list-row.selected-for-delete{background:rgba(255,69,58,.12)!important}
+  .screening-row.travel-warning:not(.conflict),.screening-row.booking-alternative,.schedule-list-row.is-alternative,.booking-plan-item.is-alternative{background:rgba(255,159,10,.12)!important}
+  .screening-row button.alternative,.modal-screening-actions button.alternative{background:rgba(255,159,10,.14)!important;border-color:rgba(255,159,10,.38)!important;color:#ffd60a!important}
+  .notice.error,.booking-apply-cleanup-note{background:rgba(255,69,58,.12)!important;border-color:rgba(255,69,58,.32)!important;color:#ff9f97!important}
+  .toast{background:rgba(44,44,46,.94)!important;border-color:var(--ios-separator)!important;color:var(--ios-label)!important}
+
+  .travel-matrix tbody th{background:var(--ios-surface)!important;color:var(--ios-label)!important}
+  .settings-switch i{background:var(--ios-fill)!important;border-color:var(--ios-separator)!important}
+  .settings-switch input:checked+i{background:var(--ios-green)!important}
+  .settings-switch i::after{background:#fff!important;box-shadow:0 1px 4px rgba(0,0,0,.55)!important}
+  .curator-method li::before{background:var(--ios-fill)!important;color:var(--ios-secondary)!important}
+  .film-search-suggestions{background:var(--ios-glass-strong)!important;border-color:var(--ios-separator)!important;box-shadow:var(--ios-shadow)!important}
+  .film-search-suggestion{background:transparent!important;border-color:var(--ios-separator)!important;color:var(--ios-label)!important}
+  .film-search-suggestion:hover,.film-search-suggestion:focus-visible{background:var(--ios-fill)!important}
 }
 
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.film-card:hover{transform:none}}
