@@ -77,7 +77,7 @@ function findMutuallyOverlappingTriple(data: FilmData): [Item, Item, Item] | nul
   return null
 }
 
-async function seedOrigin(page: Page, originId: string, priority?: 1 | 2 | 3) {
+async function seedOrigin(page: Page, originId: string, priority?: number) {
   await page.addInitScript(({ selectedKey, statusKey, planKey, originId, priority }) => {
     if (!localStorage.getItem(selectedKey)) localStorage.setItem(selectedKey, JSON.stringify([originId]))
     if (!localStorage.getItem(statusKey)) localStorage.setItem(statusKey, JSON.stringify({ [originId]: 'planned' }))
@@ -247,7 +247,7 @@ test('repairs persisted same-priority fallbacks when they overlap', async ({ pag
   await expect(panel.locator('summary')).toContainText('2순위 1 · 3순위 1')
 })
 
-test('does not invent a fourth priority for a third-priority conflict', async ({ page, request }) => {
+test('offers fallback priorities from the required rank through 10', async ({ page, request }) => {
   const data = await screeningData(request)
   const pair = findOverlappingPair(data)
   test.skip(!pair, '대안 예매 테스트에 사용할 겹치는 회차가 없습니다.')
@@ -257,7 +257,28 @@ test('does not invent a fourth priority for a third-priority conflict', async ({
   await page.goto('./')
   const { dialog } = await openCandidateDialog(page, candidate)
 
-  await expect(dialog).toContainText('4순위 대안을 만들 수 없습니다')
+  await expect(dialog.locator('select')).toHaveValue('4')
+  await expect(dialog.locator('select option[value="3"]')).toHaveCount(0)
+  await expect(dialog.locator('select option[value="10"]')).toHaveText('10순위')
+  await dialog.locator('select').selectOption('10')
+  await dialog.getByRole('button', { name: '10순위 대안으로 저장' }).click()
+  await expect.poll(() => page.evaluate(({ key, candidateId }) => {
+    const plan = JSON.parse(localStorage.getItem(key) ?? '{}') as Record<string, { priority?: number }>
+    return plan[candidateId]?.priority
+  }, { key: BOOKING_PLAN_KEY, candidateId: candidate.screening.id })).toBe(10)
+})
+
+test('blocks an eleventh fallback priority after rank 10', async ({ page, request }) => {
+  const data = await screeningData(request)
+  const pair = findOverlappingPair(data)
+  test.skip(!pair, '대안 예매 테스트에 사용할 겹치는 회차가 없습니다.')
+  const [origin, candidate] = pair!
+
+  await seedOrigin(page, origin.screening.id, 10)
+  await page.goto('./')
+  const { dialog } = await openCandidateDialog(page, candidate)
+
+  await expect(dialog).toContainText('이미 10순위')
   await expect(dialog.locator('select')).toHaveCount(0)
   await expect(dialog.getByRole('button', { name: '대안 저장 불가' })).toBeDisabled()
   await expect(page.locator('.selection-count')).toHaveText('총 1개 선택')

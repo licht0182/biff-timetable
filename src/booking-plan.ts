@@ -1,6 +1,10 @@
-import type { BookingPlanMap, BookingPriority, TicketStatus } from './components/film-types'
+import { BOOKING_PRIORITIES, MAX_BOOKING_PRIORITY, type BookingPlanMap, type BookingPriority, type TicketStatus } from './components/film-types'
 
-export type BookingSelectValue = 'planned' | 'priority-1' | 'priority-2' | 'priority-3' | 'booked' | 'failed'
+export type BookingSelectValue = 'planned' | `priority-${BookingPriority}` | 'booked' | 'failed'
+
+export function isBookingPriority(value: unknown): value is BookingPriority {
+  return typeof value === 'number' && BOOKING_PRIORITIES.includes(value as BookingPriority)
+}
 
 function normalizeFallbackFor(value: unknown, screeningId: string) {
   if (!Array.isArray(value)) return undefined
@@ -16,7 +20,7 @@ export function normalizeBookingPlan(value: unknown): BookingPlanMap {
   const entries = Object.entries(value).flatMap(([screeningId, raw]) => {
     if (!screeningId.trim() || !raw || typeof raw !== 'object' || Array.isArray(raw)) return []
     const priority = (raw as { priority?: unknown }).priority
-    if (priority !== 1 && priority !== 2 && priority !== 3) return []
+    if (!isBookingPriority(priority)) return []
     const fallbackFor = normalizeFallbackFor((raw as { fallbackFor?: unknown }).fallbackFor, screeningId)
     return [[screeningId, fallbackFor ? { priority, fallbackFor } : { priority }] as const]
   })
@@ -90,7 +94,7 @@ export function fallbackMinimumPriority(plan: BookingPlanMap, originIds: string[
     return priority > highest ? priority : highest
   }, 1)
 
-  if (highestOriginPriority >= 3) return null
+  if (highestOriginPriority >= MAX_BOOKING_PRIORITY) return null
   return (highestOriginPriority + 1) as BookingPriority
 }
 
@@ -114,17 +118,15 @@ export function bookingStateFromSelectValue(
   currentPriority?: BookingPriority,
 ): { status: Exclude<TicketStatus, 'none'>; priority?: BookingPriority } {
   if (value === 'booked' || value === 'failed') return { status: value, priority: currentPriority }
-  if (value === 'priority-1') return { status: 'planned', priority: 1 }
-  if (value === 'priority-2') return { status: 'planned', priority: 2 }
-  if (value === 'priority-3') return { status: 'planned', priority: 3 }
+  if (value.startsWith('priority-')) {
+    const priority = Number(value.slice('priority-'.length))
+    if (isBookingPriority(priority)) return { status: 'planned', priority }
+  }
   return { status: 'planned' }
 }
 
 export function bookingPrioritySymbol(priority?: BookingPriority) {
-  if (priority === 1) return '①'
-  if (priority === 2) return '②'
-  if (priority === 3) return '③'
-  return ''
+  return priority ? ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'][priority - 1] : ''
 }
 
 

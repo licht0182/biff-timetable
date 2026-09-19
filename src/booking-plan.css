@@ -5,7 +5,7 @@
 .booking-plan-panel[open]>summary:before{transform:rotate(90deg)}
 .booking-plan-panel>summary>span{margin-right:auto}
 .booking-plan-panel>summary>small{font-size:9px;color:#888;font-weight:700;white-space:nowrap}
-.booking-plan-groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border-top:1px solid #eee}
+.booking-plan-groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;max-height:min(45svh,420px);overflow:auto;border-top:1px solid #eee}
 .booking-plan-group{padding:10px;border-right:1px solid #eee;min-width:0}
 .booking-plan-group:last-child{border-right:0}
 .booking-plan-group h3{margin:0 0 7px;font-size:11px;color:#555}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { BookingPriority, Film, Screening } from './film-types'
+import { BOOKING_PRIORITIES, MAX_BOOKING_PRIORITY, type BookingPriority, type Film, type Screening } from './film-types'
 
 type ConflictItem = { film: Film; screening: Screening }
 
@@ -26,8 +26,9 @@ export default function BookingConflictDialog({
   onSaveAlternative,
   onClose,
 }: BookingConflictDialogProps) {
-  const [priority, setPriority] = useState<BookingPriority>(minimumPriority ?? 3)
+  const [priority, setPriority] = useState<BookingPriority>(minimumPriority ?? MAX_BOOKING_PRIORITY)
   const canSave = minimumPriority !== null
+  const priorityOptions = minimumPriority === null ? [] : BOOKING_PRIORITIES.filter((value) => value >= minimumPriority)
 
   return (
     <div className="booking-conflict-backdrop" onMouseDown={onClose}>
@@ -78,14 +79,13 @@ export default function BookingConflictDialog({
           <label className="booking-conflict-priority">
             <span>대안 우선순위</span>
             <select value={priority} onChange={(event) => setPriority(Number(event.target.value) as BookingPriority)}>
-              {minimumPriority! <= 2 && <option value={2}>2순위</option>}
-              <option value={3}>3순위</option>
+              {priorityOptions.map((value) => <option value={value} key={value}>{value}순위</option>)}
             </select>
             <small>겹치는 현재 회차와 기존 대안보다 낮은 우선순위만 선택할 수 있습니다.</small>
           </label>
         ) : (
           <div className="booking-conflict-limit" role="status">
-            겹치는 현재 회차 또는 기존 대안 중 3순위가 있어 4순위 대안을 만들 수 없습니다. 기존 회차의 우선순위를 조정하거나 대안을 해제한 뒤 다시 시도해 주세요.
+            겹치는 현재 회차 또는 기존 대안이 이미 {MAX_BOOKING_PRIORITY}순위여서 더 낮은 우선순위의 대안을 만들 수 없습니다. 기존 회차의 우선순위를 조정하거나 대안을 해제한 뒤 다시 시도해 주세요.
           </div>
         )}
 

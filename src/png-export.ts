@@ -189,7 +189,7 @@ function buildExportBoard(
   const legend = element('div', 'png-export-legend')
   const mobileLegend = profile.mode === 'mobile'
   legend.append(element('span', 'booked', mobileLegend ? '✓ 완료' : '✓ 예매 완료'))
-  legend.append(element('span', 'priority', mobileLegend ? '①②③ 순위' : '①②③ 예매 순위'))
+  legend.append(element('span', 'priority', mobileLegend ? '①–⑩ 순위' : '①–⑩ 예매 순위'))
   legend.append(element('span', 'failed', mobileLegend ? '× 실패' : '× 예매 실패'))
   legend.append(element('span', 'planned', mobileLegend ? '○ 예정' : '○ 예매 예정'))
   legend.append(element('span', '', mobileLegend ? 'GV' : 'GV 게스트 방문'))

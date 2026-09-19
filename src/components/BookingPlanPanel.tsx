@@ -1,4 +1,5 @@
-import type { BookingPlanMap, BookingPriority, Film, Screening, TicketStatusMap } from './film-types'
+import { bookingPrioritySymbol } from '../booking-plan'
+import { BOOKING_PRIORITIES, type BookingPlanMap, type Film, type Screening, type TicketStatusMap } from './film-types'
 
 type BookingPlanItem = { film: Film; screening: Screening }
 
@@ -12,8 +13,6 @@ type BookingPlanPanelProps = {
   onRemoveAlternative: (screeningId: string) => void
   onApplyAlternative: (screeningId: string) => void
 }
-
-const PRIORITIES: BookingPriority[] = [1, 2, 3]
 
 export default function BookingPlanPanel({
   items,
@@ -29,22 +28,25 @@ export default function BookingPlanPanel({
   if (!plannedItems.length) return null
 
   const itemByScreeningId = new Map(items.map((item) => [item.screening.id, item]))
-  const counts = PRIORITIES.map((priority) => (
-    plannedItems.filter(({ screening }) => bookingPlan[screening.id]?.priority === priority).length
-  ))
+  const groups = BOOKING_PRIORITIES.map((priority) => ({
+    priority,
+    items: plannedItems.filter(({ screening }) => bookingPlan[screening.id]?.priority === priority),
+  })).filter(({ items: groupItems }) => groupItems.length > 0)
+  const summary = groups.length <= 4
+    ? groups.map(({ priority, items: groupItems }) => `${priority}순위 ${groupItems.length}`).join(' · ')
+    : `${groups[0].priority}~${groups[groups.length - 1].priority}순위 · 총 ${plannedItems.length}`
 
   return (
     <details className="booking-plan-panel">
       <summary>
         <span>예매 계획</span>
-        <small aria-live="polite">{`1순위 ${counts[0]} · 2순위 ${counts[1]} · 3순위 ${counts[2]}${nextFallbackIds.size ? ` · 다음 대안 ${nextFallbackIds.size}` : ''}`}</small>
+        <small aria-live="polite">{`${summary}${nextFallbackIds.size ? ` · 다음 대안 ${nextFallbackIds.size}` : ''}`}</small>
       </summary>
       <div className="booking-plan-groups">
-        {PRIORITIES.map((priority) => {
-          const group = plannedItems.filter(({ screening }) => bookingPlan[screening.id]?.priority === priority)
+        {groups.map(({ priority, items: group }) => {
           return (
             <section className="booking-plan-group" key={priority}>
-              <h3><span aria-hidden="true">{priority === 1 ? '①' : priority === 2 ? '②' : '③'}</span> {priority}순위</h3>
+              <h3><span aria-hidden="true">{bookingPrioritySymbol(priority)}</span> {priority}순위</h3>
               {group.length ? <div className="booking-plan-list">
                 {group.map(({ film, screening }) => {
                   const status = ticketStatus[screening.id] ?? 'planned'

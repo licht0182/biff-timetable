@@ -27,7 +27,9 @@ export type Film = {
 export type TicketStatus = 'none' | 'planned' | 'booked' | 'failed'
 export type TicketStatusMap = Record<string, Exclude<TicketStatus, 'none'>>
 
-export type BookingPriority = 1 | 2 | 3
+export const BOOKING_PRIORITIES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const
+export type BookingPriority = typeof BOOKING_PRIORITIES[number]
+export const MAX_BOOKING_PRIORITY: BookingPriority = 10
 export type BookingPlanEntry = {
   priority: BookingPriority
   fallbackFor?: string[]

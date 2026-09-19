@@ -7,7 +7,7 @@ import BookingStatusSelect from './components/BookingStatusSelect'
 import BookingConflictDialog from './components/BookingConflictDialog'
 import BookingFallbackApplyDialog from './components/BookingFallbackApplyDialog'
 import ScheduleList from './components/ScheduleList'
-import type { BookingPlanMap, BookingPriority, Film, Screening, TicketStatus, TicketStatusMap } from './components/film-types'
+import { BOOKING_PRIORITIES, MAX_BOOKING_PRIORITY, type BookingPlanMap, type BookingPriority, type Film, type Screening, type TicketStatus, type TicketStatusMap } from './components/film-types'
 import { createCustomEventId, customEventAbsoluteWindow, customEventCategoryLabel, customEventPaletteIndex, customEventTimetableDate, customEventTimetableEndMinutes, customEventTimetableStartMinutes, normalizeCustomEvents, windowsOverlap, type CustomEvent, type CustomEventDraft } from './custom-events'
 import { REST_BREAK_MINUTES, VENUE_TRANSFER_SITES, getVenueSiteTransferMinutes } from './venue-travel'
 import { getTransferBuffer } from './transfer-buffer'
@@ -77,7 +77,7 @@ function repairOverlappingFallbackPriorities(plan: BookingPlanMap, items: Timeta
       requiredPriority = Math.max(requiredPriority, previousEntry.priority + 1) as BookingPriority
     }
 
-    const repairedPriority = Math.min(requiredPriority, 3) as BookingPriority
+    const repairedPriority = Math.min(requiredPriority, MAX_BOOKING_PRIORITY) as BookingPriority
     if (repairedPriority === next[current.screeningId].priority) continue
     next[current.screeningId] = { ...next[current.screeningId], priority: repairedPriority }
     changed = true
@@ -724,8 +724,8 @@ export default function App() {
       setToast('대안이 연결된 회차는 우선순위를 해제하기 전에 대안을 먼저 해제해 주세요.')
       return
     }
-    if (hasFallbacks && priority === 3) {
-      setToast('3순위에는 다음 대안을 둘 수 없습니다. 연결된 대안을 먼저 해제해 주세요.')
+    if (hasFallbacks && priority === MAX_BOOKING_PRIORITY) {
+      setToast(`${MAX_BOOKING_PRIORITY}순위에는 다음 대안을 둘 수 없습니다. 연결된 대안을 먼저 해제해 주세요.`)
       return
     }
 
@@ -1090,12 +1090,14 @@ export default function App() {
   const bookedCount = selected.filter((id) => ticketStatus[id] === 'booked').length
   const failedCount = selected.filter((id) => ticketStatus[id] === 'failed').length
   const plannedCount = selected.filter((id) => ticketStatus[id] !== 'booked' && ticketStatus[id] !== 'failed').length
-  const priorityCounts = ([1, 2, 3] as const).map((priority) => (
-    Object.values(bookingPlan).filter((entry) => entry.priority === priority).length
-  ))
-  const hasBookingPriorities = priorityCounts.some((count) => count > 0)
+  const priorityCounts = BOOKING_PRIORITIES.map((priority) => ({
+    priority,
+    count: Object.values(bookingPlan).filter((entry) => entry.priority === priority).length,
+  }))
+  const prioritySummary = priorityCounts.filter(({ count }) => count > 0).map(({ priority, count }) => `${priority}순위 ${count}`).join(' · ')
+  const hasBookingPriorities = prioritySummary.length > 0
   const bookingSummaryText = hasBookingPriorities
-    ? `1순위 ${priorityCounts[0]} · 2순위 ${priorityCounts[1]} · 3순위 ${priorityCounts[2]} · 완료 ${bookedCount} · 실패 ${failedCount} · 사용자 일정 ${customEvents.length}`
+    ? `${prioritySummary} · 완료 ${bookedCount} · 실패 ${failedCount} · 사용자 일정 ${customEvents.length}`
     : `예매 완료 ${bookedCount} · 예정 ${plannedCount} · 실패 ${failedCount} · 사용자 일정 ${customEvents.length}`
   const alternativeCount = Object.entries(bookingPlan).filter(([screeningId, entry]) => !selectedSet.has(screeningId) && Boolean(entry.fallbackFor?.length)).length
   const listSummaryText = `실제 일정 ${selected.length + customEvents.length} · 예매 대안 ${alternativeCount}`
@@ -1236,7 +1238,7 @@ export default function App() {
           <div className="settings-card-head"><div><h3>시간표 표시</h3><p>작은 화면에서 필요한 정보만 남길 수 있습니다.</p></div></div>
           <div className="settings-list">
             <label className="settings-toggle-row"><span><strong>상영관명 표시</strong><small>내 시간표 영화 블록 안에 상영관명을 표시합니다.</small></span><span className="settings-switch"><input type="checkbox" checked={userSettings.showVenueInTimetable} onChange={(event) => setUserSettings((current) => ({ ...current, showVenueInTimetable: event.target.checked }))} /><i /></span></label>
-            <label className="settings-toggle-row"><span><strong>예매 상태·순위 기호 표시</strong><small>1·2·3순위와 예매 완료/실패 기호를 영화 제목 앞에 표시합니다.</small></span><span className="settings-switch"><input type="checkbox" checked={userSettings.showBookingStatusInTimetable} onChange={(event) => setUserSettings((current) => ({ ...current, showBookingStatusInTimetable: event.target.checked }))} /><i /></span></label>
+            <label className="settings-toggle-row"><span><strong>예매 상태·순위 기호 표시</strong><small>1~10순위와 예매 완료/실패 기호를 영화 제목 앞에 표시합니다.</small></span><span className="settings-switch"><input type="checkbox" checked={userSettings.showBookingStatusInTimetable} onChange={(event) => setUserSettings((current) => ({ ...current, showBookingStatusInTimetable: event.target.checked }))} /><i /></span></label>
           </div>
         </section>
         <section className="settings-card settings-reset-card"><div><h3>기본 설정</h3><p>이동 시간과 표시 설정을 처음 값으로 되돌립니다.</p></div><button type="button" className="settings-reset-button" onClick={() => setUserSettings({ ...DEFAULT_USER_SETTINGS })}>기본값으로 초기화</button></section>

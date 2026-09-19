@@ -1,4 +1,4 @@
-import type { BookingPriority, TicketStatus } from './film-types'
+import { BOOKING_PRIORITIES, type BookingPriority, type TicketStatus } from './film-types'
 import { bookingSelectValue, bookingStateFromSelectValue, type BookingSelectValue } from '../booking-plan'
 
 type BookingStatusSelectProps = {
@@ -27,9 +27,7 @@ export default function BookingStatusSelect({
       aria-label={ariaLabel}
     >
       <option value="planned">예매 예정</option>
-      <option value="priority-1">1순위 · 예정</option>
-      <option value="priority-2">2순위 · 예정</option>
-      <option value="priority-3">3순위 · 예정</option>
+      {BOOKING_PRIORITIES.map((value) => <option value={`priority-${value}`} key={value}>{value}순위 · 예정</option>)}
       <option value="booked">예매 완료</option>
       <option value="failed">예매 실패</option>
     </select>
