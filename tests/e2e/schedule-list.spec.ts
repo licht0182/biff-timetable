@@ -7,6 +7,7 @@ type Item = { film: Film; screening: Screening }
 const SELECTED_KEY = 'biff-timetable:selected-screenings:v1'
 const PLAN_KEY = 'biff-timetable:booking-plan:v1'
 const VIEW_KEY = 'biff-timetable:view-mode:v1'
+const CUSTOM_EVENTS_KEY = 'biff-timetable:custom-events:v1'
 
 function minutes(time: string) {
   const [hour, minute] = time.split(':').map(Number)
@@ -68,6 +69,50 @@ test('uses the chronological list by default and persists the view switch', asyn
   await page.getByRole('button', { name: '목록', exact: true }).click()
   await page.reload()
   await expect(page.locator('.schedule-list')).toBeVisible()
+})
+
+test('keeps a custom event delete action aligned inside the list row on mobile', async ({ page }) => {
+  const event = {
+    id: 'custom-layout-test',
+    title: '부산 친구와 저녁 식사',
+    date: '2026-10-07',
+    start: '18:30',
+    end: '20:00',
+    location: '센텀시티',
+    category: 'meal',
+    createdAt: '2026-09-19T00:00:00.000Z',
+  }
+  await page.addInitScript(({ key, value }) => localStorage.setItem(key, JSON.stringify([value])), {
+    key: CUSTOM_EVENTS_KEY,
+    value: event,
+  })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('./')
+  await openTimetable(page)
+
+  const row = page.locator('.schedule-custom-row')
+  const actions = row.locator('.schedule-custom-actions')
+  const remove = actions.getByRole('button', { name: `${event.title} 일정 삭제` })
+  await expect(row).toBeVisible()
+  await expect(actions).toBeVisible()
+  await expect(remove).toBeVisible()
+
+  const geometry = await row.evaluate((element) => {
+    const rowBox = element.getBoundingClientRect()
+    const actionBox = element.querySelector<HTMLElement>('.schedule-custom-actions')!.getBoundingClientRect()
+    const buttonBox = element.querySelector<HTMLButtonElement>('.schedule-list-remove')!.getBoundingClientRect()
+    return {
+      actionParent: element.querySelector('.schedule-list-remove')?.parentElement?.className,
+      rightInset: rowBox.right - buttonBox.right,
+      rowCenter: rowBox.top + rowBox.height / 2,
+      actionCenter: actionBox.top + actionBox.height / 2,
+      buttonCenter: buttonBox.top + buttonBox.height / 2,
+    }
+  })
+  expect(geometry.actionParent).toContain('schedule-row-actions')
+  expect(geometry.rightInset).toBeGreaterThanOrEqual(6)
+  expect(Math.abs(geometry.rowCenter - geometry.actionCenter)).toBeLessThanOrEqual(1)
+  expect(Math.abs(geometry.rowCenter - geometry.buttonCenter)).toBeLessThanOrEqual(1)
 })
 
 test('shows one selected date at a time and keeps the mobile list scrollable', async ({ page, request }) => {

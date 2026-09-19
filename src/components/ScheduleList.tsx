@@ -151,7 +151,9 @@ export default function ScheduleList({
                   <span className="schedule-priority-dot priority-custom" aria-label="사용자 일정" />
                   <span className="schedule-list-copy"><strong>{event.title}</strong><span>{customEventCategoryLabel(event.category)}{event.location ? ` · ${event.location}` : ''}</span></span>
                 </button>
-                <button type="button" className="schedule-list-remove" onClick={() => selectionMode ? onToggleDeleteSelection(event.id) : onRemoveCustomEvent(event)} aria-label={selectionMode ? `${event.title} 삭제 ${selected ? '선택 해제' : '선택'}` : `${event.title} 일정 삭제`}>{selectionMode ? (selected ? '완료' : '선택') : '삭제'}</button>
+                <div className="schedule-row-actions schedule-custom-actions">
+                  <button type="button" className="schedule-list-remove" onClick={() => selectionMode ? onToggleDeleteSelection(event.id) : onRemoveCustomEvent(event)} aria-label={selectionMode ? `${event.title} 삭제 ${selected ? '선택 해제' : '선택'}` : `${event.title} 일정 삭제`}>{selectionMode ? (selected ? '완료' : '선택') : '삭제'}</button>
+                </div>
               </article>
             }
 
