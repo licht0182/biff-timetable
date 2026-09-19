@@ -33,6 +33,7 @@ test('sets 1/2/3 booking priorities, keeps priority on failure, and persists the
   }, { statusKey: STATUS_KEY, planKey: BOOKING_PLAN_KEY })).toBeTruthy()
 
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   const planPanel = page.locator('.booking-plan-panel')
   await expect(planPanel).toBeVisible()
   await expect(planPanel.locator('summary')).toContainText('3순위 1')
@@ -46,6 +47,7 @@ test('sets 1/2/3 booking priorities, keeps priority on failure, and persists the
 
   await page.reload()
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await expect(page.locator('.booking-plan-panel summary')).toContainText('3순위 1')
   const reloadedEvent = page.locator('.event-block').filter({ hasText: filmTitle }).first()
   await expect(reloadedEvent).toHaveClass(/status-failed/)
@@ -64,6 +66,7 @@ test('keeps the booking plan usable without horizontal overflow at 320px', async
   expect(finderOverflow).toBeLessThanOrEqual(1)
 
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   const panel = page.locator('.booking-plan-panel')
   await expect(panel).toBeVisible()
   await panel.locator('summary').click()
@@ -99,6 +102,7 @@ test('keeps a pending fallback action inside the 320px viewport', async ({ page,
   await page.setViewportSize({ width: 320, height: 740 })
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   const panel = page.locator('.booking-plan-panel')
   await expect(panel.locator('summary')).toContainText('다음 대안 1')
   await panel.locator('summary').click()

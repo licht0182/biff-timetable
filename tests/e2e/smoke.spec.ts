@@ -120,6 +120,7 @@ test('exports desktop and mobile timetable PNGs with separate high-resolution pr
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await page.getByRole('button', { name: 'PNG 저장' }).click()
 
   const desktop = await pngPreviewSize(page)
@@ -147,6 +148,7 @@ test('extends mobile PNG height when the last timetable hour runs past midnight'
   await page.setViewportSize({ width: 393, height: 852 })
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await page.getByRole('button', { name: 'PNG 저장' }).click()
 
   const mobile = await pngPreviewSize(page)
@@ -193,6 +195,7 @@ test('keeps distinct personal-event colors in the timetable and PNG export', asy
   await page.setViewportSize({ width: 393, height: 852 })
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
 
   const screenEvents = page.locator('.event-block.custom-event.category-personal')
   await expect(screenEvents).toHaveCount(2)
@@ -421,6 +424,7 @@ test('persists a selected screening across reload and opens its timetable detail
   await expect(page.locator('.selection-count')).toHaveText('총 1개 선택')
 
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   const event = page.locator('.event-block').first()
   await expect(event).toBeVisible()
   await event.click()
@@ -433,6 +437,7 @@ test('changes booking status from a timetable detail and persists it', async ({ 
   await page.goto('./')
   await page.getByRole('button', { name: '+ 추가' }).first().click()
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
 
   const event = page.locator('.event-block').first()
   await expect(event).toBeVisible()
@@ -454,6 +459,7 @@ test('changes booking status from a timetable detail and persists it', async ({ 
 
   await page.reload()
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await expect(page.locator('.event-block').first()).toHaveClass(/status-booked/)
 })
 
@@ -490,6 +496,7 @@ test('extends the timetable for a screening that runs past midnight', async ({ p
   await seedSelected(page, [item!.screening.id])
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
 
   const expectedHour = Math.ceil(timetableEnd(item!) / 60)
   const labelHour = expectedHour < 24 ? expectedHour : expectedHour - 24
@@ -507,6 +514,7 @@ test('supports multi-select deletion with confirmation cancellation and approval
   await seedSelected(page, items.map((item) => item.screening.id))
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await page.getByRole('button', { name: '선택', exact: true }).click()
   const events = page.locator('.event-block')
   await events.nth(0).click()
@@ -529,6 +537,7 @@ test('keeps the 320px mobile layout inside the viewport', async ({ page }) => {
 
   await page.getByRole('button', { name: '+ 추가' }).first().click()
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   const timetableOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
   expect(timetableOverflow).toBeLessThanOrEqual(1)
   await expect(page.locator('.timetable-action-buttons')).toBeVisible()

@@ -128,6 +128,7 @@ test('stores an overlapping screening as a fallback without adding it to the rea
 
   await page.reload()
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   const panel = page.locator('.booking-plan-panel')
   await expect(panel).toBeVisible()
   await panel.locator('summary').click()
@@ -241,6 +242,7 @@ test('repairs persisted same-priority fallbacks when they overlap', async ({ pag
   })).toEqual([2, 3])
 
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   const panel = page.locator('.booking-plan-panel')
   await expect(panel.locator('summary')).toContainText('2순위 1 · 3순위 1')
 })

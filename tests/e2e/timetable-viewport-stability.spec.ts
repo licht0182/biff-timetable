@@ -55,6 +55,7 @@ test('keeps mobile timetable geometry fixed across Safari-style height-only resi
   await seedOneScreening(page, id!)
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await expect(page.locator('.app-shell')).toHaveClass(/timetable-viewport-stable/)
   await expect(page.locator('.timetable')).toHaveAttribute('data-stable-viewport', 'true')
 
@@ -104,6 +105,7 @@ test('releases the timetable viewport lock for settings', async ({ page, request
   await seedOneScreening(page, id!)
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await expect(page.locator('.app-shell')).toHaveClass(/timetable-viewport-stable/)
 
   await page.getByRole('button', { name: '설정' }).click()

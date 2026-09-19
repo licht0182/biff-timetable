@@ -6,6 +6,7 @@ import BookingPlanPanel from './components/BookingPlanPanel'
 import BookingStatusSelect from './components/BookingStatusSelect'
 import BookingConflictDialog from './components/BookingConflictDialog'
 import BookingFallbackApplyDialog from './components/BookingFallbackApplyDialog'
+import ScheduleList from './components/ScheduleList'
 import type { BookingPlanMap, BookingPriority, Film, Screening, TicketStatus, TicketStatusMap } from './components/film-types'
 import { createCustomEventId, customEventAbsoluteWindow, customEventCategoryLabel, customEventPaletteIndex, customEventTimetableDate, customEventTimetableEndMinutes, customEventTimetableStartMinutes, normalizeCustomEvents, windowsOverlap, type CustomEvent, type CustomEventDraft } from './custom-events'
 import { REST_BREAK_MINUTES, VENUE_TRANSFER_SITES, getVenueSiteTransferMinutes } from './venue-travel'
@@ -50,6 +51,7 @@ type UserTimetableSettings = {
   showVenueInTimetable: boolean
   showBookingStatusInTimetable: boolean
 }
+type TimetableViewMode = 'list' | 'grid'
 
 function repairOverlappingFallbackPriorities(plan: BookingPlanMap, items: TimetableItem[]): BookingPlanMap {
   const itemByScreeningId = new Map(items.map((item) => [item.screening.id, item] as const))
@@ -90,6 +92,7 @@ const TICKET_STATUS_KEY = 'biff-timetable:ticket-status:v1'
 const BOOKING_PLAN_KEY = 'biff-timetable:booking-plan:v1'
 const CUSTOM_EVENTS_KEY = 'biff-timetable:custom-events:v1'
 const USER_SETTINGS_KEY = 'biff-timetable:user-settings:v1'
+const TIMETABLE_VIEW_KEY = 'biff-timetable:view-mode:v1'
 const DEFAULT_USER_SETTINGS: UserTimetableSettings = {
   sameClusterMinutes: 10,
   differentVenueMinutes: 30,
@@ -134,6 +137,10 @@ function normalizeUserSettings(value: unknown): UserTimetableSettings {
     showVenueInTimetable: typeof source.showVenueInTimetable === 'boolean' ? source.showVenueInTimetable : DEFAULT_USER_SETTINGS.showVenueInTimetable,
     showBookingStatusInTimetable: typeof source.showBookingStatusInTimetable === 'boolean' ? source.showBookingStatusInTimetable : DEFAULT_USER_SETTINGS.showBookingStatusInTimetable,
   }
+}
+
+function normalizeTimetableView(value: unknown): TimetableViewMode {
+  return value === 'grid' ? 'grid' : 'list'
 }
 
 function formatDate(date: string, _compact = false) {
@@ -277,6 +284,7 @@ export default function App() {
   const [pngExportState, setPngExportState] = useState<'idle' | 'working' | 'ready' | 'done' | 'error'>('idle')
   const [settingsOpen, setSettingsOpen] = useState(initialNavigation.settingsOpen)
   const [userSettings, setUserSettings] = useState<UserTimetableSettings>(() => normalizeUserSettings(readStorageValue(USER_SETTINGS_KEY)))
+  const [timetableView, setTimetableView] = useState<TimetableViewMode>(() => normalizeTimetableView(readStorageValue(TIMETABLE_VIEW_KEY)))
   const [timetableSelectionMode, setTimetableSelectionMode] = useState(false)
   const [timetableDeleteSelection, setTimetableDeleteSelection] = useState<string[]>([])
   const timeRangeDraftChanged = draftStartTime !== startTimeFilter || draftEndTime !== endTimeFilter
@@ -350,6 +358,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem(BOOKING_PLAN_KEY, JSON.stringify(bookingPlan)) }, [bookingPlan])
   useEffect(() => { localStorage.setItem(CUSTOM_EVENTS_KEY, JSON.stringify(customEvents)) }, [customEvents])
   useEffect(() => { localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(userSettings)) }, [userSettings])
+  useEffect(() => { localStorage.setItem(TIMETABLE_VIEW_KEY, JSON.stringify(timetableView)) }, [timetableView])
 
   useEffect(() => {
     setTicketStatus((current) => {
@@ -416,13 +425,16 @@ export default function App() {
   }, [activeTab, settingsOpen])
 
   useEffect(() => {
-    const validIds = new Set([...selected, ...customEvents.map((event) => event.id)])
+    const alternativeIds = Object.entries(bookingPlan)
+      .filter(([screeningId, entry]) => !selected.includes(screeningId) && Boolean(entry.fallbackFor?.length))
+      .map(([screeningId]) => screeningId)
+    const validIds = new Set([...selected, ...alternativeIds, ...customEvents.map((event) => event.id)])
     setTimetableDeleteSelection((current) => {
       const next = current.filter((id) => validIds.has(id))
       return next.length === current.length ? current : next
     })
     if (validIds.size === 0) setTimetableSelectionMode(false)
-  }, [selected, customEvents])
+  }, [selected, bookingPlan, customEvents])
 
   const allDates = useMemo(
     () => Array.from(new Set(films.flatMap((film) => film.screenings.map((screening) => screening.date)))).sort(),
@@ -679,6 +691,24 @@ export default function App() {
     setSelected((current) => current.includes(screening.id) ? current : [...current, screening.id])
     setTicketStatus((statuses) => ({ ...statuses, [screening.id]: 'planned' }))
   }, [selectedSet, bookingPlan, removeAlternative, conflictingSelections, conflictingCustomEventsForScreening])
+
+  const removeScheduleScreening = useCallback((screeningId: string) => {
+    const item = allScreeningItems.find(({ screening }) => screening.id === screeningId)
+    if (!item) return
+
+    const isAlternative = !selectedSet.has(screeningId) && Boolean(bookingPlan[screeningId]?.fallbackFor?.length)
+    if (isAlternative) {
+      removeAlternative(screeningId)
+      return
+    }
+
+    const linkedAlternativeCount = Object.values(bookingPlan).filter((entry) => entry.fallbackFor?.includes(screeningId)).length
+    if (linkedAlternativeCount > 0) {
+      const confirmed = window.confirm(`“${item.film.title}” 회차를 삭제하면 연결된 예매 대안 ${linkedAlternativeCount}개도 함께 해제됩니다.\n계속하시겠습니까?`)
+      if (!confirmed) return
+    }
+    toggle(item.film, item.screening)
+  }, [allScreeningItems, bookingPlan, selectedSet, removeAlternative, toggle])
 
   const toggleFavorite = useCallback((filmId: string) => {
     setFavorites((current) => current.includes(filmId) ? current.filter((id) => id !== filmId) : [...current, filmId])
@@ -1067,6 +1097,8 @@ export default function App() {
   const bookingSummaryText = hasBookingPriorities
     ? `1순위 ${priorityCounts[0]} · 2순위 ${priorityCounts[1]} · 3순위 ${priorityCounts[2]} · 완료 ${bookedCount} · 실패 ${failedCount} · 사용자 일정 ${customEvents.length}`
     : `예매 완료 ${bookedCount} · 예정 ${plannedCount} · 실패 ${failedCount} · 사용자 일정 ${customEvents.length}`
+  const alternativeCount = Object.entries(bookingPlan).filter(([screeningId, entry]) => !selectedSet.has(screeningId) && Boolean(entry.fallbackFor?.length)).length
+  const listSummaryText = `실제 일정 ${selected.length + customEvents.length} · 예매 대안 ${alternativeCount}`
   const totalTimetableCount = selected.length + customEvents.length
   const defaultCustomDate = dates[0] ?? allDates[0] ?? todayLocal()
   const dialogCustomEvent = customEventDialog?.eventId ? customEvents.find((event) => event.id === customEventDialog.eventId) ?? null : null
@@ -1278,10 +1310,14 @@ export default function App() {
           />
         ) : !loadError && <div className="empty">조건에 맞는 상영작이 없습니다.</div>}
       </main> : activeTab === 'curator' ? <Suspense fallback={<main className="curator-page curator-loading" aria-busy="true"><div className="empty">AI 도슨트 칼럼을 불러오는 중입니다.</div></main>}><CuratorPage key={curatorPageKey} onOpenFilms={openFilms} onOpenFilm={openFilmFromCurator} /></Suspense> : <main className="timetable-page">
-        {selectedItems.length === 0 && customEvents.length === 0 ? <div className="empty timetable-empty"><strong>아직 시간표에 일정이 없습니다.</strong><span>영화 회차를 고르거나 직접 일정을 추가해 주세요.</span><div className="timetable-empty-actions"><button onClick={openFilms}>영화 찾기</button><button type="button" className="custom-event-add-button" onClick={openCreateCustomEvent}>+ 일정 추가</button></div></div> : <>
+        {selectedItems.length === 0 && customEvents.length === 0 ? <div className="empty timetable-empty"><strong>아직 시간표에 일정이 없습니다.</strong><span>영화 회차를 고르거나 직접 일정을 추가해 주세요.</span><div className="timetable-empty-actions"><div className="timetable-view-switch" role="group" aria-label="시간표 보기 방식"><button type="button" className={timetableView === 'list' ? 'active' : ''} aria-pressed={timetableView === 'list'} onClick={() => setTimetableView('list')}>목록</button><button type="button" className={timetableView === 'grid' ? 'active' : ''} aria-pressed={timetableView === 'grid'} onClick={() => setTimetableView('grid')}>시간표</button></div><button onClick={openFilms}>영화 찾기</button><button type="button" className="custom-event-add-button" onClick={openCreateCustomEvent}>+ 일정 추가</button></div></div> : <>
           <div className="timetable-actions enhanced-timetable-actions">
-            <div><span className="booking-summary">{timetableSelectionMode ? `삭제할 일정 ${timetableDeleteSelection.length}개 선택` : bookingSummaryText}</span></div>
+            <div><span className="booking-summary">{timetableSelectionMode ? `삭제할 일정 ${timetableDeleteSelection.length}개 선택` : timetableView === 'list' ? listSummaryText : bookingSummaryText}</span></div>
             <div className="timetable-action-buttons">
+              <div className="timetable-view-switch" role="group" aria-label="시간표 보기 방식">
+                <button type="button" className={timetableView === 'list' ? 'active' : ''} aria-pressed={timetableView === 'list'} onClick={() => setTimetableView('list')}>목록</button>
+                <button type="button" className={timetableView === 'grid' ? 'active' : ''} aria-pressed={timetableView === 'grid'} onClick={() => setTimetableView('grid')}>시간표</button>
+              </div>
               <button type="button" className="custom-event-add-button" onClick={openCreateCustomEvent}>+ 일정</button>
               <button
                 type="button"
@@ -1298,17 +1334,33 @@ export default function App() {
             </div>
             <input ref={importInputRef} type="file" accept="application/json,.json" className="visually-hidden" onChange={importBackup} />
           </div>
-          <BookingPlanPanel
+          {timetableView === 'list' ? <ScheduleList
             items={allScreeningItems}
             selectedSet={selectedSet}
             nextFallbackIds={nextFallbackSet}
             bookingPlan={bookingPlan}
             ticketStatus={ticketStatus}
-            formatDate={formatDate}
-            onRemoveAlternative={removeAlternative}
+            customEvents={customEvents}
+            selectionMode={timetableSelectionMode}
+            deleteSelection={new Set(timetableDeleteSelection)}
+            onOpenScreening={(film, screening) => { setDetailScreeningId(screening.id); setDetailFilm(film) }}
+            onOpenCustomEvent={(event) => setCustomEventDialog({ mode: 'detail', eventId: event.id })}
+            onRemoveScreening={removeScheduleScreening}
+            onRemoveCustomEvent={deleteCustomEvent}
             onApplyAlternative={prepareApplyFallback}
-          />
-          <div className={`timetable-scroll ${timetableMetrics.dense ? 'dense' : ''} ${timetableMetrics.ultraDense ? 'ultra-dense' : ''} ${timetableSelectionMode ? 'timetable-selection-mode' : ''}`}>
+            onToggleDeleteSelection={toggleTimetableDeleteSelection}
+          /> : <>
+            <BookingPlanPanel
+              items={allScreeningItems}
+              selectedSet={selectedSet}
+              nextFallbackIds={nextFallbackSet}
+              bookingPlan={bookingPlan}
+              ticketStatus={ticketStatus}
+              formatDate={formatDate}
+              onRemoveAlternative={removeAlternative}
+              onApplyAlternative={prepareApplyFallback}
+            />
+            <div className={`timetable-scroll ${timetableMetrics.dense ? 'dense' : ''} ${timetableMetrics.ultraDense ? 'ultra-dense' : ''} ${timetableSelectionMode ? 'timetable-selection-mode' : ''}`}>
             <div className="timetable" style={timetableStyle}>
               <div className="corner" />
               {dates.map((date) => <div className="date-head" key={date} title={formatDate(date)}>{formatDate(date, timetableMetrics.dense)}</div>)}
@@ -1391,7 +1443,8 @@ export default function App() {
                 })}
               </div>)}
             </div>
-          </div>
+            </div>
+          </>}
           {userSettings.showTransferWarnings && <p className="transfer-note">이동시간은 2026 센텀권 상영관의 출발 → 도착 도보시간 + 휴게 {REST_BREAK_MINUTES}분 정밀값을 우선 사용합니다. 같은 정확한 관은 고정 {REST_BREAK_MINUTES}분 · 미등록 같은 시설 {userSettings.sameClusterMinutes}분 · 미등록 다른 시설 {userSettings.differentVenueMinutes}분. 사용자 일정은 현재 시간 충돌만 계산합니다.</p>}
         </>}
       </main>)}

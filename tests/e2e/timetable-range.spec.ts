@@ -38,6 +38,7 @@ test('keeps an ordinary timetable at 08:00–00:00 and extends only when a late 
 
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   const axis = page.locator('.time-axis')
   await expect(axis).toContainText('00시')
   await expect(axis).not.toContainText('01시')

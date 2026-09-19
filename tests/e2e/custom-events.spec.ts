@@ -47,6 +47,7 @@ async function addCustomEvent(page: import('@playwright/test').Page, input: Cust
 test('creates, edits, persists, and deletes a custom-only timetable event', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await addCustomEvent(page)
 
   await expect(page.locator('.selection-count')).toHaveText('총 0개 선택')
@@ -66,6 +67,7 @@ test('creates, edits, persists, and deletes a custom-only timetable event', asyn
 
   await page.reload()
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   const persisted = page.locator('.event-block.custom-event').first()
   await expect(persisted).toContainText('늦은 점심')
 
@@ -79,6 +81,7 @@ test('creates, edits, persists, and deletes a custom-only timetable event', asyn
 test('splits overlapping custom events into lanes and allows cancelling another conflict', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await addCustomEvent(page, { title: '첫 일정', start: '12:00', end: '13:00' })
 
   page.once('dialog', (confirmation) => confirmation.accept())
@@ -106,6 +109,7 @@ test('splits overlapping custom events into lanes and allows cancelling another 
 test('keeps an early-morning custom event on its entered date and expands the axis before 08:00', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await addCustomEvent(page, { title: '아침 식사', date: '2025-09-20', start: '07:00', end: '08:00' })
 
   await expect(page.locator('.date-head')).toContainText('9월 20일')
@@ -124,6 +128,7 @@ test('keeps an early-morning custom event on its entered date and expands the ax
 test('stores an overnight custom event as next-day end and exports the correct ICS dates', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await addCustomEvent(page, { title: '늦은 이동', date: '2025-09-20', start: '23:30', end: '00:30', location: '숙소' })
 
   const block = page.locator('.event-block.custom-event')
@@ -159,6 +164,7 @@ test('marks a movie and custom event when their times overlap and gives both sep
   await page.addInitScript(({ key, id }) => localStorage.setItem(key, JSON.stringify([id])), { key: SELECTED_KEY, id: candidate!.screening.id })
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await page.getByRole('button', { name: '일정 추가' }).click()
 
   const dialog = page.getByRole('dialog')
@@ -181,6 +187,7 @@ test('marks a movie and custom event when their times overlap and gives both sep
 test('restores custom events from a JSON backup', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await addCustomEvent(page, { title: '백업 원본' })
 
   await page.locator('.backup-menu > summary').click()
@@ -210,6 +217,7 @@ test('deletes a movie screening and custom event together in timetable selection
   await page.addInitScript(({ key, id }) => localStorage.setItem(key, JSON.stringify([id])), { key: SELECTED_KEY, id: candidate!.screening.id })
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await addCustomEvent(page, { title: '함께 삭제할 일정', date: candidate!.screening.date })
 
   await page.getByRole('button', { name: '선택', exact: true }).click()
@@ -224,6 +232,7 @@ test('deletes a movie screening and custom event together in timetable selection
 test('includes custom events in JSON backup and calendar export', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await addCustomEvent(page, { title: '백업할 일정' })
 
   await page.locator('.backup-menu > summary').click()
@@ -250,6 +259,7 @@ test('includes custom events in JSON backup and calendar export', async ({ page 
 test('exports a custom-only timetable as a non-empty PNG', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await addCustomEvent(page, { title: 'PNG 일정', start: '07:30', end: '09:00' })
 
   const downloadPromise = page.waitForEvent('download')
@@ -265,6 +275,7 @@ test('keeps the custom event form within a 320px mobile viewport with long conte
   await page.setViewportSize({ width: 320, height: 740 })
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await page.getByRole('button', { name: '+ 일정 추가' }).click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toBeVisible()

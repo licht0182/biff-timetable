@@ -35,6 +35,7 @@ test('header selection total counts only festival screenings and excludes custom
   await expect(headerCount).toHaveText('총 1개 선택')
 
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await addCustomEvent(page, screening!.date)
 
   await expect(page.locator('.booking-summary')).toContainText('사용자 일정 1')

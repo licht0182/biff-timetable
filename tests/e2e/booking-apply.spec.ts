@@ -147,6 +147,7 @@ test('applies the next fallback to the real timetable while preserving failed hi
   await seedFallbackState(page, origin, candidate)
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
 
   const panel = page.locator('.booking-plan-panel')
   await expect(panel).toBeVisible()
@@ -206,6 +207,7 @@ test('blocks fallback application when it now conflicts with a booked screening'
   await seedFallbackState(page, origin, candidate, booked)
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
 
   const panel = page.locator('.booking-plan-panel')
   await panel.locator('summary').click()
@@ -248,6 +250,7 @@ test('activates the third priority only after the applied second priority also f
 
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   const panel = page.locator('.booking-plan-panel')
   await expect(panel.locator('summary')).toContainText('다음 대안 1')
   await panel.locator('summary').click()
@@ -333,6 +336,7 @@ test('runs the complete 1-to-2-to-3 fallback journey through the visible UI', as
   await originRowAgain.locator('.ticket-select').selectOption('failed')
 
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   const panel = page.locator('.booking-plan-panel')
   await expect(panel.locator('summary')).toContainText('다음 대안 1')
   await panel.locator('summary').click()
@@ -378,6 +382,7 @@ test('runs the complete 1-to-2-to-3 fallback journey through the visible UI', as
 
   await page.reload()
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   await expect(page.locator('.selection-count')).toHaveText('총 1개 선택')
   await expect(page.locator('.event-block').filter({ hasText: third.film.title })).toHaveCount(1)
   await expect(page.locator('.event-block').filter({ hasText: second.film.title })).toHaveCount(0)
@@ -409,6 +414,7 @@ test('activates every option in the same next-priority tier', async ({ page, req
 
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   const panel = page.locator('.booking-plan-panel')
   await expect(panel.locator('summary')).toContainText('다음 대안 2')
   await panel.locator('summary').click()
@@ -466,6 +472,7 @@ test('detaches failed fallback history without leaving dangling references', asy
 
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
   const panel = page.locator('.booking-plan-panel')
   await panel.locator('summary').click()
 
