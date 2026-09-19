@@ -86,6 +86,7 @@ test('keeps mobile navigation and a compact filter entry point available while s
   await page.setViewportSize({ width: 393, height: 852 })
   await page.goto('./')
   await expect(page.locator('.film-card').first()).toBeVisible()
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight)).toBeGreaterThanOrEqual(900)
 
   await page.evaluate(() => window.scrollTo(0, 900))
   await expect.poll(() => page.locator('.tabs').evaluate((element) => Math.round(element.getBoundingClientRect().top))).toBe(0)
