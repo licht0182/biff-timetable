@@ -8,6 +8,7 @@ import BookingConflictDialog from './components/BookingConflictDialog'
 import BookingFallbackApplyDialog from './components/BookingFallbackApplyDialog'
 import ScheduleList from './components/ScheduleList'
 import LiquidTabBar from './components/LiquidTabBar'
+import LiquidGlassEffects from './components/LiquidGlassEffects'
 import PwaUpdatePrompt from './components/PwaUpdatePrompt'
 import { BOOKING_PRIORITIES, MAX_BOOKING_PRIORITY, type BookingPlanMap, type BookingPriority, type Film, type Screening, type TicketStatus, type TicketStatusMap } from './components/film-types'
 import { createCustomEventId, customEventAbsoluteWindow, customEventCategoryLabel, customEventPaletteIndex, customEventTimetableDate, customEventTimetableEndMinutes, customEventTimetableStartMinutes, normalizeCustomEvents, windowsOverlap, type CustomEvent, type CustomEventDraft } from './custom-events'
@@ -1550,6 +1551,7 @@ export default function App() {
         onOpenCurator={openCurator}
         onOpenSettings={openSettings}
       />}
+      <LiquidGlassEffects />
       <PwaUpdatePrompt />
     </div>
   )

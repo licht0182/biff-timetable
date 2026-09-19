@@ -20,6 +20,28 @@ test('uses an accessible floating tab bar for primary mobile navigation', async 
   await expect(page.locator('.settings-intro').getByRole('heading', { name: '설정' })).toBeVisible()
 })
 
+test('progressively enhances only navigation and overlay surfaces with SVG refraction', async ({ page, browserName }) => {
+  const topbar = page.locator('.topbar')
+  const tabBarSurface = page.locator('.liquid-tab-bar-surface')
+
+  if (browserName === 'chromium') {
+    await expect(topbar).toHaveAttribute('data-liquid-glass', 'navigation')
+    await expect(tabBarSurface).toHaveAttribute('data-liquid-glass', 'navigation')
+    await expect.poll(() => page.locator('.liquid-glass-filter-defs filter').count()).toBeGreaterThanOrEqual(3)
+    await expect.poll(() => topbar.evaluate((element) => getComputedStyle(element).backdropFilter)).toContain('url(')
+    await expect(page.locator('.film-card').first()).not.toHaveAttribute('data-liquid-glass', /.+/)
+
+    await page.getByRole('button', { name: '상세', exact: true }).first().click()
+    await expect(page.locator('.film-modal')).toHaveAttribute('data-liquid-glass', 'modal')
+    await expect.poll(() => page.locator('.film-modal').evaluate((element) => getComputedStyle(element).backdropFilter)).toContain('url(')
+  } else {
+    await expect(topbar).not.toHaveAttribute('data-liquid-glass', /.+/)
+    await expect(tabBarSurface).not.toHaveAttribute('data-liquid-glass', /.+/)
+    await expect(page.locator('.liquid-glass-filter-defs')).toHaveCount(0)
+    await expect.poll(() => tabBarSurface.evaluate((element) => getComputedStyle(element).backdropFilter)).toContain('blur(')
+  }
+})
+
 test('presents advanced filters as a dismissible bottom sheet', async ({ page }) => {
   await page.getByRole('button', { name: /날짜·상영관·시간대/ }).click()
   const sheet = page.locator('#film-advanced-filters')
