@@ -1190,7 +1190,7 @@ export default function App() {
   }, [activeTab, filmViewActive])
 
   return (
-    <div className={`app-shell ${activeTab === 'timetable' ? 'timetable-mode' : ''}`}>
+    <div className={`app-shell ${activeTab === 'timetable' ? `timetable-mode timetable-${timetableView}-mode` : ''}`}>
       <header className="topbar">
         <div><p className="eyebrow">BUSAN INTERNATIONAL FILM FESTIVAL</p><h1>BIFF Timetable</h1><p className="subtitle">상영작을 고르고 나만의 영화제 시간표를 만드세요.</p></div>
         <div className="selection-count">총 {totalTimetableCount}개 선택</div>

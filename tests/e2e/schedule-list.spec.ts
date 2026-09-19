@@ -70,6 +70,47 @@ test('uses the chronological list by default and persists the view switch', asyn
   await expect(page.locator('.schedule-list')).toBeVisible()
 })
 
+test('shows one selected date at a time and keeps the mobile list scrollable', async ({ page, request }) => {
+  const all = await items(request)
+  const dateCounts = new Map<string, number>()
+  all.forEach(({ screening }) => dateCounts.set(screening.date, (dateCounts.get(screening.date) ?? 0) + 1))
+  const firstDate = [...dateCounts.entries()].filter(([, count]) => count >= 8).sort(([a], [b]) => a.localeCompare(b))[0][0]
+  const firstDayItems = all.filter(({ screening }) => screening.date === firstDate).slice(0, 16)
+  const secondDayItem = all.find(({ screening }) => screening.date > firstDate)
+  test.skip(!secondDayItem || firstDayItems.length < 8, '두 날짜와 충분한 첫날 상영 회차가 없습니다.')
+  const selectedIds = [...firstDayItems.map(({ screening }) => screening.id), secondDayItem!.screening.id]
+  await page.addInitScript(({ key, ids }) => localStorage.setItem(key, JSON.stringify(ids)), { key: SELECTED_KEY, ids: selectedIds })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('./')
+  await openTimetable(page)
+
+  const tabs = page.getByRole('tab')
+  const visibleDay = page.locator('.schedule-list-day')
+  await expect(tabs).toHaveCount(2)
+  await expect(visibleDay).toHaveCount(1)
+  await expect(visibleDay.locator(`[data-screening-id="${firstDayItems[0].screening.id}"]`)).toBeVisible()
+  await expect(visibleDay.locator(`[data-screening-id="${secondDayItem!.screening.id}"]`)).toHaveCount(0)
+
+  const scrollState = await page.evaluate(() => ({
+    bodyLocked: document.body.classList.contains('timetable-viewport-locked'),
+    htmlLocked: document.documentElement.classList.contains('timetable-viewport-locked'),
+    bodyOverflow: getComputedStyle(document.body).overflow,
+    shellOverflow: getComputedStyle(document.querySelector<HTMLElement>('.app-shell')!).overflow,
+    scrollRange: document.documentElement.scrollHeight - window.innerHeight,
+  }))
+  expect(scrollState).toMatchObject({ bodyLocked: false, htmlLocked: false })
+  expect(scrollState.bodyOverflow).not.toBe('hidden')
+  expect(scrollState.shellOverflow).not.toBe('hidden')
+  expect(scrollState.scrollRange).toBeGreaterThan(100)
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+
+  await tabs.nth(1).click()
+  await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true')
+  await expect(visibleDay.locator(`[data-screening-id="${firstDayItems[0].screening.id}"]`)).toHaveCount(0)
+  await expect(visibleDay.locator(`[data-screening-id="${secondDayItem!.screening.id}"]`)).toBeVisible()
+})
+
 test('groups overlapping priorities and removes only the selected alternative', async ({ page, request }) => {
   const triple = overlappingTriple(await items(request))
   test.skip(!triple, '서로 겹치는 세 영화 회차가 없습니다.')
@@ -92,7 +133,7 @@ test('groups overlapping priorities and removes only the selected alternative', 
   await openTimetable(page)
 
   const group = page.locator('.schedule-screening-group.has-conflict')
-  await expect(group.getByRole('heading')).toHaveText('시간 겹침 · 3편')
+  await expect(group.getByRole('heading')).toContainText('같은 시간대에 3개 일정')
   await expect(group.locator('.schedule-list-row')).toHaveCount(3)
   await expect(group.locator('.priority-1')).toHaveCount(1)
   await expect(group.locator('.priority-2')).toHaveCount(1)

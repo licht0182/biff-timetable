@@ -118,7 +118,7 @@ function activateViewportLock(shell: HTMLElement, scroll: HTMLElement) {
 }
 
 function applyStability() {
-  const shell = document.querySelector<HTMLElement>('.app-shell.timetable-mode')
+  const shell = document.querySelector<HTMLElement>('.app-shell.timetable-grid-mode')
   const scroll = shell?.querySelector<HTMLElement>('.timetable-page .timetable-scroll') ?? null
 
   if (!shell || !scroll) {
