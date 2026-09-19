@@ -7,6 +7,8 @@ import BookingStatusSelect from './components/BookingStatusSelect'
 import BookingConflictDialog from './components/BookingConflictDialog'
 import BookingFallbackApplyDialog from './components/BookingFallbackApplyDialog'
 import ScheduleList from './components/ScheduleList'
+import LiquidTabBar from './components/LiquidTabBar'
+import PwaUpdatePrompt from './components/PwaUpdatePrompt'
 import { BOOKING_PRIORITIES, MAX_BOOKING_PRIORITY, type BookingPlanMap, type BookingPriority, type Film, type Screening, type TicketStatus, type TicketStatusMap } from './components/film-types'
 import { createCustomEventId, customEventAbsoluteWindow, customEventCategoryLabel, customEventPaletteIndex, customEventTimetableDate, customEventTimetableEndMinutes, customEventTimetableStartMinutes, normalizeCustomEvents, windowsOverlap, type CustomEvent, type CustomEventDraft } from './custom-events'
 import { REST_BREAK_MINUTES, VENUE_TRANSFER_SITES, getVenueSiteTransferMinutes } from './venue-travel'
@@ -249,6 +251,7 @@ export default function App() {
   const importInputRef = useRef<HTMLInputElement>(null)
   const filmScrollPositionRef = useRef(0)
   const filmControlsRef = useRef<HTMLElement>(null)
+  const filterSheetRef = useRef<HTMLDivElement>(null)
   const [films, setFilms] = useState<Film[]>([])
   const [dataNote, setDataNote] = useState('')
   const [dataSource, setDataSource] = useState('')
@@ -285,6 +288,24 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(initialNavigation.settingsOpen)
   const [userSettings, setUserSettings] = useState<UserTimetableSettings>(() => normalizeUserSettings(readStorageValue(USER_SETTINGS_KEY)))
   const [timetableView, setTimetableView] = useState<TimetableViewMode>(() => normalizeTimetableView(readStorageValue(TIMETABLE_VIEW_KEY)))
+
+  useEffect(() => {
+    document.body.classList.toggle('filter-sheet-open', mobileFiltersOpen)
+    const focusTimeout = mobileFiltersOpen
+      ? window.setTimeout(() => filterSheetRef.current?.focus(), 80)
+      : undefined
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileFiltersOpen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.classList.remove('filter-sheet-open')
+      window.removeEventListener('keydown', handleKeyDown)
+      if (focusTimeout) window.clearTimeout(focusTimeout)
+    }
+  }, [mobileFiltersOpen])
+
+  useEffect(() => setMobileFiltersOpen(false), [activeTab, settingsOpen])
   const [timetableSelectionMode, setTimetableSelectionMode] = useState(false)
   const [timetableDeleteSelection, setTimetableDeleteSelection] = useState<string[]>([])
   const timeRangeDraftChanged = draftStartTime !== startTimeFilter || draftEndTime !== endTimeFilter
@@ -1112,8 +1133,6 @@ export default function App() {
   const retryFilmData = useCallback(() => setDataReloadKey((current) => current + 1), [])
   const focusFilmFilters = useCallback(() => {
     setMobileFiltersOpen(true)
-    filmControlsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    window.setTimeout(() => filmControlsRef.current?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true }), 350)
   }, [])
 
   const openFilms = useCallback(() => {
@@ -1192,7 +1211,7 @@ export default function App() {
   }, [activeTab, filmViewActive])
 
   return (
-    <div className={`app-shell ${activeTab === 'timetable' ? `timetable-mode timetable-${timetableView}-mode` : ''}`}>
+    <div className={`app-shell has-liquid-navigation ${activeTab === 'timetable' ? `timetable-mode timetable-${timetableView}-mode` : ''}`}>
       <header className="topbar">
         <div><p className="eyebrow">BUSAN INTERNATIONAL FILM FESTIVAL</p><h1>BIFF Timetable</h1><p className="subtitle">상영작을 고르고 나만의 영화제 시간표를 만드세요.</p></div>
         <div className="selection-count">총 {totalTimetableCount}개 선택</div>
@@ -1263,7 +1282,9 @@ export default function App() {
             <span>날짜·상영관·시간대</span>
             <strong>{activeFilterCount > 0 ? `${activeFilterCount}개 적용` : mobileFiltersOpen ? '접기' : '상세 필터'}</strong>
           </button>
-          <div id="film-advanced-filters" className={`filter-row ${mobileFiltersOpen ? 'mobile-open' : ''}`}>
+          {mobileFiltersOpen && <button type="button" className="filter-sheet-backdrop" aria-label="상세 필터 닫기" onClick={() => setMobileFiltersOpen(false)} />}
+          <div ref={filterSheetRef} id="film-advanced-filters" className={`filter-row ${mobileFiltersOpen ? 'mobile-open' : ''}`} aria-labelledby="filter-sheet-title" tabIndex={mobileFiltersOpen ? -1 : undefined}>
+            <div className="filter-sheet-head"><span aria-hidden="true" /><strong id="filter-sheet-title">상세 필터</strong><button type="button" onClick={() => setMobileFiltersOpen(false)} aria-label="상세 필터 닫기">완료</button></div>
             <label><span>날짜</span><select value={dateFilter} onChange={(event) => setDateFilter(event.target.value)}><option value="전체">전체 날짜</option>{allDates.map((date) => <option key={date} value={date}>{formatDate(date)}</option>)}</select></label>
             <label><span>상영관</span><select value={venueFilter} onChange={(event) => setVenueFilter(event.target.value)}><option value="전체">전체 상영관</option>{allVenues.map((venue) => <option key={venue} value={venue}>{venue}</option>)}</select></label>
             <div className="time-range-filter">
@@ -1521,6 +1542,15 @@ export default function App() {
         onDelete={deleteCustomEvent}
         onSave={saveCustomEvent}
       />}
+      {!detailFilm && !bookingConflictDialog && !fallbackApplyDialog && !customEventDialog && <LiquidTabBar
+        activeTab={settingsOpen ? 'settings' : activeTab}
+        timetableCount={totalTimetableCount}
+        onOpenFilms={openFilmsFromMenu}
+        onOpenTimetable={openTimetable}
+        onOpenCurator={openCurator}
+        onOpenSettings={openSettings}
+      />}
+      <PwaUpdatePrompt />
     </div>
   )
 }

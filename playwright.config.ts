@@ -11,12 +11,13 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:4173/biff-timetable/',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    serviceWorkers: 'block',
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     {
       name: 'webkit-iphone',
-      testMatch: /(?:custom-event-mobile-width|timetable-viewport-stability|timetable-more-menu|screening-selection-count|screening-vertical-alignment|reliability-accessibility|schedule-list)\.spec\.ts/,
+      testMatch: /(?:custom-event-mobile-width|timetable-viewport-stability|timetable-more-menu|screening-selection-count|screening-vertical-alignment|reliability-accessibility|schedule-list|liquid-glass)\.spec\.ts/,
       use: { ...devices['iPhone 13'] },
     },
   ],

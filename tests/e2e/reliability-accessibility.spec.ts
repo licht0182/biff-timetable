@@ -89,11 +89,14 @@ test('keeps mobile navigation and a compact filter entry point available while s
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight)).toBeGreaterThanOrEqual(900)
 
   await page.evaluate(() => window.scrollTo(0, 900))
-  await expect.poll(() => page.locator('.tabs').evaluate((element) => Math.round(element.getBoundingClientRect().top))).toBe(0)
+  await expect(page.locator('.liquid-tab-bar')).toBeInViewport()
+  await expect.poll(() => page.locator('.liquid-tab-bar-surface').evaluate((element) => Math.round(window.innerHeight - element.getBoundingClientRect().bottom))).toBeGreaterThanOrEqual(8)
   await expect(page.getByRole('button', { name: '검색·필터' })).toBeInViewport()
 
   await page.getByRole('button', { name: '검색·필터' }).click()
-  await expect(page.getByRole('combobox', { name: '영화 검색' })).toBeFocused()
+  await expect(page.locator('#film-advanced-filters')).toBeVisible()
+  await expect(page.locator('#film-advanced-filters')).toHaveAttribute('tabindex', '-1')
+  await expect(page.getByRole('button', { name: '상세 필터 닫기' }).last()).toBeVisible()
 })
 
 test('labels AI docent content as prewritten editorial content', async ({ page }) => {

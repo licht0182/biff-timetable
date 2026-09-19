@@ -30,6 +30,7 @@ import './timetable-runtime-layout'
 import './timetable-viewport-stability'
 import './timetable-more-menu'
 import './screening-selection-count'
+import './liquid-glass.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

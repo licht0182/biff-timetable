@@ -1,0 +1,148 @@
+:root{
+  color-scheme:light dark;
+  --ios-tint:#0a84ff;
+  --ios-brand:#d92d20;
+  --ios-green:#28a745;
+  --ios-orange:#f59e0b;
+  --ios-red:#ff3b30;
+  --ios-bg:#f2f2f7;
+  --ios-bg-elevated:rgba(255,255,255,.84);
+  --ios-surface:#fff;
+  --ios-surface-soft:#f8f8fa;
+  --ios-label:#111114;
+  --ios-secondary:#65656b;
+  --ios-separator:rgba(60,60,67,.16);
+  --ios-glass:rgba(248,248,252,.7);
+  --ios-glass-strong:rgba(255,255,255,.86);
+  --ios-glass-border:rgba(255,255,255,.72);
+  --ios-shadow:0 12px 36px rgba(24,24,28,.1),0 1px 2px rgba(24,24,28,.08);
+  --ios-radius:22px;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  color:var(--ios-label);
+  background:var(--ios-bg);
+}
+
+html{min-height:100%;background:var(--ios-bg);scroll-padding-top:92px}
+body{min-height:100%;background:transparent;color:var(--ios-label);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(circle at 15% -10%,rgba(10,132,255,.13),transparent 34rem),radial-gradient(circle at 95% 12%,rgba(175,82,222,.08),transparent 30rem),var(--ios-bg)}
+button,input,select,textarea{font:inherit}
+button{-webkit-tap-highlight-color:transparent}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid color-mix(in srgb,var(--ios-tint) 54%,transparent);outline-offset:2px}
+
+.app-shell{max-width:1180px;padding:22px 24px 54px}
+.topbar{position:relative;overflow:hidden;border:1px solid var(--ios-glass-border);border-bottom:0;border-radius:26px 26px 0 0;background:var(--ios-glass);box-shadow:var(--ios-shadow);padding:22px 26px;color:var(--ios-label);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
+.topbar::after,.tabs::after,.liquid-tab-bar-surface::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(135deg,rgba(255,255,255,.48),transparent 38%,rgba(255,255,255,.08));mix-blend-mode:soft-light}
+.topbar h1{letter-spacing:-.045em}
+.eyebrow{color:var(--ios-secondary);letter-spacing:.12em}
+.subtitle{color:var(--ios-secondary)}
+.selection-count{position:relative;z-index:1;min-height:38px;display:flex;align-items:center;border-color:color-mix(in srgb,var(--ios-tint) 30%,transparent);border-radius:999px;background:color-mix(in srgb,var(--ios-tint) 9%,transparent);color:var(--ios-tint)}
+
+.tabs{position:sticky;top:10px;z-index:60;border:1px solid var(--ios-glass-border);border-top-color:var(--ios-separator);border-radius:0 0 26px 26px;background:var(--ios-glass);box-shadow:0 14px 30px rgba(20,20,24,.08);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
+.tabs button{position:relative;z-index:1;min-height:46px;border-radius:999px;color:var(--ios-secondary);transition:background .22s ease,color .22s ease,transform .22s ease}
+.tabs button:hover{background:rgba(127,127,127,.08)}
+.tabs button.active{background:color-mix(in srgb,var(--ios-tint) 13%,transparent);color:var(--ios-tint)}
+.tabs button.active::after{display:none!important}
+
+.notice,.controls,.film-results-toolbar,.timetable-actions,.settings-card,.settings-reset-card,.curator-hero,.curator-featured,.curator-latest,.curator-method{border-color:var(--ios-glass-border);border-radius:var(--ios-radius);background:var(--ios-bg-elevated);box-shadow:0 5px 22px rgba(30,30,35,.055)}
+.controls{padding:16px;backdrop-filter:blur(20px) saturate(145%);-webkit-backdrop-filter:blur(20px) saturate(145%)}
+.controls input,.controls select,.custom-event-form input,.custom-event-form textarea{border-color:var(--ios-separator);border-radius:14px;background:var(--ios-surface-soft);color:var(--ios-label)}
+.controls input::placeholder{color:var(--ios-secondary)}
+.filter-toggle,.filter-reset,.chips button,.time-range-action,.mobile-advanced-filter-toggle,.mobile-filter-jump,.timetable-view-switch button,.timetable-action-buttons>button,.custom-event-add-button,.png-export-trigger{min-height:40px;border-color:var(--ios-separator);border-radius:999px;background:var(--ios-glass-strong);color:var(--ios-label);box-shadow:0 1px 2px rgba(30,30,35,.04)}
+.filter-toggle.active,.chips button.active,.timetable-view-switch button.active{border-color:transparent;background:var(--ios-tint);color:#fff}
+.chips{gap:8px;padding:3px 0 1px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.film-results-toolbar{min-height:52px;padding:10px 16px}
+
+.film-card,.schedule-screening-group,.booking-plan-panel,.timetable-scroll,.timetable-empty{border-color:var(--ios-separator);border-radius:var(--ios-radius);background:var(--ios-surface);box-shadow:0 4px 18px rgba(30,30,35,.055)}
+.film-card{overflow:hidden;transition:transform .2s ease,box-shadow .2s ease}
+.film-card:hover{transform:translateY(-1px);box-shadow:0 9px 26px rgba(30,30,35,.09)}
+.film-card h2{letter-spacing:-.035em}
+.section-label{border-radius:999px;background:color-mix(in srgb,var(--ios-brand) 9%,var(--ios-surface));color:var(--ios-brand)}
+.film-card button,.screening-actions button,.modal-screening-actions button{border-radius:12px}
+.screening-actions button:not(.selected),.modal-screening-actions button:not(.selected){color:var(--ios-tint)}
+.screening-actions button.selected,.modal-screening-actions button.selected{background:var(--ios-tint);border-color:var(--ios-tint);color:#fff}
+
+.enhanced-timetable-actions{position:sticky;top:74px;z-index:45;background:var(--ios-glass-strong);backdrop-filter:blur(24px) saturate(175%);-webkit-backdrop-filter:blur(24px) saturate(175%)}
+.timetable-delete-button{background:var(--ios-red)!important;color:#fff!important}
+.toast{bottom:calc(24px + env(safe-area-inset-bottom));border:1px solid var(--ios-glass-border);border-radius:999px;background:rgba(28,28,30,.86);box-shadow:var(--ios-shadow);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+
+.modal-backdrop,.booking-conflict-backdrop,.booking-apply-backdrop,.custom-event-backdrop{background:rgba(12,12,14,.32);backdrop-filter:blur(12px) saturate(125%);-webkit-backdrop-filter:blur(12px) saturate(125%)}
+.film-modal,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal{border:1px solid var(--ios-glass-border);border-radius:30px;background:var(--ios-bg-elevated);box-shadow:0 28px 70px rgba(0,0,0,.24);color:var(--ios-label);backdrop-filter:blur(32px) saturate(175%);-webkit-backdrop-filter:blur(32px) saturate(175%)}
+.timetable-viewport-stable .timetable-scroll{border:0;box-shadow:inset 0 0 0 1px var(--ios-separator),0 4px 18px rgba(30,30,35,.055)}
+.modal-close{width:38px;height:38px;border:0;border-radius:50%;background:rgba(127,127,127,.14);color:var(--ios-secondary)}
+
+.liquid-tab-bar{display:none}
+.filter-sheet-backdrop,.filter-sheet-head{display:none}
+
+.pwa-update-toast{position:fixed;right:22px;bottom:22px;z-index:12000;display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px;width:min(430px,calc(100vw - 32px));padding:14px 14px 14px 18px;border:1px solid var(--ios-glass-border);border-radius:22px;background:var(--ios-glass-strong);box-shadow:var(--ios-shadow);color:var(--ios-label);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
+.pwa-update-toast>div{display:grid;gap:3px}.pwa-update-toast strong{font-size:14px}.pwa-update-toast span{color:var(--ios-secondary);font-size:11px;line-height:1.4}
+.pwa-update-toast button{min-height:38px;border:0;border-radius:999px;padding:0 15px;background:var(--ios-tint);color:#fff;font-weight:800}.pwa-update-toast .pwa-update-close{width:38px;padding:0;background:rgba(127,127,127,.13);color:var(--ios-secondary);font-size:22px}
+
+@media(max-width:700px){
+  html{scroll-padding-top:12px}
+  body{background:var(--ios-bg)}
+  body.filter-sheet-open{overflow:hidden}
+  .app-shell,.timetable-mode{padding:0 10px calc(108px + env(safe-area-inset-bottom))}
+  .topbar,.timetable-mode .topbar{margin:0 -10px;padding:calc(15px + env(safe-area-inset-top)) 16px 14px;border:0;border-radius:0;background:linear-gradient(180deg,var(--ios-bg-elevated),color-mix(in srgb,var(--ios-bg-elevated) 75%,transparent));box-shadow:none;backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%)}
+  .topbar::after{display:none}
+  .topbar>div:first-child,.timetable-mode .topbar>div:first-child{padding-left:42px}
+  .topbar>div:first-child::before{border-radius:12px;background:var(--ios-brand);box-shadow:0 5px 14px rgba(217,45,32,.22)}
+  .topbar h1,.timetable-mode .topbar h1{font-size:21px}
+  .eyebrow{display:none!important}
+  .subtitle{max-width:220px;margin-top:3px;font-size:11px;line-height:1.35}
+  .selection-count{min-height:34px;padding:0 11px;font-size:10px}
+  .tabs{display:none!important}
+  .notice{margin-top:10px;border-radius:16px}
+
+  .liquid-tab-bar{position:fixed;left:0;right:0;bottom:0;z-index:1000;display:flex;justify-content:center;padding:8px 10px calc(8px + env(safe-area-inset-bottom));pointer-events:none}
+  .liquid-tab-bar-surface{position:relative;display:grid;grid-template-columns:repeat(4,1fr);width:min(100%,460px);min-height:68px;padding:5px;border:1px solid var(--ios-glass-border);border-radius:26px;background:var(--ios-glass);box-shadow:0 14px 40px rgba(15,15,20,.2);pointer-events:auto;overflow:hidden;backdrop-filter:blur(30px) saturate(190%);-webkit-backdrop-filter:blur(30px) saturate(190%)}
+  .liquid-tab-bar button{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:56px;border:0;border-radius:20px;background:transparent;color:var(--ios-secondary);font-size:9px;font-weight:700;transition:background .2s ease,color .2s ease,transform .2s ease}
+  .liquid-tab-bar button:active{transform:scale(.94)}
+  .liquid-tab-bar button.active{background:color-mix(in srgb,var(--ios-tint) 14%,transparent);color:var(--ios-tint)}
+  .liquid-tab-icon{position:relative;display:grid;place-items:center;width:25px;height:25px}
+  .liquid-tab-icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .liquid-tab-icon b{position:absolute;top:-5px;right:-12px;min-width:17px;height:17px;padding:0 4px;border:2px solid var(--ios-glass-strong);border-radius:999px;background:var(--ios-red);color:#fff;font-size:8px;line-height:13px;text-align:center}
+
+  .controls{margin-top:10px;padding:10px;border-radius:20px;background:var(--ios-bg-elevated);backdrop-filter:none;-webkit-backdrop-filter:none}
+  .film-search-autocomplete input{min-height:50px!important;border:0!important;border-radius:16px!important;padding-left:42px!important;background:rgba(127,127,127,.1)!important;font-size:16px!important}
+  .mobile-advanced-filter-toggle{min-height:46px!important;border:0!important;border-radius:15px!important;background:rgba(127,127,127,.09)!important}
+  .filter-sheet-backdrop{position:fixed;inset:0;z-index:1090;display:block;width:100%;height:100%;border:0;border-radius:0;background:rgba(5,5,8,.34);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  #film-advanced-filters.filter-row{position:fixed;left:0;right:0;bottom:0;z-index:1100;display:grid!important;grid-template-columns:1fr 1fr;gap:12px;max-height:min(78dvh,660px);margin:0;padding:12px 16px calc(20px + env(safe-area-inset-bottom));border:1px solid var(--ios-glass-border);border-radius:30px 30px 0 0;background:var(--ios-glass-strong);box-shadow:0 -24px 60px rgba(0,0,0,.2);overflow:auto;transform:translateY(105%);visibility:hidden;transition:transform .28s cubic-bezier(.22,.75,.2,1),visibility .28s;backdrop-filter:blur(32px) saturate(180%);-webkit-backdrop-filter:blur(32px) saturate(180%)}
+  #film-advanced-filters.filter-row.mobile-open{transform:translateY(0);visibility:visible}
+  .filter-sheet-head{grid-column:1/-1;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;min-height:38px;text-align:center}
+  .filter-sheet-head>span{justify-self:center;width:36px;height:5px;border-radius:999px;background:rgba(127,127,127,.3)}
+  .filter-sheet-head strong{font-size:17px;letter-spacing:-.03em}
+  .filter-sheet-head button{border:0;background:transparent;color:var(--ios-tint);font-size:14px;font-weight:800}
+  #film-advanced-filters>label{min-width:0}#film-advanced-filters>label select{width:100%;min-height:48px}
+  #film-advanced-filters .time-range-filter{grid-column:1/-1}
+  #film-advanced-filters .filter-toggle,#film-advanced-filters .filter-reset{min-height:46px}
+  .chips{margin:2px -2px 0;padding:6px 2px}.chips button{min-height:38px;padding:0 14px}
+  .film-results-toolbar{position:sticky;top:8px;z-index:40;border-radius:18px;background:var(--ios-glass);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%)}
+  .mobile-filter-jump{min-height:38px!important;color:var(--ios-tint)!important}
+  .film-list-item{padding-bottom:9px}
+  .film-card{border-radius:20px}
+  .film-card:hover{transform:none}
+
+  .enhanced-timetable-actions{top:8px;border-radius:20px}
+  .timetable-action-buttons{gap:7px}
+  .timetable-action-buttons button,.timetable-action-buttons summary{min-height:40px;border-radius:999px}
+  .modal-backdrop,.booking-conflict-backdrop,.booking-apply-backdrop,.custom-event-backdrop{align-items:flex-end!important;padding:0!important}
+  .film-modal,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal{width:100%!important;max-width:none!important;max-height:92dvh!important;margin:0!important;border-radius:30px 30px 0 0!important;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+  .film-modal::before,.booking-conflict-dialog::before,.booking-apply-dialog::before,.custom-event-dialog::before,.custom-event-modal::before{content:"";display:block;width:38px;height:5px;margin:9px auto 3px;border-radius:999px;background:rgba(127,127,127,.3)}
+  .toast{bottom:calc(94px + env(safe-area-inset-bottom));max-width:calc(100vw - 30px)}
+  .pwa-update-toast{right:10px;bottom:calc(92px + env(safe-area-inset-bottom));grid-template-columns:minmax(0,1fr) auto;width:calc(100vw - 20px);border-radius:22px}.pwa-update-toast .pwa-update-close{position:absolute;top:7px;right:7px;width:30px;height:30px;min-height:30px}.pwa-update-toast>div{padding-right:25px}
+}
+
+@media(min-width:701px) and (max-width:900px){.app-shell{padding-inline:18px}.tabs{top:8px}.topbar{border-radius:24px 24px 0 0}}
+
+@media(prefers-color-scheme:dark){
+  :root{--ios-bg:#000;--ios-bg-elevated:rgba(34,34,38,.86);--ios-surface:#1c1c1e;--ios-surface-soft:#2c2c2e;--ios-label:#f5f5f7;--ios-secondary:#aeaeb2;--ios-separator:rgba(235,235,245,.16);--ios-glass:rgba(35,35,39,.7);--ios-glass-strong:rgba(40,40,44,.88);--ios-glass-border:rgba(255,255,255,.14);--ios-shadow:0 14px 38px rgba(0,0,0,.4),0 1px 1px rgba(255,255,255,.05)}
+  body::before{background:radial-gradient(circle at 15% -10%,rgba(10,132,255,.2),transparent 34rem),radial-gradient(circle at 95% 12%,rgba(191,90,242,.12),transparent 30rem),var(--ios-bg)}
+  .topbar::after,.tabs::after,.liquid-tab-bar-surface::after{opacity:.35}
+  .film-card,.schedule-screening-group,.booking-plan-panel,.timetable-scroll,.timetable-empty{box-shadow:0 4px 18px rgba(0,0,0,.28)}
+  a{color:#64aaff}
+}
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.film-card:hover{transform:none}}
+@media(prefers-reduced-transparency:reduce){.topbar,.tabs,.liquid-tab-bar-surface,.controls,.enhanced-timetable-actions,.film-results-toolbar,.film-modal,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal,.pwa-update-toast{background:var(--ios-surface)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.topbar,.tabs,.liquid-tab-bar-surface,.controls,.enhanced-timetable-actions,.film-results-toolbar,.film-modal,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal,.pwa-update-toast{background:var(--ios-surface)!important}}
