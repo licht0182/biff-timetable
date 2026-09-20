@@ -536,6 +536,40 @@ select option{background:#f3f4f6;color:#111827}
   border-color:transparent!important;
   box-shadow:0 1px 3px rgba(15,23,42,.1)!important;
 }
+:root :is(
+  .film-search-autocomplete,
+  .mobile-advanced-filter-toggle,
+  .mobile-filter-jump,
+  .chips button,
+  .filter-toggle,
+  .filter-reset,
+  .time-range-action,
+  .favorite-button,
+  .detail-button,
+  .screening-row button,
+  .modal-screenings button,
+  .timetable-view-switch button,
+  .timetable-action-buttons>button,
+  .timetable-action-buttons summary,
+  .custom-event-add-button,
+  .png-export-trigger,
+  .custom-event-form-actions button,
+  .booking-plan-item-actions button,
+  .booking-conflict-actions button,
+  .booking-apply-actions button,
+  .settings-reset-button,
+  .modal-close,
+  .png-ios-actions button,
+  .schedule-list-remove,
+  .curator-filter-chips button,
+  .curator-top-button,
+  .curator-film-search-button,
+  .schedule-date-tab,
+  .data-cache-notice button,
+  .data-load-notice button
+){
+  border-color:transparent!important;
+}
 .film-search-autocomplete{
   border-radius:14px;
 }
