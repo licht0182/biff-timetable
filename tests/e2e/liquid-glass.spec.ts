@@ -77,7 +77,7 @@ test('keeps the browser dock outside Safari toolbar tint sampling', async ({ pag
     expect(metrics.navScrollRange).toBeGreaterThan(0)
     expect(metrics.surfaceBackdrop).toBe('none')
     expect(metrics.surfaceFilter).toBe('none')
-    expect(metrics.refractionDisplay).toBe('none')
+    expect(metrics.refractionDisplay).toBeUndefined()
     expect(metrics.surfaceHighlightDisplay).toBe('none')
   } else {
     expect(metrics.navPosition).toBe('fixed')
@@ -112,30 +112,33 @@ test('keeps SVG refraction on stable glass while content avoids ghost-prone filt
   await expect(topbar).toHaveAttribute('data-liquid-glass', 'navigation')
   await expect(tabBarSurface).toHaveAttribute('data-liquid-glass', 'navigation')
   await expect(firstFilmCard).toHaveAttribute('data-liquid-glass', 'content')
-  await expect.poll(() => page.locator('.liquid-glass-filter-defs filter').count()).toBeGreaterThanOrEqual(3)
-  await expect(topbar.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(1)
-  await expect(tabBarSurface.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(1)
   await expect(firstFilmCard.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(0)
   await expect(firstFilmCard).not.toHaveClass(/liquid-glass-backdrop-refraction/)
 
-  const layerCompositing = await topbar.locator(':scope > .liquid-glass-refraction-layer').evaluate((element) => {
-    const style = getComputedStyle(element)
-    return { mixBlendMode: style.mixBlendMode, willChange: style.willChange, filter: style.filter }
-  })
-  expect(layerCompositing.mixBlendMode).toBe('normal')
-  expect(layerCompositing.willChange).not.toContain('filter')
-  expect(layerCompositing.filter).toContain('url(')
-
-  if (browserName === 'chromium') {
-    await expect.poll(() => topbar.evaluate((element) => getComputedStyle(element).backdropFilter)).toContain('url(')
-  } else {
+  if (browserName === 'webkit') {
+    await expect.poll(() => page.locator('.liquid-glass-filter-defs filter').count()).toBe(0)
+    await expect(topbar.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(0)
+    await expect(tabBarSurface.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(0)
     await expect.poll(() => topbar.evaluate((element) => getComputedStyle(element).backdropFilter || getComputedStyle(element).webkitBackdropFilter)).toContain('blur(')
+  } else {
+    await expect.poll(() => page.locator('.liquid-glass-filter-defs filter').count()).toBeGreaterThanOrEqual(3)
+    await expect(topbar.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(1)
+    await expect(tabBarSurface.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(1)
+
+    const layerCompositing = await topbar.locator(':scope > .liquid-glass-refraction-layer').evaluate((element) => {
+      const style = getComputedStyle(element)
+      return { mixBlendMode: style.mixBlendMode, willChange: style.willChange, filter: style.filter }
+    })
+    expect(layerCompositing.mixBlendMode).toBe('normal')
+    expect(layerCompositing.willChange).not.toContain('filter')
+    expect(layerCompositing.filter).toContain('url(')
+    await expect.poll(() => topbar.evaluate((element) => getComputedStyle(element).backdropFilter)).toContain('url(')
   }
 
   await page.getByRole('button', { name: '상세', exact: true }).first().click()
   const modal = page.locator('.film-modal')
   await expect(modal).toHaveAttribute('data-liquid-glass', 'modal')
-  await expect(modal.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(1)
+  await expect(modal.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(browserName === 'webkit' ? 0 : 1)
 })
 
 test('presents advanced filters as a dismissible bottom sheet', async ({ page }) => {
