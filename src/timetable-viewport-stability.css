@@ -9,11 +9,13 @@ body.timetable-viewport-locked{
 }
 
 body.timetable-viewport-locked{
-  position:fixed!important;
-  inset:0!important;
+  /*
+   * Keep the grid non-scrollable without promoting the entire document to a
+   * fixed compositor layer. iOS Safari can otherwise retain that gray layer
+   * briefly after navigating away from the timetable.
+   */
   width:100%!important;
-  height:100svh!important;
-  max-height:100svh!important;
+  min-height:100svh!important;
 }
 
 .app-shell.timetable-viewport-stable{
@@ -56,7 +58,7 @@ body.timetable-viewport-locked{
 }
 
 @supports not (height:100svh){
-  body.timetable-viewport-locked,
+  body.timetable-viewport-locked{min-height:100vh!important}
   .app-shell.timetable-viewport-stable{
     height:100vh!important;
     max-height:100vh!important;
