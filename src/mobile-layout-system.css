@@ -31,6 +31,16 @@
     scroll-padding-bottom:144px;
   }
 
+  /*
+   * Grid view fills the viewport behind the floating dock instead of reserving
+   * a permanent gray footer band. The translucent dock can therefore sit over
+   * timetable content just like it does on the other primary sections.
+   */
+  .app-shell.timetable-grid-mode.timetable-viewport-stable{
+    padding-bottom:0!important;
+    scroll-padding-bottom:0;
+  }
+
   body.filter-sheet-open{overflow:hidden;overscroll-behavior:none}
 
   .filter-sheet-backdrop{
