@@ -242,3 +242,53 @@ test('uses the settings wrapper only for layout and contains matrix overflow loc
   expect(matrixMetrics.scrollWidth).toBeGreaterThan(matrixMetrics.clientWidth)
   expect(['auto', 'scroll']).toContain(matrixMetrics.overflowX)
 })
+
+
+test('survives the full mobile navigation flow without leaking layout state', async ({ page }) => {
+  const pageErrors: Error[] = []
+  page.on('pageerror', (error) => pageErrors.push(error))
+
+  await page.goto('./')
+  const dock = page.locator('.liquid-tab-bar')
+  await expect(page.locator('.film-card').first()).toBeVisible()
+
+  await page.getByRole('button', { name: '검색·필터' }).click()
+  await expect(page.locator('#film-advanced-filters')).toBeVisible()
+  await page.getByRole('button', { name: '상세 필터 닫기' }).click()
+  await expect(page.locator('#film-advanced-filters')).toBeHidden()
+
+  await page.getByRole('button', { name: '+ 추가' }).first().click()
+  await expect(page.locator('.selection-count')).toHaveText('총 1개 선택')
+
+  await dock.getByRole('button', { name: '내 시간표' }).click()
+  await expect(page.locator('.schedule-list')).toBeVisible()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
+  await expect(page.locator('.timetable-scroll')).toBeVisible()
+  await expect(page.locator('.app-shell')).toHaveClass(/timetable-viewport-stable/)
+
+  const more = page.locator('.timetable-action-buttons .backup-menu.timetable-more-menu')
+  await more.locator(':scope > summary').click()
+  await expect(more).toHaveAttribute('open', '')
+  await expect(more.getByRole('button', { name: 'JSON 저장' })).toBeVisible()
+  await more.locator(':scope > summary').click()
+
+  await dock.getByRole('button', { name: '영화 찾기' }).click()
+  await expectViewportLockReleased(page)
+  await expect(page.locator('#film-controls')).toBeVisible()
+
+  await dock.getByRole('button', { name: 'AI 도슨트' }).click()
+  await expect(page.locator('.curator-hero')).toBeVisible()
+  await expectViewportLockReleased(page)
+
+  await dock.getByRole('button', { name: '설정' }).click()
+  await expect(page.locator('.settings-intro')).toBeVisible()
+  await expectViewportLockReleased(page)
+
+  await dock.getByRole('button', { name: '내 시간표' }).click()
+  await expect(page.locator('.timetable-scroll')).toBeVisible()
+  await expect(page.locator('.app-shell')).toHaveClass(/timetable-viewport-stable/)
+
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+  expect(overflow).toBeLessThanOrEqual(1)
+  expect(pageErrors).toEqual([])
+})
