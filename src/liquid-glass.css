@@ -92,7 +92,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .subtitle{font-size:11px;line-height:1.35}
   .selection-count{font-size:10px}
 
-  .liquid-tab-bar-surface{border:1px solid var(--ios-glass-border);background:var(--ios-glass);box-shadow:0 14px 40px rgba(15,15,20,.2);backdrop-filter:blur(30px) saturate(190%);-webkit-backdrop-filter:blur(30px) saturate(190%)}
+  .liquid-tab-bar-surface{border:1px solid var(--ios-glass-border);background:var(--ios-glass);box-shadow:0 1px 4px rgba(15,23,42,.14);backdrop-filter:blur(30px) saturate(190%);-webkit-backdrop-filter:blur(30px) saturate(190%)}
   .liquid-tab-bar button{border:0;background:transparent;color:var(--ios-secondary);font-size:9px;font-weight:700;transition:background .2s ease,color .2s ease,transform .2s ease}
   .liquid-tab-bar button:active{transform:scale(.94)}
   .liquid-tab-bar button.active{background:color-mix(in srgb,var(--ios-tint) 14%,transparent);color:var(--ios-tint)}
