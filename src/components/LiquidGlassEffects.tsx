@@ -37,7 +37,6 @@ const PRESETS = {
 
 const mapCache = new Map<string, GlassMaps>()
 let nextFilterId = 0
-const AUTHORED_POSITION_TARGETS = '.tabs, .film-results-toolbar, .enhanced-timetable-actions'
 
 function isIOSWebKitRuntime() {
   if (typeof navigator === 'undefined') return false
@@ -213,7 +212,7 @@ export default function LiquidGlassEffects() {
       TARGETS.forEach(({ selector, preset, usesRefraction }) => {
         document.querySelectorAll<HTMLElement>(selector).forEach((element) => {
           if (surfaces.current.has(element)) return
-          if (!element.matches(AUTHORED_POSITION_TARGETS) && getComputedStyle(element).position === 'static') {
+          if (getComputedStyle(element).position === 'static') {
             element.classList.add('liquid-glass-positioned')
           }
           // iOS WebKit cannot use the SVG backdrop refraction path reliably.
