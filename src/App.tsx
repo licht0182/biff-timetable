@@ -1261,9 +1261,6 @@ export default function App() {
         <button type="button" className={`settings-tab-trigger ${settingsOpen ? 'active' : ''}`} aria-current={settingsOpen ? 'page' : undefined} onClick={openSettings}>설정</button>
       </nav>
 
-      {activeTab === 'films' && !settingsOpen && dataNote && <div className="notice film-data-notice">{dataNote}{dataSource && <> <a href={dataSource} target="_blank" rel="noreferrer">공식 시간표 ↗</a></>}</div>}
-      {dataStatus === 'cached' && <div className="notice data-cache-notice" role="status"><span>네트워크에 연결할 수 없어 {cachedAtLabel}에 저장한 상영시간표를 표시합니다.</span><button type="button" onClick={retryFilmData}>최신 데이터 다시 확인</button></div>}
-      {loadError && <div className="notice error data-load-notice" role="alert"><span>{loadError}</span><button type="button" onClick={retryFilmData}>다시 시도</button></div>}
       {toast && <div className="toast" role="status">{toast}</div>}
 
       {settingsOpen && <main className="biff-settings-panel react-settings-panel">
@@ -1300,7 +1297,10 @@ export default function App() {
         <section className="settings-card settings-reset-card"><div><h3>기본 설정</h3><p>이동 시간과 표시 설정을 처음 값으로 되돌립니다.</p></div><button type="button" className="settings-reset-button" onClick={() => setUserSettings({ ...DEFAULT_USER_SETTINGS })}>기본값으로 초기화</button></section>
       </main>}
 
-      {!settingsOpen && (activeTab === 'films' ? <main aria-busy={dataStatus === 'loading'}>
+      {!settingsOpen && (activeTab === 'films' ? <main className="film-page" aria-busy={dataStatus === 'loading'}>
+        {dataNote && <div className="notice film-data-notice">{dataNote}{dataSource && <> <a href={dataSource} target="_blank" rel="noreferrer">공식 시간표 ↗</a></>}</div>}
+        {dataStatus === 'cached' && <div className="notice data-cache-notice" role="status"><span>네트워크에 연결할 수 없어 {cachedAtLabel}에 저장한 상영시간표를 표시합니다.</span><button type="button" onClick={retryFilmData}>최신 데이터 다시 확인</button></div>}
+        {loadError && <div className="notice error data-load-notice" role="alert"><span>{loadError}</span><button type="button" onClick={retryFilmData}>다시 시도</button></div>}
         <section ref={filmControlsRef} id="film-controls" className="controls enhanced-controls">
           <FilmSearchAutocomplete
             query={query}
