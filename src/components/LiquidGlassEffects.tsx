@@ -6,6 +6,7 @@ type FilterSurface = {
   element: HTMLElement
   layer: HTMLSpanElement | null
   edgeLayer: HTMLSpanElement
+  highlightLayer: HTMLSpanElement
   id: string
   preset: LiquidGlassPreset
   usesRefraction: boolean
@@ -37,6 +38,26 @@ const PRESETS = {
 
 const mapCache = new Map<string, GlassMaps>()
 let nextFilterId = 0
+const EDGE_HIGHLIGHT_INSET = 0.9
+const EDGE_GEOMETRY_PROPERTIES = [
+  '--glass-edge-top-offset',
+  '--glass-edge-right-offset',
+  '--glass-edge-bottom-offset',
+  '--glass-edge-left-offset',
+  '--glass-rim-inner-inset',
+  '--glass-rim-inner-tl',
+  '--glass-rim-inner-tr',
+  '--glass-rim-inner-br',
+  '--glass-rim-inner-bl',
+] as const
+
+function shrinkPixelRadius(value: string, inset: number) {
+  return value.split(/\s+/).map((token) => {
+    if (!token.endsWith('px')) return token
+    const radius = Number.parseFloat(token)
+    return Number.isFinite(radius) ? `${Math.max(0, radius - inset)}px` : token
+  }).join(' ')
+}
 
 function isIOSWebKitRuntime() {
   if (typeof navigator === 'undefined') return false
@@ -139,6 +160,28 @@ export default function LiquidGlassEffects() {
     const transparencyPreference = window.matchMedia('(prefers-reduced-transparency: reduce)')
     let frame = 0
 
+    const syncEdgeGeometry = (surface: FilterSurface) => {
+      const { element } = surface
+      const style = getComputedStyle(element)
+      const borderTop = Number.parseFloat(style.borderTopWidth) || 0
+      const borderRight = Number.parseFloat(style.borderRightWidth) || 0
+      const borderBottom = Number.parseFloat(style.borderBottomWidth) || 0
+      const borderLeft = Number.parseFloat(style.borderLeftWidth) || 0
+
+      // Absolute children are positioned from the padding box. Pull the outer
+      // rim back across any transparent authored border so it follows the
+      // actual painted surface boundary instead of floating one pixel inside.
+      element.style.setProperty('--glass-edge-top-offset', `${-borderTop}px`)
+      element.style.setProperty('--glass-edge-right-offset', `${-borderRight}px`)
+      element.style.setProperty('--glass-edge-bottom-offset', `${-borderBottom}px`)
+      element.style.setProperty('--glass-edge-left-offset', `${-borderLeft}px`)
+      element.style.setProperty('--glass-rim-inner-inset', `${EDGE_HIGHLIGHT_INSET}px`)
+      element.style.setProperty('--glass-rim-inner-tl', shrinkPixelRadius(style.borderTopLeftRadius, EDGE_HIGHLIGHT_INSET))
+      element.style.setProperty('--glass-rim-inner-tr', shrinkPixelRadius(style.borderTopRightRadius, EDGE_HIGHLIGHT_INSET))
+      element.style.setProperty('--glass-rim-inner-br', shrinkPixelRadius(style.borderBottomRightRadius, EDGE_HIGHLIGHT_INSET))
+      element.style.setProperty('--glass-rim-inner-bl', shrinkPixelRadius(style.borderBottomLeftRadius, EDGE_HIGHLIGHT_INSET))
+    }
+
     const clearSurface = (surface: FilterSurface) => {
       surface.element.classList.remove('liquid-glass-enhanced')
       surface.element.classList.remove('liquid-glass-backdrop-refraction')
@@ -146,13 +189,17 @@ export default function LiquidGlassEffects() {
       surface.element.classList.remove('liquid-glass-positioned')
       surface.element.removeAttribute('data-liquid-glass')
       surface.element.style.removeProperty('--liquid-filter')
+      EDGE_GEOMETRY_PROPERTIES.forEach((property) => surface.element.style.removeProperty(property))
       surface.layer?.remove()
       surface.edgeLayer.remove()
+      surface.highlightLayer.remove()
     }
 
     const applyEdgeOnly = (surface: FilterSurface) => {
-      const { element, edgeLayer } = surface
+      const { element, edgeLayer, highlightLayer } = surface
+      syncEdgeGeometry(surface)
       if (!edgeLayer.isConnected) element.append(edgeLayer)
+      if (!highlightLayer.isConnected) element.append(highlightLayer)
       element.classList.remove('liquid-glass-enhanced')
       element.classList.remove('liquid-glass-backdrop-refraction')
       element.classList.add('liquid-glass-edge-host')
@@ -187,8 +234,10 @@ export default function LiquidGlassEffects() {
           surface.displacement = maps.displacement
           surface.specular = maps.specular
         }
+        syncEdgeGeometry(surface)
         if (surface.layer && !surface.layer.isConnected) element.append(surface.layer)
         if (!surface.edgeLayer.isConnected) element.append(surface.edgeLayer)
+        if (!surface.highlightLayer.isConnected) element.append(surface.highlightLayer)
         element.classList.add('liquid-glass-enhanced')
         element.classList.add('liquid-glass-edge-host')
         element.classList.toggle('liquid-glass-backdrop-refraction', nativeBackdropRefraction && surface.usesRefraction)
@@ -228,10 +277,15 @@ export default function LiquidGlassEffects() {
           edgeLayer.className = 'liquid-glass-edge-layer'
           edgeLayer.setAttribute('aria-hidden', 'true')
           element.append(edgeLayer)
+          const highlightLayer = document.createElement('span')
+          highlightLayer.className = 'liquid-glass-edge-highlight-layer'
+          highlightLayer.setAttribute('aria-hidden', 'true')
+          element.append(highlightLayer)
           const surface: FilterSurface = {
             element,
             layer,
             edgeLayer,
+            highlightLayer,
             id: `liquid-glass-${++nextFilterId}`,
             preset,
             usesRefraction: effectiveUsesRefraction,
