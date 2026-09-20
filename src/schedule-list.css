@@ -46,8 +46,15 @@
 .schedule-date-tabs{gap:8px;padding:4px 2px 14px}
 .schedule-date-tab{min-width:88px;padding:10px 13px;border-color:#e0e3e7;border-radius:12px;background:#fff;box-shadow:0 2px 8px rgba(34,42,53,.04)}
 .schedule-date-tab strong{font-size:16px;letter-spacing:-.02em}.schedule-date-tab span{font-size:11px}.schedule-date-tab em{color:#9097a1}
-.schedule-date-tab.active{border-color:#343a43;background:#343a43;color:#fff;box-shadow:0 6px 16px rgba(34,42,53,.18)}
-.schedule-date-tab.active span,.schedule-date-tab.active em,.schedule-date-tab.active .weekday-토,.schedule-date-tab.active .weekday-일{color:#fff}
+.schedule-date-tab.active{
+  border-color:color-mix(in srgb,var(--accent) 28%,#d9dee5);
+  background:color-mix(in srgb,var(--accent-soft) 72%,#fff);
+  color:var(--accent);
+  box-shadow:0 4px 12px rgba(34,42,53,.08),inset 0 1px 0 rgba(255,255,255,.78)
+}
+.schedule-date-tab.active strong{color:var(--accent)}
+.schedule-date-tab.active em{color:#7f858e}
+.schedule-date-tab.active .weekday-토{color:#3777aa}.schedule-date-tab.active .weekday-일{color:#cf5548}
 .schedule-list-day{padding:0}
 .schedule-list-day>h2{display:flex;align-items:baseline;gap:5px;margin:0;padding:14px 2px 11px;border:0;color:#252a31;font-size:22px}
 .schedule-list-day>h2 em{font-size:13px}.schedule-list-day>h2 small{margin-left:auto;color:#8b929c;font-size:11px;font-weight:700}
