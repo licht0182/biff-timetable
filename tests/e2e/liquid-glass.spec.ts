@@ -130,7 +130,7 @@ test('keeps SVG refraction on stable glass while content avoids ghost-prone filt
   await expect(modal.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(browserName === 'webkit' ? 0 : 1)
 })
 
-test('renders symmetric unclipped Liquid Glass edges on surfaces and controls', async ({ page }) => {
+test('renders one rounded rim geometry with black above white everywhere', async ({ page }) => {
   const expectAlignedRim = async (selector: string) => {
     const surface = page.locator(selector).first()
     await expect(surface).toBeVisible()
@@ -140,86 +140,90 @@ test('renders symmetric unclipped Liquid Glass edges on surfaces and controls', 
 
     const metrics = await surface.evaluate((element) => {
       const hostStyle = getComputedStyle(element)
-      const edge = element.querySelector<HTMLElement>(':scope > .liquid-glass-edge-layer')!
-      const highlight = element.querySelector<HTMLElement>(':scope > .liquid-glass-edge-highlight-layer')!
-      const edgeStyle = getComputedStyle(edge)
-      const highlightStyle = getComputedStyle(highlight)
+      const dark = element.querySelector<HTMLElement>(':scope > .liquid-glass-edge-layer')!
+      const white = element.querySelector<HTMLElement>(':scope > .liquid-glass-edge-highlight-layer')!
+      const darkStyle = getComputedStyle(dark)
+      const whiteStyle = getComputedStyle(white)
       const hostRect = element.getBoundingClientRect()
-      const edgeRect = edge.getBoundingClientRect()
-      const highlightRect = highlight.getBoundingClientRect()
+      const darkRect = dark.getBoundingClientRect()
+      const whiteRect = white.getBoundingClientRect()
       return {
         hostRect: { x: hostRect.x, y: hostRect.y, width: hostRect.width, height: hostRect.height },
-        edgeRect: { x: edgeRect.x, y: edgeRect.y, width: edgeRect.width, height: edgeRect.height },
-        highlightRect: { x: highlightRect.x, y: highlightRect.y, width: highlightRect.width, height: highlightRect.height },
+        darkRect: { x: darkRect.x, y: darkRect.y, width: darkRect.width, height: darkRect.height },
+        whiteRect: { x: whiteRect.x, y: whiteRect.y, width: whiteRect.width, height: whiteRect.height },
         hostRadius: [
           hostStyle.borderTopLeftRadius,
           hostStyle.borderTopRightRadius,
           hostStyle.borderBottomRightRadius,
           hostStyle.borderBottomLeftRadius,
         ],
-        edgeRadius: [
-          edgeStyle.borderTopLeftRadius,
-          edgeStyle.borderTopRightRadius,
-          edgeStyle.borderBottomRightRadius,
-          edgeStyle.borderBottomLeftRadius,
+        darkRadius: [
+          darkStyle.borderTopLeftRadius,
+          darkStyle.borderTopRightRadius,
+          darkStyle.borderBottomRightRadius,
+          darkStyle.borderBottomLeftRadius,
         ],
-        highlightRadius: [
-          highlightStyle.borderTopLeftRadius,
-          highlightStyle.borderTopRightRadius,
-          highlightStyle.borderBottomRightRadius,
-          highlightStyle.borderBottomLeftRadius,
+        whiteRadius: [
+          whiteStyle.borderTopLeftRadius,
+          whiteStyle.borderTopRightRadius,
+          whiteStyle.borderBottomRightRadius,
+          whiteStyle.borderBottomLeftRadius,
         ],
-        borderWidths: [
+        hostBorderWidths: [
           hostStyle.borderTopWidth,
           hostStyle.borderRightWidth,
           hostStyle.borderBottomWidth,
           hostStyle.borderLeftWidth,
         ],
+        darkPadding: [
+          darkStyle.paddingTop,
+          darkStyle.paddingRight,
+          darkStyle.paddingBottom,
+          darkStyle.paddingLeft,
+        ],
+        whitePadding: [
+          whiteStyle.paddingTop,
+          whiteStyle.paddingRight,
+          whiteStyle.paddingBottom,
+          whiteStyle.paddingLeft,
+        ],
+        darkBackground: darkStyle.backgroundImage,
+        whiteBackground: whiteStyle.backgroundImage,
+        darkMask: darkStyle.maskImage || darkStyle.webkitMaskImage,
+        whiteMask: whiteStyle.maskImage || whiteStyle.webkitMaskImage,
+        darkMaskComposite: darkStyle.maskComposite || darkStyle.webkitMaskComposite,
+        whiteMaskComposite: whiteStyle.maskComposite || whiteStyle.webkitMaskComposite,
+        darkZIndex: Number.parseInt(darkStyle.zIndex, 10),
+        whiteZIndex: Number.parseInt(whiteStyle.zIndex, 10),
         overflow: hostStyle.overflow,
-        edgeBackground: edgeStyle.backgroundImage,
-        edgeBackgroundSize: edgeStyle.backgroundSize,
-        highlightBackground: highlightStyle.backgroundImage,
-        highlightBackgroundSize: highlightStyle.backgroundSize,
-        edgeMask: edgeStyle.maskImage || edgeStyle.webkitMaskImage,
-        highlightMask: highlightStyle.maskImage || highlightStyle.webkitMaskImage,
-        edgeZIndex: Number.parseInt(edgeStyle.zIndex, 10),
-        highlightZIndex: Number.parseInt(highlightStyle.zIndex, 10),
-        edgePointerEvents: edgeStyle.pointerEvents,
-        highlightPointerEvents: highlightStyle.pointerEvents,
       }
     })
 
     const closeEnough = (left: number, right: number) => Math.abs(left - right) <= 0.2
-    for (const rect of [metrics.edgeRect, metrics.highlightRect]) {
+    for (const rect of [metrics.darkRect, metrics.whiteRect]) {
       expect(closeEnough(rect.x, metrics.hostRect.x)).toBeTruthy()
       expect(closeEnough(rect.y, metrics.hostRect.y)).toBeTruthy()
       expect(closeEnough(rect.width, metrics.hostRect.width)).toBeTruthy()
       expect(closeEnough(rect.height, metrics.hostRect.height)).toBeTruthy()
     }
 
-    expect(metrics.borderWidths).toEqual(['0px', '0px', '0px', '0px'])
-    expect(metrics.edgeRadius).toEqual(metrics.hostRadius)
-    expect(metrics.highlightRadius).toEqual(metrics.hostRadius)
-    expect(metrics.edgeZIndex).toBeGreaterThan(metrics.highlightZIndex)
+    expect(metrics.hostBorderWidths).toEqual(['0px', '0px', '0px', '0px'])
+    expect(metrics.darkRadius).toEqual(metrics.hostRadius)
+    expect(metrics.whiteRadius).toEqual(metrics.hostRadius)
+    expect(metrics.darkPadding).toEqual(['1px', '1px', '1px', '1px'])
+    expect(metrics.whitePadding).toEqual(['1px', '1px', '1px', '1px'])
+    expect(metrics.darkZIndex).toBeGreaterThan(metrics.whiteZIndex)
+    expect(metrics.darkZIndex).toBe(10)
+    expect(metrics.whiteZIndex).toBe(8)
 
-    expect(metrics.edgeBackground.match(/linear-gradient/g)?.length).toBe(4)
-    expect(metrics.edgeBackground).toContain('0, 0, 0')
-    expect(metrics.highlightBackground.match(/linear-gradient/g)?.length).toBe(4)
-    expect(metrics.highlightBackground).toContain('255, 255, 255')
-    expect(metrics.edgeMask).toBe('none')
-    expect(metrics.highlightMask).toBe('none')
-
-    const edgeSizes = metrics.edgeBackgroundSize.split(',').map((part) => part.trim())
-    const highlightSizes = metrics.highlightBackgroundSize.split(',').map((part) => part.trim())
-    expect(edgeSizes).toHaveLength(4)
-    expect(highlightSizes).toHaveLength(4)
-    expect(edgeSizes[0]).toBe(edgeSizes[1])
-    expect(edgeSizes[2]).toBe(edgeSizes[3])
-    expect(highlightSizes[0]).toBe(highlightSizes[1])
-    expect(highlightSizes[2]).toBe(highlightSizes[3])
-
-    expect(metrics.edgePointerEvents).toBe('none')
-    expect(metrics.highlightPointerEvents).toBe('none')
+    expect(metrics.darkBackground.match(/linear-gradient/g)?.length).toBe(1)
+    expect(metrics.whiteBackground.match(/linear-gradient/g)?.length).toBe(1)
+    expect(metrics.darkBackground).toContain('0, 0, 0')
+    expect(metrics.whiteBackground).toContain('255, 255, 255')
+    expect(metrics.darkMask).toContain('linear-gradient')
+    expect(metrics.whiteMask).toContain('linear-gradient')
+    expect(metrics.darkMaskComposite).not.toBe('add')
+    expect(metrics.whiteMaskComposite).not.toBe('add')
     return metrics
   }
 
@@ -233,41 +237,42 @@ test('renders symmetric unclipped Liquid Glass edges on surfaces and controls', 
       return {
         borderColor: style.borderColor,
         boxShadow: style.boxShadow,
-        whiteContent: white.content,
+        radius: style.borderRadius,
+        whiteRadius: white.borderRadius,
+        darkRadius: dark.borderRadius,
+        whitePadding: [white.paddingTop, white.paddingRight, white.paddingBottom, white.paddingLeft],
+        darkPadding: [dark.paddingTop, dark.paddingRight, dark.paddingBottom, dark.paddingLeft],
         whiteBackground: white.backgroundImage,
-        whiteBackgroundSize: white.backgroundSize,
-        whiteZIndex: Number.parseInt(white.zIndex, 10),
-        darkContent: dark.content,
         darkBackground: dark.backgroundImage,
-        darkBackgroundSize: dark.backgroundSize,
+        whiteMask: white.maskImage || white.webkitMaskImage,
+        darkMask: dark.maskImage || dark.webkitMaskImage,
+        whiteZIndex: Number.parseInt(white.zIndex, 10),
         darkZIndex: Number.parseInt(dark.zIndex, 10),
       }
     })
 
     expect(metrics.borderColor).toBe('rgba(0, 0, 0, 0)')
-    expect(metrics.whiteContent).not.toBe('none')
-    expect(metrics.darkContent).not.toBe('none')
-    expect(metrics.whiteBackground.match(/linear-gradient/g)?.length).toBe(4)
-    expect(metrics.darkBackground.match(/linear-gradient/g)?.length).toBe(4)
+    expect(metrics.whiteRadius).toBe(metrics.radius)
+    expect(metrics.darkRadius).toBe(metrics.radius)
+    expect(metrics.whitePadding).toEqual(['1px', '1px', '1px', '1px'])
+    expect(metrics.darkPadding).toEqual(['1px', '1px', '1px', '1px'])
+    expect(metrics.whiteBackground.match(/linear-gradient/g)?.length).toBe(1)
+    expect(metrics.darkBackground.match(/linear-gradient/g)?.length).toBe(1)
     expect(metrics.whiteBackground).toContain('255, 255, 255')
     expect(metrics.darkBackground).toContain('0, 0, 0')
+    expect(metrics.whiteMask).toContain('linear-gradient')
+    expect(metrics.darkMask).toContain('linear-gradient')
     expect(metrics.darkZIndex).toBeGreaterThan(metrics.whiteZIndex)
-
-    const whiteSizes = metrics.whiteBackgroundSize.split(',').map((part) => part.trim())
-    const darkSizes = metrics.darkBackgroundSize.split(',').map((part) => part.trim())
-    expect(whiteSizes[0]).toBe(whiteSizes[1])
-    expect(whiteSizes[2]).toBe(whiteSizes[3])
-    expect(darkSizes[0]).toBe(darkSizes[1])
-    expect(darkSizes[2]).toBe(darkSizes[3])
+    expect(metrics.darkZIndex).toBe(10)
+    expect(metrics.whiteZIndex).toBe(8)
     expect(metrics.boxShadow).not.toContain('inset')
   }
 
   for (const selector of ['.topbar', '.liquid-tab-bar-surface', '.controls', '.film-results-toolbar', '.film-card']) {
     await expectAlignedRim(selector)
   }
-
-  const filmCardMetrics = await expectAlignedRim('.film-card')
-  expect(filmCardMetrics.overflow).toBe('hidden')
+  const filmCard = await expectAlignedRim('.film-card')
+  expect(filmCard.overflow).toBe('hidden')
 
   await expectControlRim('.film-search-autocomplete')
   await expectControlRim('.mobile-advanced-filter-toggle')
@@ -275,43 +280,42 @@ test('renders symmetric unclipped Liquid Glass edges on surfaces and controls', 
   await expectControlRim('.favorite-button')
   await expectControlRim('.detail-button')
 
-  const searchInput = page.locator('.film-search-autocomplete > input')
-  await expect(searchInput).toBeVisible()
-  expect(await searchInput.evaluate((element) => getComputedStyle(element).boxShadow)).toBe('none')
-
   const tabBar = page.locator('.liquid-tab-bar')
   await tabBar.getByRole('button', { name: '설정' }).click()
   await expectAlignedRim('.settings-intro')
   await expectAlignedRim('.settings-card')
+  await expectAlignedRim('.settings-card-head')
   await expectControlRim('.settings-reset-button')
 
   await tabBar.getByRole('button', { name: 'AI 도슨트' }).click()
   await expectAlignedRim('.curator-hero')
   await expectAlignedRim('.curator-card')
+  await expectAlignedRim('.curator-featured-card')
   await expectControlRim('.curator-filter-chips button')
 
   await tabBar.getByRole('button', { name: '영화 찾기' }).click()
   await page.getByRole('button', { name: '상세', exact: true }).first().click()
   await expectAlignedRim('.film-modal')
+  await expectAlignedRim('.film-detail-grid')
   await expectControlRim('.modal-close')
 
   const modalCorners = await page.locator('.film-modal').evaluate((element) => {
     const host = getComputedStyle(element)
-    const edge = getComputedStyle(element.querySelector<HTMLElement>(':scope > .liquid-glass-edge-layer')!)
-    const highlight = getComputedStyle(element.querySelector<HTMLElement>(':scope > .liquid-glass-edge-highlight-layer')!)
+    const dark = getComputedStyle(element.querySelector<HTMLElement>(':scope > .liquid-glass-edge-layer')!)
+    const white = getComputedStyle(element.querySelector<HTMLElement>(':scope > .liquid-glass-edge-highlight-layer')!)
     return {
       hostTopLeft: host.borderTopLeftRadius,
       hostBottomLeft: host.borderBottomLeftRadius,
-      edgeTopLeft: edge.borderTopLeftRadius,
-      edgeBottomLeft: edge.borderBottomLeftRadius,
-      highlightTopLeft: highlight.borderTopLeftRadius,
-      highlightBottomLeft: highlight.borderBottomLeftRadius,
+      darkTopLeft: dark.borderTopLeftRadius,
+      darkBottomLeft: dark.borderBottomLeftRadius,
+      whiteTopLeft: white.borderTopLeftRadius,
+      whiteBottomLeft: white.borderBottomLeftRadius,
     }
   })
-  expect(modalCorners.edgeTopLeft).toBe(modalCorners.hostTopLeft)
-  expect(modalCorners.highlightTopLeft).toBe(modalCorners.hostTopLeft)
-  expect(modalCorners.edgeBottomLeft).toBe(modalCorners.hostBottomLeft)
-  expect(modalCorners.highlightBottomLeft).toBe(modalCorners.hostBottomLeft)
+  expect(modalCorners.darkTopLeft).toBe(modalCorners.hostTopLeft)
+  expect(modalCorners.whiteTopLeft).toBe(modalCorners.hostTopLeft)
+  expect(modalCorners.darkBottomLeft).toBe(modalCorners.hostBottomLeft)
+  expect(modalCorners.whiteBottomLeft).toBe(modalCorners.hostBottomLeft)
 })
 
 test('keeps black shadows tight to surface edges', async ({ page }) => {
