@@ -130,7 +130,7 @@ test('keeps SVG refraction on stable glass while content avoids ghost-prone filt
   await expect(modal.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(browserName === 'webkit' ? 0 : 1)
 })
 
-test('aligns separate dark and white rim rings to each surface boundary', async ({ page, browserName }) => {
+test('aligns separate dark and white rim rings to each surface boundary', async ({ page }) => {
   const expectAlignedRim = async (selector: string) => {
     const surface = page.locator(selector).first()
     await expect(surface).toBeVisible()
@@ -248,10 +248,6 @@ test('aligns separate dark and white rim rings to each surface boundary', async 
   expect(modalCorners.hostBottomLeft).toBe(0)
   expect(modalCorners.highlightBottomLeft).toBe(0)
 
-  // WebKit refraction behavior is covered before modal navigation in the
-  // dedicated refraction test. The dock may be remounted while a modal owns
-  // the interaction layer, so do not reassert its transient DOM here.
-  expect(browserName).toBeTruthy()
 })
 
 test('keeps black shadows tight to surface edges', async ({ page }) => {
