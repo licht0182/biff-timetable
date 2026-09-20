@@ -130,7 +130,7 @@ test('keeps SVG refraction on stable glass while content avoids ghost-prone filt
   await expect(modal.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(browserName === 'webkit' ? 0 : 1)
 })
 
-test('renders a dark hairline with fading inner highlights on every glass surface', async ({ page, browserName }) => {
+test('renders dark side hairlines with fading top and bottom highlights', async ({ page, browserName }) => {
   const selectors = ['.topbar', '.liquid-tab-bar-surface', '.film-card']
   for (const selector of selectors) {
     const surface = page.locator(selector).first()
@@ -148,7 +148,7 @@ test('renders a dark hairline with fading inner highlights on every glass surfac
         edgePosition: edgeStyle.position,
         edgePointerEvents: edgeStyle.pointerEvents,
         edgeBorderWidth: Number.parseFloat(edgeStyle.borderTopWidth),
-        edgeBorderColor: edgeStyle.borderTopColor,
+        edgeBackground: edgeStyle.backgroundImage,
         topBackground: topHighlight.backgroundImage,
         bottomBackground: bottomHighlight.backgroundImage,
       }
@@ -157,9 +157,10 @@ test('renders a dark hairline with fading inner highlights on every glass surfac
     expect(metrics.hostBorder).toMatch(/rgba\([^)]*, 0\)|transparent/)
     expect(metrics.edgePosition).toBe('absolute')
     expect(metrics.edgePointerEvents).toBe('none')
-    expect(metrics.edgeBorderWidth).toBeGreaterThan(0)
-    expect(metrics.edgeBorderWidth).toBeLessThanOrEqual(1)
-    expect(metrics.edgeBorderColor).not.toMatch(/rgba\([^)]*, 0\)|transparent/)
+    expect(metrics.edgeBorderWidth).toBe(0)
+    expect((metrics.edgeBackground.match(/linear-gradient/g) ?? []).length).toBeGreaterThanOrEqual(2)
+    expect(metrics.edgeBackground).toContain('17, 24, 39')
+    expect(metrics.edgeBackground).toContain('rgba(0, 0, 0, 0)')
     expect(metrics.topBackground).toContain('linear-gradient')
     expect(metrics.topBackground).toContain('255, 255, 255')
     expect(metrics.bottomBackground).toContain('linear-gradient')
