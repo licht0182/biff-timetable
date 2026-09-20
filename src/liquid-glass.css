@@ -389,3 +389,104 @@ select option{background:#f3f4f6;color:#111827}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
   .topbar,.tabs,.liquid-tab-bar-surface,.notice,.controls,.film-results-toolbar,.timetable-actions,.film-card,.schedule-screening-group,.booking-plan-panel,.timetable-scroll,.timetable-empty,.settings-card,.settings-reset-card,.curator-hero,.curator-featured,.curator-latest,.curator-method,.curator-card,.curator-article,.film-modal,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal,.pwa-update-toast{background:rgba(229,231,235,.92)!important}
 }
+
+
+/* Liquid Glass edge rim -----------------------------------------------------
+ * Apple-style edge treatment: a continuous dark hairline around the surface,
+ * with separate inner white specular lines at the top and bottom. The white
+ * lines fade toward the side edges instead of outlining all four sides.
+ */
+.liquid-glass-edge-host[data-liquid-glass]{
+  --glass-rim-dark:rgba(17,24,39,.28);
+  --glass-rim-top-mid:rgba(255,255,255,.28);
+  --glass-rim-top-peak:rgba(255,255,255,.68);
+  --glass-rim-bottom-mid:rgba(255,255,255,.12);
+  --glass-rim-bottom-peak:rgba(255,255,255,.30);
+  border-color:transparent!important;
+}
+.liquid-glass-edge-host[data-liquid-glass="navigation"]{
+  --glass-rim-dark:rgba(17,24,39,.35);
+  --glass-rim-top-mid:rgba(255,255,255,.44);
+  --glass-rim-top-peak:rgba(255,255,255,.88);
+  --glass-rim-bottom-mid:rgba(255,255,255,.20);
+  --glass-rim-bottom-peak:rgba(255,255,255,.48);
+}
+.liquid-glass-edge-host[data-liquid-glass="toolbar"]{
+  --glass-rim-dark:rgba(17,24,39,.32);
+  --glass-rim-top-mid:rgba(255,255,255,.38);
+  --glass-rim-top-peak:rgba(255,255,255,.82);
+  --glass-rim-bottom-mid:rgba(255,255,255,.17);
+  --glass-rim-bottom-peak:rgba(255,255,255,.41);
+}
+.liquid-glass-edge-host[data-liquid-glass="sheet"],
+.liquid-glass-edge-host[data-liquid-glass="modal"]{
+  --glass-rim-dark:rgba(17,24,39,.35);
+  --glass-rim-top-mid:rgba(255,255,255,.38);
+  --glass-rim-top-peak:rgba(255,255,255,.82);
+  --glass-rim-bottom-mid:rgba(255,255,255,.18);
+  --glass-rim-bottom-peak:rgba(255,255,255,.43);
+}
+.liquid-glass-enhanced.liquid-glass-edge-host[data-liquid-glass]{
+  box-shadow:var(--ios-shadow)!important;
+}
+.liquid-glass-edge-layer{
+  position:absolute;
+  inset:0;
+  z-index:7;
+  display:block;
+  overflow:hidden;
+  box-sizing:border-box;
+  border:.5px solid var(--glass-rim-dark);
+  border-radius:inherit;
+  pointer-events:none;
+}
+.liquid-glass-edge-layer::before,
+.liquid-glass-edge-layer::after{
+  content:"";
+  position:absolute;
+  left:1px;
+  right:1px;
+  height:1px;
+  pointer-events:none;
+}
+.liquid-glass-edge-layer::before{
+  top:1px;
+  background:linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 5%,
+    var(--glass-rim-top-mid) 24%,
+    var(--glass-rim-top-peak) 50%,
+    var(--glass-rim-top-mid) 76%,
+    transparent 95%,
+    transparent 100%
+  );
+}
+.liquid-glass-edge-layer::after{
+  bottom:1px;
+  background:linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 7%,
+    var(--glass-rim-bottom-mid) 26%,
+    var(--glass-rim-bottom-peak) 50%,
+    var(--glass-rim-bottom-mid) 74%,
+    transparent 93%,
+    transparent 100%
+  );
+}
+.liquid-glass-edge-host>.liquid-glass-refraction-layer::before{
+  border:0;
+  box-shadow:none;
+}
+@media(hover:hover) and (pointer:fine){
+  .film-card.liquid-glass-edge-host:hover{box-shadow:var(--ios-shadow-strong)!important}
+}
+@media(prefers-reduced-transparency:reduce){
+  .liquid-glass-edge-host[data-liquid-glass]{
+    --glass-rim-top-mid:rgba(255,255,255,.22);
+    --glass-rim-top-peak:rgba(255,255,255,.56);
+    --glass-rim-bottom-mid:rgba(255,255,255,.10);
+    --glass-rim-bottom-peak:rgba(255,255,255,.24);
+  }
+}
