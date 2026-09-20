@@ -41,7 +41,7 @@
 .booking-plan-remove{align-self:center;border:1px solid #e2d6ad;border-radius:4px;background:#fff;color:#806216;font-size:8px;font-weight:800;padding:5px 6px;cursor:pointer;white-space:nowrap}
 .booking-plan-remove:hover{background:#fff9e8}
 .booking-conflict-backdrop{position:fixed;inset:0;z-index:1120;background:rgba(0,0,0,.52);display:grid;place-items:center;padding:18px}
-.booking-conflict-dialog{width:min(520px,100%);max-height:calc(100dvh - 36px);overflow:auto;background:#fff;border:1px solid #ddd;border-radius:10px;box-shadow:0 18px 55px rgba(0,0,0,.28);padding:17px}
+.booking-conflict-dialog{width:min(520px,100%);max-height:calc(100dvh - 36px);overflow:auto;background:#fff;border:1px solid #ddd;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.14);padding:17px}
 .booking-conflict-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding-bottom:12px;border-bottom:1px solid #eee}
 .booking-conflict-head span{font-size:9px;font-weight:900;letter-spacing:.08em;color:var(--accent)}
 .booking-conflict-head h2{margin:5px 0 0;font-size:19px;letter-spacing:-.035em}
@@ -80,7 +80,7 @@
 .booking-plan-item.is-next-fallback{border-color:#a8c89d;background:#f9fdf7;box-shadow:inset 3px 0 0 #719b63}
 .booking-plan-item.is-next-fallback .booking-plan-alternative{background:#dff0d9;color:#416735}
 .booking-apply-backdrop{position:fixed;inset:0;z-index:1130;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:18px}
-.booking-apply-dialog{width:min(540px,100%);max-height:calc(100dvh - 36px);overflow:auto;background:#fff;border:1px solid #ddd;border-radius:10px;box-shadow:0 18px 55px rgba(0,0,0,.3);padding:17px}
+.booking-apply-dialog{width:min(540px,100%);max-height:calc(100dvh - 36px);overflow:auto;background:#fff;border:1px solid #ddd;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.15);padding:17px}
 .booking-apply-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding-bottom:12px;border-bottom:1px solid #eee}
 .booking-apply-head span{font-size:9px;font-weight:900;letter-spacing:.08em;color:#4f7644}
 .booking-apply-head h2{margin:5px 0 0;font-size:19px;letter-spacing:-.035em}

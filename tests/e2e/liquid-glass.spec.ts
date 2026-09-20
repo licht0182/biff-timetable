@@ -130,6 +130,37 @@ test('keeps SVG refraction on stable glass while content avoids ghost-prone filt
   await expect(modal.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(browserName === 'webkit' ? 0 : 1)
 })
 
+test('keeps black shadows tight to surface edges', async ({ page }) => {
+  const maxBlurRadius = (value: string) => {
+    const shadows: string[] = []
+    let depth = 0
+    let start = 0
+    for (let index = 0; index < value.length; index += 1) {
+      const character = value[index]
+      if (character === '(') depth += 1
+      else if (character === ')') depth = Math.max(0, depth - 1)
+      else if (character === ',' && depth === 0) {
+        shadows.push(value.slice(start, index))
+        start = index + 1
+      }
+    }
+    shadows.push(value.slice(start))
+    return Math.max(0, ...shadows.map((shadow) => {
+      const values = shadow.match(/-?\d+(?:\.\d+)?px/g)?.map((token) => Number.parseFloat(token)) ?? []
+      return Math.abs(values[2] ?? 0)
+    }))
+  }
+
+  const cardShadow = await page.locator('.film-card').first().evaluate((element) => getComputedStyle(element).boxShadow)
+  const dockShadow = await page.locator('.liquid-tab-bar-surface').evaluate((element) => getComputedStyle(element).boxShadow)
+  expect(maxBlurRadius(cardShadow)).toBeLessThanOrEqual(4)
+  expect(maxBlurRadius(dockShadow)).toBeLessThanOrEqual(4)
+
+  await page.getByRole('button', { name: '상세', exact: true }).first().click()
+  const modalShadow = await page.locator('.film-modal').evaluate((element) => getComputedStyle(element).boxShadow)
+  expect(maxBlurRadius(modalShadow)).toBeLessThanOrEqual(6)
+})
+
 test('presents advanced filters as a dismissible bottom sheet', async ({ page }) => {
   await page.getByRole('button', { name: /날짜·상영관·시간대/ }).click()
   const sheet = page.locator('#film-advanced-filters')

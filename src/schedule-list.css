@@ -44,13 +44,13 @@
 /* Agenda cards intentionally use a different visual language from the reference list. */
 .schedule-list{gap:0;padding:0 0 30px;border:0;border-radius:0;background:transparent}
 .schedule-date-tabs{gap:8px;padding:4px 2px 14px}
-.schedule-date-tab{min-width:88px;padding:10px 13px;border-color:#e0e3e7;border-radius:12px;background:#fff;box-shadow:0 2px 8px rgba(34,42,53,.04)}
+.schedule-date-tab{min-width:88px;padding:10px 13px;border-color:#e0e3e7;border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(34,42,53,.08)}
 .schedule-date-tab strong{font-size:16px;letter-spacing:-.02em}.schedule-date-tab span{font-size:11px}.schedule-date-tab em{color:#9097a1}
 .schedule-date-tab.active{
   border-color:color-mix(in srgb,var(--accent) 28%,#d9dee5);
   background:color-mix(in srgb,var(--accent-soft) 72%,#fff);
   color:var(--accent);
-  box-shadow:0 4px 12px rgba(34,42,53,.08),inset 0 1px 0 rgba(255,255,255,.78)
+  box-shadow:0 1px 3px rgba(34,42,53,.1),inset 0 1px 0 rgba(255,255,255,.78)
 }
 .schedule-date-tab.active strong{color:var(--accent)}
 .schedule-date-tab.active em{color:#7f858e}
@@ -64,7 +64,7 @@
 .schedule-screening-group.has-conflict{display:grid;gap:8px;margin:4px 0;padding:10px;border:1px solid #f0d8d3;border-radius:14px;background:#fff7f5;overflow:visible}
 .schedule-screening-group.has-conflict>h3{display:flex;align-items:center;gap:8px;margin:0;padding:1px 2px 4px;color:#6f504c;font-size:11px;font-weight:700}
 .schedule-screening-group.has-conflict>h3 span{padding:4px 7px;border-radius:999px;background:#c95646;color:#fff;font-size:10px;font-weight:900;letter-spacing:.02em}
-.schedule-list-row{grid-template-columns:82px minmax(0,1fr) auto;min-height:84px;border:1px solid #e5e7ea!important;border-radius:12px;background:#fff;box-shadow:0 3px 12px rgba(34,42,53,.045);overflow:hidden}
+.schedule-list-row{grid-template-columns:82px minmax(0,1fr) auto;min-height:84px;border:1px solid #e5e7ea!important;border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(34,42,53,.08);overflow:hidden}
 .schedule-screening-group.has-conflict .schedule-list-row{border-color:#eadbd8!important;box-shadow:none}
 .schedule-list-time{align-self:center;gap:4px;padding:12px 6px 12px 14px}
 .schedule-list-time strong{font-size:17px;font-variant-numeric:tabular-nums}.schedule-list-time span{font-size:11px;color:#9ba0a7}

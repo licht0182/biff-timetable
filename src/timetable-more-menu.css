@@ -42,7 +42,7 @@
   border:1px solid #d8d8d8;
   border-radius:12px;
   background:#fff;
-  box-shadow:0 8px 24px rgba(0,0,0,.14);
+  box-shadow:0 1px 4px rgba(0,0,0,.1);
 }
 
 .timetable-more-menu>div button{
