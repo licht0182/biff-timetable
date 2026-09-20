@@ -5,6 +5,7 @@ type LiquidGlassPreset = 'navigation' | 'toolbar' | 'content' | 'sheet' | 'modal
 type FilterSurface = {
   element: HTMLElement
   layer: HTMLSpanElement | null
+  edgeLayer: HTMLSpanElement
   id: string
   preset: LiquidGlassPreset
   usesRefraction: boolean
@@ -21,7 +22,7 @@ const TARGETS: Array<{ selector: string; preset: LiquidGlassPreset; usesRefracti
   { selector: '.film-results-toolbar, .enhanced-timetable-actions', preset: 'toolbar', usesRefraction: true },
   // Refracting every virtualized card creates dozens of WebKit compositing layers.
   // Content keeps the translucent lens/bevel treatment without a live SVG filter.
-  { selector: '.notice, .controls, .film-card, .schedule-screening-group, .booking-plan-panel, .timetable-scroll, .timetable-empty, .settings-card, .settings-reset-card, .curator-hero, .curator-featured, .curator-latest, .curator-method, .curator-card, .curator-article', preset: 'content', usesRefraction: false },
+  { selector: '.layout-surface, .notice, .controls, .film-card, .schedule-screening-group, .booking-plan-panel, .timetable-scroll, .timetable-empty, .settings-intro, .settings-card, .settings-reset-card, .curator-hero, .curator-featured, .curator-latest, .curator-method, .curator-card, .curator-article, .pwa-update-toast', preset: 'content', usesRefraction: false },
   { selector: '#film-advanced-filters.filter-row.mobile-open', preset: 'sheet', usesRefraction: true },
   { selector: '.film-modal, .booking-conflict-dialog, .booking-apply-dialog, .custom-event-dialog, .custom-event-modal', preset: 'modal', usesRefraction: true },
 ]
@@ -142,16 +143,29 @@ export default function LiquidGlassEffects() {
     const clearSurface = (surface: FilterSurface) => {
       surface.element.classList.remove('liquid-glass-enhanced')
       surface.element.classList.remove('liquid-glass-backdrop-refraction')
+      surface.element.classList.remove('liquid-glass-edge-host')
       surface.element.classList.remove('liquid-glass-positioned')
       surface.element.removeAttribute('data-liquid-glass')
       surface.element.style.removeProperty('--liquid-filter')
+      surface.layer?.remove()
+      surface.edgeLayer.remove()
+    }
+
+    const applyEdgeOnly = (surface: FilterSurface) => {
+      const { element, edgeLayer } = surface
+      if (!edgeLayer.isConnected) element.append(edgeLayer)
+      element.classList.remove('liquid-glass-enhanced')
+      element.classList.remove('liquid-glass-backdrop-refraction')
+      element.classList.add('liquid-glass-edge-host')
+      element.dataset.liquidGlass = surface.preset
+      element.style.removeProperty('--liquid-filter')
       surface.layer?.remove()
     }
 
     const publish = () => {
       frame = 0
       if (transparencyPreference.matches) {
-        surfaces.current.forEach(clearSurface)
+        surfaces.current.forEach(applyEdgeOnly)
         setFilters([])
         return
       }
@@ -175,7 +189,9 @@ export default function LiquidGlassEffects() {
           surface.specular = maps.specular
         }
         if (surface.layer && !surface.layer.isConnected) element.append(surface.layer)
+        if (!surface.edgeLayer.isConnected) element.append(surface.edgeLayer)
         element.classList.add('liquid-glass-enhanced')
+        element.classList.add('liquid-glass-edge-host')
         element.classList.toggle('liquid-glass-backdrop-refraction', nativeBackdropRefraction && surface.usesRefraction)
         element.dataset.liquidGlass = surface.preset
         if (surface.usesRefraction) {
@@ -209,9 +225,14 @@ export default function LiquidGlassEffects() {
             layer.setAttribute('aria-hidden', 'true')
             element.append(layer)
           }
+          const edgeLayer = document.createElement('span')
+          edgeLayer.className = 'liquid-glass-edge-layer'
+          edgeLayer.setAttribute('aria-hidden', 'true')
+          element.append(edgeLayer)
           const surface: FilterSurface = {
             element,
             layer,
+            edgeLayer,
             id: `liquid-glass-${++nextFilterId}`,
             preset,
             usesRefraction: effectiveUsesRefraction,
