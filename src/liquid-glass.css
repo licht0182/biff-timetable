@@ -191,3 +191,154 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.film-card:hover{transform:none}}
 @media(prefers-reduced-transparency:reduce){.topbar,.tabs,.liquid-tab-bar-surface,.controls,.enhanced-timetable-actions,.film-results-toolbar,.film-modal,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal,.pwa-update-toast{background:var(--ios-surface)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:var(--ios-shadow)}}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.topbar,.tabs,.liquid-tab-bar-surface,.controls,.enhanced-timetable-actions,.film-results-toolbar,.film-modal,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal,.pwa-update-toast{background:var(--ios-surface)!important}}
+
+/* Strong reference pass: prioritize visible glass over opaque application surfaces. */
+:root{
+  color-scheme:dark;
+  --ios-bg:#101827;
+  --ios-bg-elevated:rgba(255,255,255,.1);
+  --ios-surface:rgba(255,255,255,.1);
+  --ios-surface-soft:rgba(255,255,255,.16);
+  --ios-label:#fff;
+  --ios-secondary:rgba(255,255,255,.76);
+  --ios-tertiary:rgba(255,255,255,.58);
+  --ios-separator:rgba(255,255,255,.2);
+  --ios-fill:rgba(255,255,255,.2);
+  --ios-glass:rgba(255,255,255,.1);
+  --ios-glass-strong:rgba(255,255,255,.16);
+  --ios-glass-border:rgba(255,255,255,.25);
+  --ios-shadow:0 8px 32px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.26);
+  --glass-blur:25px;
+  --glass-saturation:180%;
+  --glass-edge-highlight:rgba(255,255,255,.72);
+  --panel:var(--ios-surface);
+  --line:var(--ios-separator);
+  --muted:var(--ios-secondary);
+}
+
+html{background:#101827;color:var(--ios-label)}
+body{background:transparent;color:var(--ios-label)}
+body::before{
+  inset:0;
+  background-image:url('/biff-timetable/liquid-glass-background.jpg');
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  background-attachment:fixed;
+  filter:saturate(1.18) contrast(1.06);
+  transform:none;
+}
+
+h1,h2,h3,h4,strong,.film-detail-grid dd,.settings-number-row strong,.settings-toggle-row strong,.precise-transfer-panel>strong{color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.3)}
+.eyebrow,.subtitle,.english-title,.meta,.screening-row span,.detail-link,.modal-head p,.film-detail-grid dt,.synopsis,.modal-screenings span,.genre-meta,.booking-plan-panel>summary,.booking-plan-panel>summary small,.booking-plan-group h3,.booking-plan-item>span,.booking-plan-status,.booking-plan-empty,.settings-intro>p:last-child,.settings-card p,.precise-transfer-note,.settings-number-row small,.settings-toggle-row small,.curator-hero>div>p:last-child,.curator-section-heading>span,.curator-featured-card>p,.curator-card-meta,.curator-card>p,.curator-card-tags span,.curator-tags span,.curator-method span,.curator-disclaimer,.curator-back,.curator-deck,.curator-meta,.curator-body p,.curator-body ul,.curator-article-footer p,.curator-stat span{color:var(--ios-secondary)!important}
+a{color:#9bd0ff}
+
+.topbar,.tabs,.notice,.controls,.film-results-toolbar,.timetable-actions,.settings-card,.settings-reset-card,.settings-intro,.biff-settings-panel,.curator-hero,.curator-featured,.curator-latest,.curator-method,.curator-card,.curator-article,.film-card,.schedule-screening-group,.booking-plan-panel,.timetable-scroll,.timetable-empty,.liquid-tab-bar-surface,.pwa-update-toast,.film-search-suggestions{
+  border-color:var(--ios-glass-border)!important;
+  background:rgba(255,255,255,.1)!important;
+  box-shadow:var(--ios-shadow)!important;
+  color:var(--ios-label)!important;
+  backdrop-filter:blur(25px) saturate(180%);
+  -webkit-backdrop-filter:blur(25px) saturate(180%);
+}
+
+.film-modal,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal,.png-ios-dialog{
+  border-color:rgba(255,255,255,.3)!important;
+  background:rgba(255,255,255,.13)!important;
+  box-shadow:0 28px 70px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.34)!important;
+  color:#fff!important;
+}
+.modal-backdrop,.booking-conflict-backdrop,.booking-apply-backdrop,.custom-event-backdrop{background:rgba(7,13,27,.24)!important;backdrop-filter:blur(9px) saturate(140%);-webkit-backdrop-filter:blur(9px) saturate(140%)}
+
+.film-detail-grid,.schedule-list-row,.booking-plan-group,.booking-plan-item,.settings-card-head,.precise-transfer-panel,.travel-matrix-wrap,.travel-matrix th,.travel-matrix td,.curator-featured-card,.curator-film-guide,.curator-stat,.curator-article-footer,.png-ios-preview{
+  background:rgba(255,255,255,.12)!important;
+  border-color:rgba(255,255,255,.18)!important;
+  color:#fff!important;
+}
+.timetable,.corner,.date-head,.time-axis,.day-column{background:rgba(255,255,255,.04)!important;color:#fff!important}
+.hour-line{border-color:rgba(255,255,255,.14)!important}
+.date-head,.time-axis,.day-column{border-color:rgba(255,255,255,.2)!important}
+
+input,select,textarea,.custom-event-control-shell,.settings-number-control input,.film-search-autocomplete input{
+  border-color:rgba(255,255,255,.24)!important;
+  background:rgba(255,255,255,.16)!important;
+  color:#fff!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16)!important;
+  backdrop-filter:blur(10px) saturate(165%);
+  -webkit-backdrop-filter:blur(10px) saturate(165%);
+}
+input::placeholder,textarea::placeholder{color:rgba(255,255,255,.62)!important}
+select option{background:#25314a;color:#fff}
+
+.filter-toggle,.filter-reset,.chips button,.time-range-action,.mobile-advanced-filter-toggle,.mobile-filter-jump,.timetable-view-switch button,.timetable-action-buttons>button,.timetable-action-buttons summary,.custom-event-add-button,.png-export-trigger,.screening-row button,.modal-screenings button,.favorite-button,.detail-button,.timetable-empty button,.custom-event-form-actions button,.booking-plan-item-actions button,.booking-conflict-actions button,.booking-apply-actions button,.settings-reset-button,.modal-close,.png-ios-actions button,.schedule-list-remove{
+  border-color:rgba(255,255,255,.25)!important;
+  background:rgba(255,255,255,.2)!important;
+  color:#fff!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 4px 14px rgba(0,0,0,.12)!important;
+  backdrop-filter:blur(10px) saturate(180%);
+  -webkit-backdrop-filter:blur(10px) saturate(180%);
+}
+.filter-toggle.active,.chips button.active,.timetable-view-switch button.active,.screening-row button.selected,.modal-screenings button.selected,.booking-conflict-actions button.primary,.booking-apply-actions button.primary,.custom-event-save,.curator-article-footer button{
+  border-color:rgba(255,255,255,.45)!important;
+  background:rgba(10,132,255,.72)!important;
+  color:#fff!important;
+}
+.favorite-button.active{background:rgba(255,159,10,.42)!important;border-color:rgba(255,214,10,.62)!important;color:#fff!important}
+.section-label{background:rgba(217,45,32,.34)!important;color:#fff!important;border:1px solid rgba(255,255,255,.18)}
+
+.liquid-tab-icon{
+  width:46px!important;
+  height:46px!important;
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:50%;
+  background:rgba(255,255,255,.2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.26),0 6px 18px rgba(0,0,0,.14);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  transition:transform .3s ease,background .3s ease,box-shadow .3s ease;
+}
+.liquid-tab-bar button.active .liquid-tab-icon{background:rgba(255,255,255,.36);box-shadow:0 8px 25px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.42)}
+.liquid-tab-bar-surface{min-height:88px!important;padding:8px 10px!important}
+.liquid-tab-bar button{min-height:70px!important;color:rgba(255,255,255,.72)!important}
+.liquid-tab-bar button.active{background:rgba(255,255,255,.12)!important;color:#fff!important}
+.liquid-tab-icon svg{width:24px!important;height:24px!important}
+
+.film-card{transition:transform .3s ease,box-shadow .3s ease,background .3s ease}
+.liquid-glass-enhanced{
+  background:rgba(255,255,255,.1)!important;
+  backdrop-filter:var(--liquid-filter) blur(25px) saturate(180%)!important;
+  -webkit-backdrop-filter:blur(25px) saturate(180%)!important;
+  box-shadow:inset 0 1px 0 var(--glass-edge-highlight),inset 1px 0 0 rgba(255,255,255,.26),0 12px 38px rgba(0,0,0,.22)!important;
+}
+.liquid-glass-enhanced[data-liquid-glass="toolbar"]{--glass-blur:25px;--glass-saturation:180%}
+.liquid-glass-enhanced[data-liquid-glass="content"]{--glass-blur:25px;--glass-saturation:180%}
+.liquid-glass-enhanced[data-liquid-glass="sheet"],.liquid-glass-enhanced[data-liquid-glass="modal"]{--glass-blur:30px;--glass-saturation:190%}
+
+@media(hover:hover) and (pointer:fine){
+  .tabs button:hover,.liquid-tab-bar button:hover .liquid-tab-icon{transform:translateY(-8px) scale(1.1);background:rgba(255,255,255,.35)!important;box-shadow:0 8px 25px rgba(0,0,0,.2)}
+  .chips button:hover,.filter-toggle:hover,.filter-reset:hover,.favorite-button:hover,.detail-button:hover{transform:translateY(-2px) scale(1.04);background:rgba(255,255,255,.32)!important}
+  .film-card:hover{transform:translateY(-3px) scale(1.005);background:rgba(255,255,255,.14)!important;box-shadow:0 18px 44px rgba(0,0,0,.25)!important}
+}
+
+@media(max-width:700px){
+  body::before{inset:0;background-position:58% center}
+  .topbar,.timetable-mode .topbar{background:rgba(255,255,255,.1)!important;border-bottom:1px solid rgba(255,255,255,.18)!important}
+  .controls{background:rgba(255,255,255,.1)!important}
+  .film-search-autocomplete input{background:rgba(255,255,255,.16)!important}
+  .mobile-advanced-filter-toggle{background:rgba(255,255,255,.18)!important;color:#fff!important}
+  #film-advanced-filters.filter-row{background:rgba(255,255,255,.14)!important}
+  .film-results-toolbar{background:rgba(255,255,255,.1)!important}
+  .liquid-tab-icon b{border-color:rgba(255,255,255,.36)!important}
+}
+
+@media(prefers-reduced-transparency:reduce){
+  .topbar,.tabs,.liquid-tab-bar-surface,.notice,.controls,.film-results-toolbar,.timetable-actions,.film-card,.schedule-screening-group,.booking-plan-panel,.timetable-scroll,.timetable-empty,.settings-card,.settings-reset-card,.curator-hero,.curator-featured,.curator-latest,.curator-method,.curator-card,.curator-article,.film-modal,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal,.pwa-update-toast{
+    background:rgba(16,24,39,.96)!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+}
+
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .topbar,.tabs,.liquid-tab-bar-surface,.notice,.controls,.film-results-toolbar,.timetable-actions,.film-card,.schedule-screening-group,.booking-plan-panel,.timetable-scroll,.timetable-empty,.settings-card,.settings-reset-card,.curator-hero,.curator-featured,.curator-latest,.curator-method,.curator-card,.curator-article,.film-modal,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal,.pwa-update-toast{background:rgba(16,24,39,.88)!important}
+}

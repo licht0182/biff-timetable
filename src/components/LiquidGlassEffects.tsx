@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-type LiquidGlassPreset = 'navigation' | 'toolbar' | 'sheet' | 'modal'
+type LiquidGlassPreset = 'navigation' | 'toolbar' | 'content' | 'sheet' | 'modal'
 
 type FilterSurface = {
   element: HTMLElement
@@ -17,15 +17,17 @@ type GlassMaps = Pick<FilterSurface, 'displacement' | 'specular'>
 const TARGETS: Array<{ selector: string; preset: LiquidGlassPreset }> = [
   { selector: '.topbar, .tabs, .liquid-tab-bar-surface', preset: 'navigation' },
   { selector: '.film-results-toolbar, .enhanced-timetable-actions', preset: 'toolbar' },
+  { selector: '.notice, .controls, .film-card, .schedule-screening-group, .booking-plan-panel, .timetable-scroll, .timetable-empty, .settings-card, .settings-reset-card, .curator-hero, .curator-featured, .curator-latest, .curator-method, .curator-card, .curator-article', preset: 'content' },
   { selector: '#film-advanced-filters.filter-row.mobile-open', preset: 'sheet' },
   { selector: '.film-modal, .booking-conflict-dialog, .booking-apply-dialog, .custom-event-dialog, .custom-event-modal', preset: 'modal' },
 ]
 
 const PRESETS = {
-  navigation: { radius: 26, bezel: 18, scale: 8, specular: 0.42 },
-  toolbar: { radius: 20, bezel: 14, scale: 6, specular: 0.34 },
-  sheet: { radius: 30, bezel: 20, scale: 4, specular: 0.28 },
-  modal: { radius: 30, bezel: 20, scale: 4, specular: 0.3 },
+  navigation: { radius: 26, bezel: 28, scale: 20, specular: 0.65 },
+  toolbar: { radius: 20, bezel: 24, scale: 16, specular: 0.58 },
+  content: { radius: 22, bezel: 22, scale: 12, specular: 0.52 },
+  sheet: { radius: 30, bezel: 28, scale: 18, specular: 0.62 },
+  modal: { radius: 30, bezel: 28, scale: 18, specular: 0.62 },
 } satisfies Record<LiquidGlassPreset, { radius: number; bezel: number; scale: number; specular: number }>
 
 const mapCache = new Map<string, GlassMaps>()
