@@ -222,7 +222,10 @@ export default function LiquidGlassEffects() {
           if (!element.matches(AUTHORED_POSITION_TARGETS) && getComputedStyle(element).position === 'static') {
             element.classList.add('liquid-glass-positioned')
           }
-          const layer = usesRefraction ? document.createElement('span') : null
+          // iOS WebKit cannot use the SVG backdrop refraction path reliably.
+          // Do not create the extra compositing layer there; retain the CSS glass surface instead.
+          const effectiveUsesRefraction = usesRefraction && !iosWebKit
+          const layer = effectiveUsesRefraction ? document.createElement('span') : null
           if (layer) {
             layer.className = 'liquid-glass-refraction-layer'
             layer.setAttribute('aria-hidden', 'true')
@@ -233,7 +236,7 @@ export default function LiquidGlassEffects() {
             layer,
             id: `liquid-glass-${++nextFilterId}`,
             preset,
-            usesRefraction,
+            usesRefraction: effectiveUsesRefraction,
             width: 0,
             height: 0,
             displacement: '',
@@ -251,7 +254,10 @@ export default function LiquidGlassEffects() {
     mutationObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] })
     transparencyPreference.addEventListener('change', schedulePublish)
     window.addEventListener('resize', scheduleBrowserDock, { passive: true })
+    window.addEventListener('scroll', scheduleBrowserDock, { passive: true })
+    window.addEventListener('pageshow', scheduleBrowserDock)
     window.visualViewport?.addEventListener('resize', scheduleBrowserDock, { passive: true })
+    window.visualViewport?.addEventListener('scroll', scheduleBrowserDock, { passive: true })
     discover()
 
     return () => {
@@ -261,7 +267,10 @@ export default function LiquidGlassEffects() {
       resizeObserver.disconnect()
       transparencyPreference.removeEventListener('change', schedulePublish)
       window.removeEventListener('resize', scheduleBrowserDock)
+      window.removeEventListener('scroll', scheduleBrowserDock)
+      window.removeEventListener('pageshow', scheduleBrowserDock)
       window.visualViewport?.removeEventListener('resize', scheduleBrowserDock)
+      window.visualViewport?.removeEventListener('scroll', scheduleBrowserDock)
       const dock = document.querySelector<HTMLElement>('.liquid-tab-bar')
       dock?.style.removeProperty('--ios-browser-dock-start')
       dock?.style.removeProperty('--ios-browser-dock-range')
