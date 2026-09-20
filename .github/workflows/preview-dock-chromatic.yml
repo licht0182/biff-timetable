@@ -47,14 +47,13 @@ jobs:
       - name: Build isolated preview
         working-directory: preview
         env:
-          BIFF_DISABLE_PWA: '1'
+          BIFF_BASE: /biff-timetable/preview/dock-chromatic/
         run: |
           npm ci
           npm run validate:data
           npm run validate:films
           npm run validate:curator
-          npx tsc -b
-          npx vite build --base=/biff-timetable/preview/dock-chromatic/
+          npm run build
 
       - name: Assemble production and preview site
         run: |
