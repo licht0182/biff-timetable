@@ -2,10 +2,12 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const disablePwa = process.env.BIFF_DISABLE_PWA === '1'
+
 export default defineConfig({
   plugins: [
     react(),
-    VitePWA({
+    ...(!disablePwa ? [VitePWA({
       registerType: 'prompt',
       includeAssets: ['favicon.svg', 'app-icon.svg'],
       manifest: {
@@ -30,7 +32,7 @@ export default defineConfig({
         navigateFallbackDenylist: [/\/screenings\.json/, /\/films-2026(?:\.meta)?\.json/],
         cleanupOutdatedCaches: true,
       },
-    }),
+    })] : []),
   ],
   base: '/biff-timetable/',
 })
