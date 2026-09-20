@@ -88,6 +88,7 @@
   }
 
   .app-shell>main>.controls:first-child{margin-top:0}
+  .film-page>.notice:first-child{margin-top:0}
 
   .film-results-toolbar{
     position:sticky;
