@@ -119,22 +119,49 @@
 }
 
 @media(max-width:700px){
+  /* PNG is a secondary action on narrow screens; keep the primary row compact. */
+  .timetable-action-buttons>.png-export-trigger{display:none}
+
   .backup-menu.timetable-more-menu>summary{min-width:54px}
   .backup-menu.timetable-more-menu>div{
     width:176px;
     min-width:176px;
-    min-height:142px;
-    padding:42px 7px 42px;
+    min-height:184px;
+    padding:76px 7px 42px;
   }
+
+  .timetable-action-buttons:has(.backup-menu.timetable-more-menu[open])>.png-export-trigger,
   .timetable-action-buttons:has(.backup-menu.timetable-more-menu[open])>.png-export-trigger+button,
   .timetable-action-buttons:has(.backup-menu.timetable-more-menu[open])>button:last-child{
+    position:absolute;
     right:7px;
+    z-index:47;
+    display:flex;
+    align-items:center;
+    justify-content:center;
     width:162px;
     min-width:162px;
     height:29px;
     min-height:29px;
+    margin:0;
+    padding:0 9px;
+    border-radius:5px;
+    background:#fff;
     font-size:9px!important;
+    font-weight:700;
+    line-height:1;
+    white-space:nowrap;
   }
-  .timetable-action-buttons:has(.backup-menu.timetable-more-menu[open])>.png-export-trigger+button{top:calc(100% + 12px)}
-  .timetable-action-buttons:has(.backup-menu.timetable-more-menu[open])>button:last-child{top:calc(100% + 115px)}
+
+  .timetable-action-buttons:has(.backup-menu.timetable-more-menu[open])>.png-export-trigger{
+    top:calc(100% + 12px);
+    border-color:#e1e1e1;
+    color:#666;
+  }
+  .timetable-action-buttons:has(.backup-menu.timetable-more-menu[open])>.png-export-trigger+button{
+    top:calc(100% + 45px);
+  }
+  .timetable-action-buttons:has(.backup-menu.timetable-more-menu[open])>button:last-child{
+    top:calc(100% + 157px);
+  }
 }
