@@ -370,36 +370,27 @@ select option{background:#f3f4f6;color:#111827}
 }
 
 @media(max-width:700px) and (display-mode:browser){
+  /*
+   * Keep Safari's dock viewport-fixed as well. The previous scroll-timeline
+   * emulation depended on document scrollRange and could retain timetable
+   * geometry after a route change, leaving a gray band under the new page.
+   */
   .ios-webkit .liquid-tab-bar{
-    position:absolute;
-    top:0;
-    bottom:auto;
-    --ios-browser-dock-start:calc(100dvh - 122px);
-    --ios-browser-dock-range:0px;
-    transform:translate3d(0,var(--ios-browser-dock-start),0);
-    animation:ios-browser-dock-follow 1ms linear both;
-    animation-timeline:scroll(root block);
-    will-change:transform;
+    position:fixed;
+    top:auto;
+    bottom:8px;
+    transform:none;
+    animation:none;
+    will-change:auto;
   }
   .ios-webkit .liquid-tab-bar .liquid-tab-bar-surface.liquid-glass-enhanced{
     isolation:auto!important;
     filter:none!important;
-    backdrop-filter:none!important;
-    -webkit-backdrop-filter:none!important;
+    backdrop-filter:blur(12px) saturate(160%)!important;
+    -webkit-backdrop-filter:blur(12px) saturate(160%)!important;
   }
   .ios-webkit .liquid-tab-bar .liquid-glass-refraction-layer,
   .ios-webkit .liquid-tab-bar .liquid-tab-bar-surface::after{display:none!important}
-}
-
-@keyframes ios-browser-dock-follow{
-  from{transform:translate3d(0,var(--ios-browser-dock-start),0)}
-  to{transform:translate3d(0,calc(var(--ios-browser-dock-start) + var(--ios-browser-dock-range)),0)}
-}
-
-@supports not (animation-timeline:scroll()){
-  @media(max-width:700px) and (display-mode:browser){
-    .ios-webkit .liquid-tab-bar{position:fixed;top:auto;bottom:8px;animation:none;transform:none;will-change:auto}
-  }
 }
 
 @media(max-width:700px) and (display-mode:standalone){
