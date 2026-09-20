@@ -161,7 +161,7 @@ test('aligns the first content surface across all primary mobile sections', asyn
   expect(Math.max(...gaps) - Math.min(...gaps), `mobile top gaps: ${gaps.join(', ')}`).toBeLessThanOrEqual(4)
 })
 
-test('releases the grid viewport lock before leaving for every other primary section', async ({ page, request }) => {
+test('releases the grid viewport lock before leaving for every other primary section', async ({ page, request, browserName }) => {
   await seedOneScreening(page, request)
   await page.goto('./')
   const dock = page.locator('.liquid-tab-bar')
@@ -170,6 +170,27 @@ test('releases the grid viewport lock before leaving for every other primary sec
   await dock.getByRole('button', { name: '영화 찾기' }).click()
   await expectViewportLockReleased(page)
   await expect(page.locator('#film-controls')).toBeVisible()
+
+  const filmTransition = await page.evaluate(() => {
+    const surface = document.querySelector<HTMLElement>('.liquid-tab-bar-surface')!
+    const main = document.querySelector<HTMLElement>('main')!
+    const surfaceBox = surface.getBoundingClientRect()
+    return {
+      bodyPosition: getComputedStyle(document.body).position,
+      mainBehindDock: main.getBoundingClientRect().bottom - surfaceBox.top,
+      bottomGap: window.innerHeight - surfaceBox.bottom,
+    }
+  })
+  expect(filmTransition.bodyPosition).not.toBe('fixed')
+  expect(filmTransition.mainBehindDock).toBeGreaterThan(40)
+  expect(filmTransition.bottomGap).toBeGreaterThanOrEqual(5)
+  expect(filmTransition.bottomGap).toBeLessThanOrEqual(10)
+
+  if (browserName === 'webkit') {
+    await expect.poll(() => dock.evaluate((element) => (
+      Number.parseFloat(getComputedStyle(element).getPropertyValue('--ios-browser-dock-range'))
+    ))).toBeGreaterThan(100)
+  }
 
   await openGrid(page)
   await dock.getByRole('button', { name: 'AI 도슨트' }).click()
