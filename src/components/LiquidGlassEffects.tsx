@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
-type LiquidGlassPreset = 'navigation' | 'toolbar' | 'content' | 'sheet' | 'modal'
+type LiquidGlassPreset = 'navigation' | 'dock' | 'toolbar' | 'content' | 'sheet' | 'modal'
+type LiquidGlassModel = 'legacy' | 'chromatic'
 
 type FilterSurface = {
   element: HTMLElement
@@ -9,17 +10,20 @@ type FilterSurface = {
   highlightLayer: HTMLSpanElement
   id: string
   preset: LiquidGlassPreset
+  model: LiquidGlassModel
   usesRefraction: boolean
   width: number
   height: number
   displacement: string
   specular: string
+  edgeMask: string
 }
 
-type GlassMaps = Pick<FilterSurface, 'displacement' | 'specular'>
+type GlassMaps = Pick<FilterSurface, 'displacement' | 'specular' | 'edgeMask'>
 
 const TARGETS: Array<{ selector: string; preset: LiquidGlassPreset; usesRefraction: boolean }> = [
-  { selector: '.topbar, .tabs, .liquid-tab-bar-surface', preset: 'navigation', usesRefraction: true },
+  { selector: '.topbar, .tabs', preset: 'navigation', usesRefraction: true },
+  { selector: '.liquid-tab-bar-surface', preset: 'dock', usesRefraction: true },
   { selector: '.film-results-toolbar, .enhanced-timetable-actions', preset: 'toolbar', usesRefraction: true },
   // Refracting every virtualized card creates dozens of WebKit compositing layers.
   // Content keeps the translucent lens/bevel treatment without a live SVG filter.
@@ -30,6 +34,8 @@ const TARGETS: Array<{ selector: string; preset: LiquidGlassPreset; usesRefracti
 
 const PRESETS = {
   navigation: { radius: 30, bezel: 34, scale: 38, specular: 0.9 },
+  // Keep legacy dock geometry identical to navigation; the experiment changes only compositing.
+  dock: { radius: 30, bezel: 34, scale: 38, specular: 0.9 },
   toolbar: { radius: 22, bezel: 28, scale: 30, specular: 0.82 },
   content: { radius: 24, bezel: 26, scale: 26, specular: 0.76 },
   sheet: { radius: 32, bezel: 34, scale: 34, specular: 0.86 },
@@ -64,8 +70,8 @@ function roundedRectangleDistance(x: number, y: number, width: number, height: n
   return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - radius
 }
 
-function createGlassMaps(width: number, height: number, preset: LiquidGlassPreset): GlassMaps {
-  const key = `${preset}:${width}x${height}`
+function createGlassMaps(width: number, height: number, preset: LiquidGlassPreset, model: LiquidGlassModel): GlassMaps {
+  const key = `${model}:${preset}:${width}x${height}`
   const cached = mapCache.get(key)
   if (cached) return cached
 
@@ -79,14 +85,17 @@ function createGlassMaps(width: number, height: number, preset: LiquidGlassPrese
   const bezel = Math.max(2, settings.bezel * renderScale)
   const displacementCanvas = document.createElement('canvas')
   const specularCanvas = document.createElement('canvas')
-  displacementCanvas.width = specularCanvas.width = mapWidth
-  displacementCanvas.height = specularCanvas.height = mapHeight
+  const edgeMaskCanvas = document.createElement('canvas')
+  displacementCanvas.width = specularCanvas.width = edgeMaskCanvas.width = mapWidth
+  displacementCanvas.height = specularCanvas.height = edgeMaskCanvas.height = mapHeight
   const displacementContext = displacementCanvas.getContext('2d')
   const specularContext = specularCanvas.getContext('2d')
-  if (!displacementContext || !specularContext) return { displacement: '', specular: '' }
+  const edgeMaskContext = edgeMaskCanvas.getContext('2d')
+  if (!displacementContext || !specularContext || !edgeMaskContext) return { displacement: '', specular: '', edgeMask: '' }
 
   const displacementImage = displacementContext.createImageData(mapWidth, mapHeight)
   const specularImage = specularContext.createImageData(mapWidth, mapHeight)
+  const edgeMaskImage = edgeMaskContext.createImageData(mapWidth, mapHeight)
   const epsilon = 0.75
 
   for (let y = 0; y < mapHeight; y += 1) {
@@ -115,14 +124,22 @@ function createGlassMaps(width: number, height: number, preset: LiquidGlassPrese
       specularImage.data[index + 1] = 255
       specularImage.data[index + 2] = 255
       specularImage.data[index + 3] = highlight
+
+      const maskAlpha = Math.round(255 * easedEdge)
+      edgeMaskImage.data[index] = 255
+      edgeMaskImage.data[index + 1] = 255
+      edgeMaskImage.data[index + 2] = 255
+      edgeMaskImage.data[index + 3] = maskAlpha
     }
   }
 
   displacementContext.putImageData(displacementImage, 0, 0)
   specularContext.putImageData(specularImage, 0, 0)
+  edgeMaskContext.putImageData(edgeMaskImage, 0, 0)
   const maps = {
     displacement: displacementCanvas.toDataURL('image/png'),
     specular: specularCanvas.toDataURL('image/png'),
+    edgeMask: edgeMaskCanvas.toDataURL('image/png'),
   }
   if (mapCache.size >= 32) mapCache.delete(mapCache.keys().next().value ?? '')
   mapCache.set(key, maps)
@@ -136,6 +153,7 @@ export default function LiquidGlassEffects() {
   useEffect(() => {
     const nativeBackdropRefraction = supportsBackdropRefraction()
     const iosWebKit = isIOSWebKitRuntime()
+    const dockChromaticExperiment = new URLSearchParams(window.location.search).get('dockGlass') === 'chromatic'
     document.documentElement.classList.toggle('ios-webkit', iosWebKit)
     const transparencyPreference = window.matchMedia('(prefers-reduced-transparency: reduce)')
     let frame = 0
@@ -146,6 +164,7 @@ export default function LiquidGlassEffects() {
       surface.element.classList.remove('liquid-glass-edge-host')
       surface.element.classList.remove('liquid-glass-positioned')
       surface.element.removeAttribute('data-liquid-glass')
+      surface.element.removeAttribute('data-liquid-glass-model')
       surface.element.style.removeProperty('--liquid-filter')
       surface.layer?.remove()
       surface.edgeLayer.remove()
@@ -160,6 +179,7 @@ export default function LiquidGlassEffects() {
       element.classList.remove('liquid-glass-backdrop-refraction')
       element.classList.add('liquid-glass-edge-host')
       element.dataset.liquidGlass = surface.preset
+      element.dataset.liquidGlassModel = surface.model
       element.style.removeProperty('--liquid-filter')
       surface.layer?.remove()
     }
@@ -184,11 +204,12 @@ export default function LiquidGlassEffects() {
         const width = quantize(rect.width)
         const height = quantize(rect.height)
         if (surface.usesRefraction && (width !== surface.width || height !== surface.height)) {
-          const maps = createGlassMaps(width, height, surface.preset)
+          const maps = createGlassMaps(width, height, surface.preset, surface.model)
           surface.width = width
           surface.height = height
           surface.displacement = maps.displacement
           surface.specular = maps.specular
+          surface.edgeMask = maps.edgeMask
         }
         if (surface.layer && !surface.layer.isConnected) element.append(surface.layer)
         if (!surface.edgeLayer.isConnected) element.append(surface.edgeLayer)
@@ -197,6 +218,7 @@ export default function LiquidGlassEffects() {
         element.classList.add('liquid-glass-edge-host')
         element.classList.toggle('liquid-glass-backdrop-refraction', nativeBackdropRefraction && surface.usesRefraction)
         element.dataset.liquidGlass = surface.preset
+        element.dataset.liquidGlassModel = surface.model
         if (surface.usesRefraction) {
           element.style.setProperty('--liquid-filter', `url("#${surface.id}")`)
           next.push({ ...surface })
@@ -222,6 +244,7 @@ export default function LiquidGlassEffects() {
           // iOS WebKit cannot use the SVG backdrop refraction path reliably.
           // Do not create the extra compositing layer there; retain the CSS glass surface instead.
           const effectiveUsesRefraction = usesRefraction && !iosWebKit
+          const model: LiquidGlassModel = preset === 'dock' && dockChromaticExperiment ? 'chromatic' : 'legacy'
           const layer = effectiveUsesRefraction ? document.createElement('span') : null
           if (layer) {
             layer.className = 'liquid-glass-refraction-layer'
@@ -243,11 +266,13 @@ export default function LiquidGlassEffects() {
             highlightLayer,
             id: `liquid-glass-${++nextFilterId}`,
             preset,
+            model,
             usesRefraction: effectiveUsesRefraction,
             width: 0,
             height: 0,
             displacement: '',
             specular: '',
+            edgeMask: '',
           }
           surfaces.current.set(element, surface)
           resizeObserver.observe(element)
@@ -288,7 +313,23 @@ export default function LiquidGlassEffects() {
         colorInterpolationFilters="sRGB"
       >
         <feImage href={surface.displacement} x="0" y="0" width={surface.width} height={surface.height} preserveAspectRatio="none" result="displacement-map" />
-        <feDisplacementMap in="SourceGraphic" in2="displacement-map" scale={PRESETS[surface.preset].scale} xChannelSelector="R" yChannelSelector="G" result="refracted" />
+        {surface.model === 'chromatic' ? <>
+          <feImage href={surface.edgeMask} x="0" y="0" width={surface.width} height={surface.height} preserveAspectRatio="none" result="edge-mask" />
+          <feDisplacementMap in="SourceGraphic" in2="displacement-map" scale={PRESETS[surface.preset].scale} xChannelSelector="R" yChannelSelector="G" result="red-displaced" />
+          <feColorMatrix in="red-displaced" type="matrix" values={'1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0'} result="red-channel" />
+          <feDisplacementMap in="SourceGraphic" in2="displacement-map" scale={PRESETS[surface.preset].scale * 0.975} xChannelSelector="R" yChannelSelector="G" result="green-displaced" />
+          <feColorMatrix in="green-displaced" type="matrix" values={'0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0'} result="green-channel" />
+          <feDisplacementMap in="SourceGraphic" in2="displacement-map" scale={PRESETS[surface.preset].scale * 0.95} xChannelSelector="R" yChannelSelector="G" result="blue-displaced" />
+          <feColorMatrix in="blue-displaced" type="matrix" values={'0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0'} result="blue-channel" />
+          <feBlend in="green-channel" in2="blue-channel" mode="screen" result="gb-combined" />
+          <feBlend in="red-channel" in2="gb-combined" mode="screen" result="rgb-combined" />
+          <feComposite in="rgb-combined" in2="edge-mask" operator="in" result="edge-refracted" />
+          <feComponentTransfer in="edge-mask" result="center-mask">
+            <feFuncA type="table" tableValues="1 0" />
+          </feComponentTransfer>
+          <feComposite in="SourceGraphic" in2="center-mask" operator="in" result="clean-center" />
+          <feComposite in="edge-refracted" in2="clean-center" operator="over" result="refracted" />
+        </> : <feDisplacementMap in="SourceGraphic" in2="displacement-map" scale={PRESETS[surface.preset].scale} xChannelSelector="R" yChannelSelector="G" result="refracted" />}
         <feImage href={surface.specular} x="0" y="0" width={surface.width} height={surface.height} preserveAspectRatio="none" result="specular-map" />
         <feBlend in="refracted" in2="specular-map" mode="screen" />
       </filter>)}
