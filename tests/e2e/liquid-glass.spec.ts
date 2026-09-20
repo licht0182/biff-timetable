@@ -130,7 +130,7 @@ test('keeps SVG refraction on stable glass while content avoids ghost-prone filt
   await expect(modal.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(browserName === 'webkit' ? 0 : 1)
 })
 
-test('aligns separate dark and white rim rings to each surface boundary', async ({ page }) => {
+test('overlays fixed black and white rims on the exact same surface edge', async ({ page }) => {
   const expectAlignedRim = async (selector: string) => {
     const surface = page.locator(selector).first()
     await expect(surface).toBeVisible()
@@ -175,45 +175,51 @@ test('aligns separate dark and white rim rings to each surface boundary', async 
         highlightBackground: highlightStyle.backgroundImage,
         edgeMask: edgeStyle.maskImage || edgeStyle.webkitMaskImage,
         highlightMask: highlightStyle.maskImage || highlightStyle.webkitMaskImage,
+        edgeZIndex: Number.parseInt(edgeStyle.zIndex, 10),
+        highlightZIndex: Number.parseInt(highlightStyle.zIndex, 10),
         edgePointerEvents: edgeStyle.pointerEvents,
         highlightPointerEvents: highlightStyle.pointerEvents,
       }
     })
 
-    expect(Math.abs(metrics.edgeRect.x - metrics.hostRect.x)).toBeLessThanOrEqual(0.2)
-    expect(Math.abs(metrics.edgeRect.y - metrics.hostRect.y)).toBeLessThanOrEqual(0.2)
-    expect(Math.abs(metrics.edgeRect.width - metrics.hostRect.width)).toBeLessThanOrEqual(0.2)
-    expect(Math.abs(metrics.edgeRect.height - metrics.hostRect.height)).toBeLessThanOrEqual(0.2)
+    const closeEnough = (left: number, right: number) => Math.abs(left - right) <= 0.2
+    expect(closeEnough(metrics.edgeRect.x, metrics.hostRect.x)).toBeTruthy()
+    expect(closeEnough(metrics.edgeRect.y, metrics.hostRect.y)).toBeTruthy()
+    expect(closeEnough(metrics.edgeRect.width, metrics.hostRect.width)).toBeTruthy()
+    expect(closeEnough(metrics.edgeRect.height, metrics.hostRect.height)).toBeTruthy()
 
-    const innerInsetX = metrics.highlightRect.x - metrics.hostRect.x
-    const innerInsetY = metrics.highlightRect.y - metrics.hostRect.y
-    expect(innerInsetX).toBeGreaterThanOrEqual(0.7)
-    expect(innerInsetX).toBeLessThanOrEqual(1.1)
-    expect(innerInsetY).toBeGreaterThanOrEqual(0.7)
-    expect(innerInsetY).toBeLessThanOrEqual(1.1)
+    expect(closeEnough(metrics.highlightRect.x, metrics.hostRect.x)).toBeTruthy()
+    expect(closeEnough(metrics.highlightRect.y, metrics.hostRect.y)).toBeTruthy()
+    expect(closeEnough(metrics.highlightRect.width, metrics.hostRect.width)).toBeTruthy()
+    expect(closeEnough(metrics.highlightRect.height, metrics.hostRect.height)).toBeTruthy()
 
+    expect(metrics.edgeRadius).toEqual(metrics.hostRadius)
+    expect(metrics.highlightRadius).toEqual(metrics.hostRadius)
     expect(metrics.edgePadding).toBeGreaterThan(metrics.highlightPadding)
     expect(metrics.highlightPadding).toBeGreaterThan(0)
     expect(metrics.highlightPadding).toBeLessThanOrEqual(0.5)
 
+    expect(metrics.edgeZIndex).toBeGreaterThan(metrics.highlightZIndex)
     expect(metrics.edgeBackground).toContain('linear-gradient')
-    expect(metrics.edgeBackground).toContain('17, 24, 39')
+    expect(metrics.edgeBackground).toContain('0, 0, 0')
+    expect(metrics.edgeBackground).not.toContain('17, 24, 39')
     expect(metrics.highlightBackground).toContain('linear-gradient')
     expect(metrics.highlightBackground).toContain('255, 255, 255')
+
+    const whiteStops = metrics.highlightBackground.match(/rgba?\([^)]*\)/g) ?? []
+    expect(whiteStops.length).toBeGreaterThanOrEqual(6)
+    expect(whiteStops[0]).toBe(whiteStops.at(-1))
+    expect(whiteStops[1]).toBe(whiteStops.at(-2))
+
+    const darkStops = metrics.edgeBackground.match(/rgba?\([^)]*\)/g) ?? []
+    expect(darkStops.length).toBeGreaterThanOrEqual(6)
+    expect(darkStops[0]).toBe(darkStops.at(-1))
+    expect(darkStops[1]).toBe(darkStops.at(-2))
+
     expect(metrics.edgeMask).toContain('linear-gradient')
     expect(metrics.highlightMask).toContain('linear-gradient')
     expect(metrics.edgePointerEvents).toBe('none')
     expect(metrics.highlightPointerEvents).toBe('none')
-
-    expect(metrics.edgeRadius).toEqual(metrics.hostRadius)
-    for (let index = 0; index < metrics.hostRadius.length; index += 1) {
-      const hostRadius = Number.parseFloat(metrics.hostRadius[index])
-      const highlightRadius = Number.parseFloat(metrics.highlightRadius[index])
-      if (Number.isFinite(hostRadius) && Number.isFinite(highlightRadius)) {
-        expect(highlightRadius).toBeLessThanOrEqual(hostRadius + 0.01)
-        expect(highlightRadius).toBeGreaterThanOrEqual(Math.max(0, hostRadius - 1.1))
-      }
-    }
   }
 
   for (const selector of ['.topbar', '.liquid-tab-bar-surface', '.controls', '.film-results-toolbar', '.film-card']) {
@@ -231,23 +237,25 @@ test('aligns separate dark and white rim rings to each surface boundary', async 
 
   await tabBar.getByRole('button', { name: '영화 찾기' }).click()
   await page.getByRole('button', { name: '상세', exact: true }).first().click()
-  const modal = page.locator('.film-modal')
   await expectAlignedRim('.film-modal')
 
-  const modalCorners = await modal.evaluate((element) => {
+  const modalCorners = await page.locator('.film-modal').evaluate((element) => {
     const host = getComputedStyle(element)
+    const edge = getComputedStyle(element.querySelector<HTMLElement>(':scope > .liquid-glass-edge-layer')!)
     const highlight = getComputedStyle(element.querySelector<HTMLElement>(':scope > .liquid-glass-edge-highlight-layer')!)
     return {
-      hostTopLeft: Number.parseFloat(host.borderTopLeftRadius),
-      hostBottomLeft: Number.parseFloat(host.borderBottomLeftRadius),
-      highlightTopLeft: Number.parseFloat(highlight.borderTopLeftRadius),
-      highlightBottomLeft: Number.parseFloat(highlight.borderBottomLeftRadius),
+      hostTopLeft: host.borderTopLeftRadius,
+      hostBottomLeft: host.borderBottomLeftRadius,
+      edgeTopLeft: edge.borderTopLeftRadius,
+      edgeBottomLeft: edge.borderBottomLeftRadius,
+      highlightTopLeft: highlight.borderTopLeftRadius,
+      highlightBottomLeft: highlight.borderBottomLeftRadius,
     }
   })
-  expect(modalCorners.highlightTopLeft).toBeLessThan(modalCorners.hostTopLeft)
-  expect(modalCorners.hostBottomLeft).toBe(0)
-  expect(modalCorners.highlightBottomLeft).toBe(0)
-
+  expect(modalCorners.edgeTopLeft).toBe(modalCorners.hostTopLeft)
+  expect(modalCorners.highlightTopLeft).toBe(modalCorners.hostTopLeft)
+  expect(modalCorners.edgeBottomLeft).toBe(modalCorners.hostBottomLeft)
+  expect(modalCorners.highlightBottomLeft).toBe(modalCorners.hostBottomLeft)
 })
 
 test('keeps black shadows tight to surface edges', async ({ page }) => {
