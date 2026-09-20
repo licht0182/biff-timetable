@@ -333,7 +333,7 @@ select option{background:#f3f4f6;color:#111827}
   transform:translateX(-18%);
   opacity:.7;
 }
-.liquid-glass-enhanced[data-liquid-glass="navigation"]{--glass-blur:32px;--glass-saturation:180%;background:linear-gradient(145deg,rgba(255,255,255,.38),rgba(255,255,255,.12) 44%,rgba(255,255,255,.22)),rgba(255,255,255,.52)!important}
+.liquid-glass-enhanced[data-liquid-glass="navigation"],.liquid-glass-enhanced[data-liquid-glass="dock"]{--glass-blur:32px;--glass-saturation:180%;background:linear-gradient(145deg,rgba(255,255,255,.38),rgba(255,255,255,.12) 44%,rgba(255,255,255,.22)),rgba(255,255,255,.52)!important}
 .liquid-glass-enhanced[data-liquid-glass="toolbar"]{--glass-blur:30px;--glass-saturation:180%;background:linear-gradient(145deg,rgba(255,255,255,.36),rgba(255,255,255,.1) 44%,rgba(255,255,255,.2)),rgba(255,255,255,.58)!important}
 .liquid-tab-bar .liquid-tab-bar-surface.liquid-glass-enhanced{background:linear-gradient(145deg,rgba(255,255,255,.4),rgba(255,255,255,.1) 44%,rgba(255,255,255,.2)),rgba(229,231,235,.82)!important;backdrop-filter:blur(12px) saturate(160%)!important;-webkit-backdrop-filter:blur(12px) saturate(160%)!important}
 .film-results-toolbar.liquid-glass-enhanced,.enhanced-timetable-actions.liquid-glass-enhanced{background:linear-gradient(145deg,rgba(255,255,255,.4),rgba(255,255,255,.1) 44%,rgba(255,255,255,.2)),rgba(229,231,235,.97)!important}
@@ -408,7 +408,8 @@ select option{background:#f3f4f6;color:#111827}
   border-width:0!important;
   border-color:transparent!important;
 }
-.liquid-glass-edge-host[data-liquid-glass="navigation"]{
+.liquid-glass-edge-host[data-liquid-glass="navigation"],
+.liquid-glass-edge-host[data-liquid-glass="dock"]{
   --glass-rim-dark:rgba(0,0,0,.35);
   --glass-rim-white-mid:rgba(255,255,255,.44);
   --glass-rim-white-peak:rgba(255,255,255,.88);
