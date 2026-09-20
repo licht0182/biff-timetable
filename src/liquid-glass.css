@@ -392,9 +392,9 @@ select option{background:#f3f4f6;color:#111827}
 
 
 /* Liquid Glass edge rim -----------------------------------------------------
- * Apple-style edge treatment: a continuous dark hairline around the surface,
- * with separate inner white specular lines at the top and bottom. The white
- * lines fade toward the side edges instead of outlining all four sides.
+ * Apple-style edge treatment: dark hairlines live on the left/right edges and
+ * fade out toward the top/bottom corners. Separate inner white specular lines
+ * sit at the top and bottom and fade toward both side edges.
  */
 .liquid-glass-edge-host[data-liquid-glass]{
   --glass-rim-dark:rgba(17,24,39,.28);
@@ -436,9 +436,28 @@ select option{background:#f3f4f6;color:#111827}
   display:block;
   overflow:hidden;
   box-sizing:border-box;
-  border:.5px solid var(--glass-rim-dark);
+  border:0;
   border-radius:inherit;
   pointer-events:none;
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 5%,
+      var(--glass-rim-dark) 22%,
+      var(--glass-rim-dark) 78%,
+      transparent 95%,
+      transparent 100%
+    ) left center/.5px 100% no-repeat,
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 5%,
+      var(--glass-rim-dark) 22%,
+      var(--glass-rim-dark) 78%,
+      transparent 95%,
+      transparent 100%
+    ) right center/.5px 100% no-repeat;
 }
 .liquid-glass-edge-layer::before,
 .liquid-glass-edge-layer::after{
