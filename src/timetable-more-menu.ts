@@ -27,12 +27,13 @@ function closeOwningMenu(target: Element) {
   const details = actions.querySelector<HTMLDetailsElement>(':scope > .backup-menu.timetable-more-menu')
   if (!details?.open) return
 
+  const pngButton = actions.querySelector<HTMLElement>(':scope > .png-export-trigger')
   const calendarButton = actions.querySelector<HTMLElement>(':scope > .png-export-trigger + button')
   const directButtons = Array.from(actions.children).filter((element): element is HTMLButtonElement => element instanceof HTMLButtonElement)
   const clearButton = directButtons.at(-1) ?? null
   const backupAction = target.closest('.backup-menu.timetable-more-menu > div button')
 
-  if (target === calendarButton || target === clearButton || backupAction) details.open = false
+  if (target === pngButton || target === calendarButton || target === clearButton || backupAction) details.open = false
 }
 
 function onToggle(event: Event) {
