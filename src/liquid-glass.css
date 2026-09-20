@@ -392,43 +392,33 @@ select option{background:#f3f4f6;color:#111827}
 
 
 /* Liquid Glass edge rim -----------------------------------------------------
- * Two concentric rounded rings keep the optical layers physically separated:
- * - the dark outer ring follows the real surface boundary, including authored
- *   transparent borders and partial corner radii;
- * - the thinner white ring sits 0.9px inside it and follows a correspondingly
- *   smaller radius, so the two hairlines never occupy the same pixels.
+ * Both optical rings occupy the exact same authored surface boundary.
+ * The black directional rim is painted above the white directional rim so
+ * corner overlap always resolves to black while preserving the existing fades.
  */
 .liquid-glass-edge-host[data-liquid-glass]{
-  --glass-rim-dark:rgba(17,24,39,.28);
-  --glass-rim-top-mid:rgba(255,255,255,.28);
-  --glass-rim-top-peak:rgba(255,255,255,.68);
-  --glass-rim-bottom-mid:rgba(255,255,255,.12);
-  --glass-rim-bottom-peak:rgba(255,255,255,.30);
+  --glass-rim-dark:rgba(0,0,0,.28);
+  --glass-rim-white-mid:rgba(255,255,255,.28);
+  --glass-rim-white-peak:rgba(255,255,255,.68);
   --glass-rim-dark-width:.55px;
   --glass-rim-white-width:.4px;
   border-color:transparent!important;
 }
 .liquid-glass-edge-host[data-liquid-glass="navigation"]{
-  --glass-rim-dark:rgba(17,24,39,.35);
-  --glass-rim-top-mid:rgba(255,255,255,.44);
-  --glass-rim-top-peak:rgba(255,255,255,.88);
-  --glass-rim-bottom-mid:rgba(255,255,255,.20);
-  --glass-rim-bottom-peak:rgba(255,255,255,.48);
+  --glass-rim-dark:rgba(0,0,0,.35);
+  --glass-rim-white-mid:rgba(255,255,255,.44);
+  --glass-rim-white-peak:rgba(255,255,255,.88);
 }
 .liquid-glass-edge-host[data-liquid-glass="toolbar"]{
-  --glass-rim-dark:rgba(17,24,39,.32);
-  --glass-rim-top-mid:rgba(255,255,255,.38);
-  --glass-rim-top-peak:rgba(255,255,255,.82);
-  --glass-rim-bottom-mid:rgba(255,255,255,.17);
-  --glass-rim-bottom-peak:rgba(255,255,255,.41);
+  --glass-rim-dark:rgba(0,0,0,.32);
+  --glass-rim-white-mid:rgba(255,255,255,.38);
+  --glass-rim-white-peak:rgba(255,255,255,.82);
 }
 .liquid-glass-edge-host[data-liquid-glass="sheet"],
 .liquid-glass-edge-host[data-liquid-glass="modal"]{
-  --glass-rim-dark:rgba(17,24,39,.35);
-  --glass-rim-top-mid:rgba(255,255,255,.38);
-  --glass-rim-top-peak:rgba(255,255,255,.82);
-  --glass-rim-bottom-mid:rgba(255,255,255,.18);
-  --glass-rim-bottom-peak:rgba(255,255,255,.43);
+  --glass-rim-dark:rgba(0,0,0,.35);
+  --glass-rim-white-mid:rgba(255,255,255,.38);
+  --glass-rim-white-peak:rgba(255,255,255,.82);
 }
 .liquid-glass-enhanced.liquid-glass-edge-host[data-liquid-glass]{
   box-shadow:var(--ios-shadow)!important;
@@ -436,9 +426,14 @@ select option{background:#f3f4f6;color:#111827}
 .liquid-glass-edge-layer,
 .liquid-glass-edge-highlight-layer{
   position:absolute;
+  top:var(--glass-edge-top-offset,0);
+  right:var(--glass-edge-right-offset,0);
+  bottom:var(--glass-edge-bottom-offset,0);
+  left:var(--glass-edge-left-offset,0);
   display:block;
   box-sizing:border-box;
   border:0;
+  border-radius:inherit;
   pointer-events:none;
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
@@ -450,13 +445,8 @@ select option{background:#f3f4f6;color:#111827}
   mask-composite:exclude;
 }
 .liquid-glass-edge-layer{
-  top:var(--glass-edge-top-offset,0);
-  right:var(--glass-edge-right-offset,0);
-  bottom:var(--glass-edge-bottom-offset,0);
-  left:var(--glass-edge-left-offset,0);
   z-index:8;
   padding:var(--glass-rim-dark-width);
-  border-radius:inherit;
   background:linear-gradient(
     90deg,
     var(--glass-rim-dark) 0%,
@@ -468,25 +458,16 @@ select option{background:#f3f4f6;color:#111827}
   );
 }
 .liquid-glass-edge-highlight-layer{
-  top:calc(var(--glass-edge-top-offset,0px) + var(--glass-rim-inner-inset,.9px));
-  right:calc(var(--glass-edge-right-offset,0px) + var(--glass-rim-inner-inset,.9px));
-  bottom:calc(var(--glass-edge-bottom-offset,0px) + var(--glass-rim-inner-inset,.9px));
-  left:calc(var(--glass-edge-left-offset,0px) + var(--glass-rim-inner-inset,.9px));
   z-index:7;
   padding:var(--glass-rim-white-width);
-  border-radius:
-    var(--glass-rim-inner-tl,inherit)
-    var(--glass-rim-inner-tr,inherit)
-    var(--glass-rim-inner-br,inherit)
-    var(--glass-rim-inner-bl,inherit);
   background:linear-gradient(
     180deg,
-    var(--glass-rim-top-peak) 0%,
-    var(--glass-rim-top-mid) 8%,
+    var(--glass-rim-white-peak) 0%,
+    var(--glass-rim-white-mid) 8%,
     transparent 30%,
     transparent 70%,
-    var(--glass-rim-bottom-mid) 92%,
-    var(--glass-rim-bottom-peak) 100%
+    var(--glass-rim-white-mid) 92%,
+    var(--glass-rim-white-peak) 100%
   );
 }
 .liquid-glass-edge-host>.liquid-glass-refraction-layer::before{
@@ -498,9 +479,7 @@ select option{background:#f3f4f6;color:#111827}
 }
 @media(prefers-reduced-transparency:reduce){
   .liquid-glass-edge-host[data-liquid-glass]{
-    --glass-rim-top-mid:rgba(255,255,255,.22);
-    --glass-rim-top-peak:rgba(255,255,255,.56);
-    --glass-rim-bottom-mid:rgba(255,255,255,.10);
-    --glass-rim-bottom-peak:rgba(255,255,255,.24);
+    --glass-rim-white-mid:rgba(255,255,255,.22);
+    --glass-rim-white-peak:rgba(255,255,255,.56);
   }
 }
