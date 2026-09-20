@@ -26,6 +26,11 @@
 
 /* The mobile filter overlay is viewport-owned, never control-card-owned. */
 @media(max-width:700px){
+  .app-shell,.timetable-mode{
+    padding-bottom:144px!important;
+    scroll-padding-bottom:144px;
+  }
+
   body.filter-sheet-open{overflow:hidden;overscroll-behavior:none}
 
   .filter-sheet-backdrop{
@@ -83,6 +88,12 @@
   }
 
   .app-shell>main>.controls:first-child{margin-top:0}
+
+  .film-results-toolbar{
+    position:sticky;
+    top:8px;
+    z-index:40;
+  }
 
   .curator-page,
   .timetable-page,
