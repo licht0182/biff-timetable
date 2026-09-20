@@ -15,7 +15,7 @@
   --ios-glass:rgba(248,248,252,.7);
   --ios-glass-strong:rgba(255,255,255,.86);
   --ios-glass-border:rgba(255,255,255,.72);
-  --ios-shadow:0 12px 36px rgba(24,24,28,.1),0 1px 2px rgba(24,24,28,.08);
+  --ios-shadow:0 1px 3px rgba(15,23,42,.12);--ios-shadow-strong:0 2px 6px rgba(15,23,42,.14);
   --ios-radius:22px;
   --glass-blur:28px;
   --glass-saturation:180%;
@@ -39,13 +39,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .subtitle{color:var(--ios-secondary)}
 .selection-count{border-color:color-mix(in srgb,var(--ios-tint) 30%,transparent);border-radius:999px;background:color-mix(in srgb,var(--ios-tint) 9%,transparent);color:var(--ios-tint)}
 
-.tabs{border:1px solid var(--ios-glass-border);border-top-color:var(--ios-separator);background:var(--ios-glass);box-shadow:0 14px 30px rgba(20,20,24,.08);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
+.tabs{border:1px solid var(--ios-glass-border);border-top-color:var(--ios-separator);background:var(--ios-glass);box-shadow:var(--ios-shadow);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
 .tabs button{border-radius:999px;color:var(--ios-secondary);transition:background .22s ease,color .22s ease,transform .22s ease}
 .tabs button:hover{background:rgba(127,127,127,.08)}
 .tabs button.active{background:color-mix(in srgb,var(--ios-tint) 13%,transparent);color:var(--ios-tint)}
 .tabs button.active::after{display:none!important}
 
-.layout-surface,.notice,.controls,.film-results-toolbar,.timetable-actions,.settings-card,.settings-reset-card,.curator-hero,.curator-featured,.curator-latest,.curator-method{border-color:var(--ios-glass-border);background:var(--ios-bg-elevated);box-shadow:0 5px 22px rgba(30,30,35,.055)}
+.layout-surface,.notice,.controls,.film-results-toolbar,.timetable-actions,.settings-card,.settings-reset-card,.curator-hero,.curator-featured,.curator-latest,.curator-method{border-color:var(--ios-glass-border);background:var(--ios-bg-elevated);box-shadow:var(--ios-shadow)}
 .controls{backdrop-filter:blur(20px) saturate(145%);-webkit-backdrop-filter:blur(20px) saturate(145%)}
 .controls input,.controls select,.custom-event-form input,.custom-event-form textarea{border-color:var(--ios-separator);border-radius:14px;background:var(--ios-surface-soft);color:var(--ios-label)}
 .controls input::placeholder{color:var(--ios-secondary)}
@@ -53,9 +53,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .filter-toggle.active,.chips button.active,.timetable-view-switch button.active{border-color:transparent;background:var(--ios-tint);color:#fff}
 .chips::-webkit-scrollbar{display:none}
 
-.film-card,.schedule-screening-group,.booking-plan-panel,.timetable-scroll,.timetable-empty{border-color:var(--ios-separator);background:var(--ios-surface);box-shadow:0 4px 18px rgba(30,30,35,.055)}
+.film-card,.schedule-screening-group,.booking-plan-panel,.timetable-scroll,.timetable-empty{border-color:var(--ios-separator);background:var(--ios-surface);box-shadow:var(--ios-shadow)}
 .film-card{overflow:hidden;transition:transform .2s ease,box-shadow .2s ease}
-.film-card:hover{transform:translateY(-1px);box-shadow:0 9px 26px rgba(30,30,35,.09)}
+.film-card:hover{transform:translateY(-1px);box-shadow:var(--ios-shadow-strong)}
 .film-card h2{letter-spacing:-.035em}
 .section-label{border-radius:999px;background:color-mix(in srgb,var(--ios-brand) 9%,var(--ios-surface));color:var(--ios-brand)}
 .film-card button,.screening-actions button,.modal-screening-actions button{border-radius:12px}
@@ -67,8 +67,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .toast{border:1px solid var(--ios-glass-border);border-radius:999px;background:rgba(28,28,30,.86);box-shadow:var(--ios-shadow);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
 
 .modal-backdrop,.booking-conflict-backdrop,.booking-apply-backdrop,.custom-event-backdrop{background:rgba(12,12,14,.32);backdrop-filter:blur(12px) saturate(125%);-webkit-backdrop-filter:blur(12px) saturate(125%)}
-.film-modal,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal{border:1px solid var(--ios-glass-border);border-radius:30px;background:var(--ios-bg-elevated);box-shadow:0 28px 70px rgba(0,0,0,.24);color:var(--ios-label);backdrop-filter:blur(32px) saturate(175%);-webkit-backdrop-filter:blur(32px) saturate(175%)}
-.timetable-viewport-stable .timetable-scroll{border:0;box-shadow:inset 0 0 0 1px var(--ios-separator),0 4px 18px rgba(30,30,35,.055)}
+.film-modal,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal{border:1px solid var(--ios-glass-border);border-radius:30px;background:var(--ios-bg-elevated);box-shadow:var(--ios-shadow-strong);color:var(--ios-label);backdrop-filter:blur(32px) saturate(175%);-webkit-backdrop-filter:blur(32px) saturate(175%)}
+.timetable-viewport-stable .timetable-scroll{border:0;box-shadow:inset 0 0 0 1px var(--ios-separator),var(--ios-shadow)}
 .modal-close{width:38px;height:38px;border:0;border-radius:50%;background:rgba(127,127,127,.14);color:var(--ios-secondary)}
 
 .pwa-update-toast{position:fixed;right:22px;bottom:22px;z-index:12000;display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px;width:min(430px,calc(100vw - 32px));padding:14px 14px 14px 18px;border:1px solid var(--ios-glass-border);border-radius:22px;background:var(--ios-glass-strong);box-shadow:var(--ios-shadow);color:var(--ios-label);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
@@ -104,7 +104,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .film-search-autocomplete input{min-height:50px!important;border:0!important;border-radius:16px!important;padding-left:42px!important;background:rgba(127,127,127,.1)!important;font-size:16px!important}
   .mobile-advanced-filter-toggle{min-height:46px!important;border:0!important;border-radius:15px!important;background:rgba(127,127,127,.09)!important}
   .filter-sheet-backdrop{background:rgba(5,5,8,.34);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
-  #film-advanced-filters.filter-row{border:1px solid var(--ios-glass-border);border-radius:30px 30px 0 0;background:var(--ios-glass-strong);box-shadow:0 -24px 60px rgba(0,0,0,.2);transition:transform .28s cubic-bezier(.22,.75,.2,1),visibility .28s;backdrop-filter:blur(32px) saturate(180%);-webkit-backdrop-filter:blur(32px) saturate(180%)}
+  #film-advanced-filters.filter-row{border:1px solid var(--ios-glass-border);border-radius:30px 30px 0 0;background:var(--ios-glass-strong);box-shadow:0 -1px 4px rgba(15,23,42,.14);transition:transform .28s cubic-bezier(.22,.75,.2,1),visibility .28s;backdrop-filter:blur(32px) saturate(180%);-webkit-backdrop-filter:blur(32px) saturate(180%)}
   .filter-sheet-head{grid-column:1/-1;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;min-height:38px;text-align:center}
   .filter-sheet-head>span{justify-self:center;width:36px;height:5px;border-radius:999px;background:rgba(127,127,127,.3)}
   .filter-sheet-head strong{font-size:17px;letter-spacing:-.03em}
@@ -131,10 +131,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 @media(min-width:701px) and (max-width:900px){.app-shell{padding-inline:18px}.tabs{top:8px}.topbar{border-radius:24px 24px 0 0}}
 
 @media(prefers-color-scheme:dark){
-  :root{color-scheme:dark;--ios-bg:#000;--ios-bg-elevated:rgba(34,34,38,.86);--ios-surface:#1c1c1e;--ios-surface-soft:#2c2c2e;--ios-label:#f5f5f7;--ios-secondary:#aeaeb2;--ios-tertiary:#8e8e93;--ios-separator:rgba(235,235,245,.16);--ios-fill:rgba(120,120,128,.24);--ios-glass:rgba(35,35,39,.7);--ios-glass-strong:rgba(40,40,44,.88);--ios-glass-border:rgba(255,255,255,.14);--ios-shadow:0 14px 38px rgba(0,0,0,.4),0 1px 1px rgba(255,255,255,.05);--panel:var(--ios-surface);--line:var(--ios-separator);--muted:var(--ios-secondary);--accent-soft:rgba(217,45,32,.16)}
+  :root{color-scheme:dark;--ios-bg:#000;--ios-bg-elevated:rgba(34,34,38,.86);--ios-surface:#1c1c1e;--ios-surface-soft:#2c2c2e;--ios-label:#f5f5f7;--ios-secondary:#aeaeb2;--ios-tertiary:#8e8e93;--ios-separator:rgba(235,235,245,.16);--ios-fill:rgba(120,120,128,.24);--ios-glass:rgba(35,35,39,.7);--ios-glass-strong:rgba(40,40,44,.88);--ios-glass-border:rgba(255,255,255,.14);--ios-shadow:0 1px 3px rgba(0,0,0,.34);--ios-shadow-strong:0 2px 6px rgba(0,0,0,.4);--panel:var(--ios-surface);--line:var(--ios-separator);--muted:var(--ios-secondary);--accent-soft:rgba(217,45,32,.16)}
   body::before{background:radial-gradient(circle at 8% 2%,rgba(10,132,255,.24),transparent 30rem),radial-gradient(circle at 88% 12%,rgba(191,90,242,.17),transparent 28rem),radial-gradient(circle at 58% 88%,rgba(255,69,58,.1),transparent 32rem),var(--ios-bg)}
   .topbar::after,.tabs::after,.liquid-tab-bar-surface::after{opacity:.35}
-  .film-card,.schedule-screening-group,.booking-plan-panel,.timetable-scroll,.timetable-empty{box-shadow:0 4px 18px rgba(0,0,0,.28)}
+  .film-card,.schedule-screening-group,.booking-plan-panel,.timetable-scroll,.timetable-empty{box-shadow:var(--ios-shadow)}
   a{color:#64aaff}
 
   /* Keep every application surface on the same iOS dark-material scale. */
@@ -193,7 +193,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   --ios-glass:rgba(255,255,255,.38);
   --ios-glass-strong:rgba(255,255,255,.52);
   --ios-glass-border:rgba(255,255,255,.72);
-  --ios-shadow:0 8px 32px rgba(15,23,42,.12),inset 0 1px 0 rgba(255,255,255,.84);
+  --ios-shadow:0 1px 3px rgba(15,23,42,.12),inset 0 1px 0 rgba(255,255,255,.84);--ios-shadow-strong:0 2px 6px rgba(15,23,42,.14),inset 0 1px 0 rgba(255,255,255,.88);
   --glass-blur:25px;
   --glass-saturation:180%;
   --glass-edge-highlight:rgba(255,255,255,.92);
@@ -227,7 +227,7 @@ a{color:#075fad}
 .film-modal,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal,.png-ios-dialog{
   border-color:rgba(255,255,255,.78)!important;
   background:rgba(246,247,249,.82)!important;
-  box-shadow:0 28px 70px rgba(15,23,42,.2),inset 0 1px 0 rgba(255,255,255,.9)!important;
+  box-shadow:var(--ios-shadow-strong)!important;
   color:var(--ios-label)!important;
 }
 .modal-backdrop,.booking-conflict-backdrop,.booking-apply-backdrop,.custom-event-backdrop{background:rgba(15,23,42,.14)!important;backdrop-filter:blur(9px) saturate(125%);-webkit-backdrop-filter:blur(9px) saturate(125%)}
@@ -256,7 +256,7 @@ select option{background:#f3f4f6;color:#111827}
   border-color:rgba(17,24,39,.15)!important;
   background:rgba(255,255,255,.48)!important;
   color:var(--ios-label)!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.86),0 4px 14px rgba(15,23,42,.1)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.86),0 1px 3px rgba(15,23,42,.1)!important;
   backdrop-filter:blur(10px) saturate(180%);
   -webkit-backdrop-filter:blur(10px) saturate(180%);
 }
@@ -274,13 +274,13 @@ select option{background:#f3f4f6;color:#111827}
   border:1px solid rgba(255,255,255,.42);
   border-radius:19px;
   background:linear-gradient(145deg,rgba(255,255,255,.34),rgba(255,255,255,.08) 52%,rgba(255,255,255,.02));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(17,24,39,.12),0 8px 20px rgba(15,23,42,.14);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(17,24,39,.12),0 1px 3px rgba(15,23,42,.12);
   backdrop-filter:blur(16px) saturate(180%);
   -webkit-backdrop-filter:blur(16px) saturate(180%);
   transition:transform .3s ease,background .3s ease,box-shadow .3s ease;
 }
-.liquid-tab-bar button.active .liquid-tab-icon{transform:translateY(-2px);background:linear-gradient(145deg,rgba(255,255,255,.5),rgba(255,255,255,.16) 58%,rgba(255,255,255,.04));box-shadow:0 10px 28px rgba(15,23,42,.18),inset 0 1px 1px rgba(255,255,255,.95),inset 0 -1px 0 rgba(17,24,39,.12)}
-.liquid-tab-bar .liquid-tab-bar-surface{border-color:rgba(255,255,255,.78)!important;background:linear-gradient(155deg,rgba(255,255,255,.26),transparent 38%,rgba(255,255,255,.08)),rgba(255,255,255,.12)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(17,24,39,.08),0 18px 48px rgba(15,23,42,.18)!important;backdrop-filter:blur(24px) saturate(185%) contrast(105%)!important;-webkit-backdrop-filter:blur(24px) saturate(185%)!important}
+.liquid-tab-bar button.active .liquid-tab-icon{transform:translateY(-2px);background:linear-gradient(145deg,rgba(255,255,255,.5),rgba(255,255,255,.16) 58%,rgba(255,255,255,.04));box-shadow:0 1px 4px rgba(15,23,42,.14),inset 0 1px 1px rgba(255,255,255,.95),inset 0 -1px 0 rgba(17,24,39,.12)}
+.liquid-tab-bar .liquid-tab-bar-surface{border-color:rgba(255,255,255,.78)!important;background:linear-gradient(155deg,rgba(255,255,255,.26),transparent 38%,rgba(255,255,255,.08)),rgba(255,255,255,.12)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(17,24,39,.08),0 1px 4px rgba(15,23,42,.14)!important;backdrop-filter:blur(24px) saturate(185%) contrast(105%)!important;-webkit-backdrop-filter:blur(24px) saturate(185%)!important}
 .liquid-tab-bar .liquid-tab-bar-surface::after{opacity:.9;background:radial-gradient(circle at 18% 0,rgba(255,255,255,.42),transparent 36%),linear-gradient(135deg,rgba(255,255,255,.24),transparent 46%,rgba(255,255,255,.08));mix-blend-mode:screen}
 .liquid-tab-bar button{color:rgba(17,24,39,.72)!important;text-shadow:0 1px 0 rgba(255,255,255,.82)}
 .liquid-tab-bar button.active{background:transparent!important;color:#111827!important}
@@ -295,7 +295,7 @@ select option{background:#f3f4f6;color:#111827}
   background:linear-gradient(135deg,rgba(255,255,255,.28),rgba(255,255,255,.1) 42%,rgba(255,255,255,.04) 72%,rgba(255,255,255,.18)),rgba(255,255,255,.2)!important;
   backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturation))!important;
   -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturation))!important;
-  box-shadow:inset 0 1px 1px var(--glass-edge-highlight),inset 1px 0 0 rgba(255,255,255,.7),inset -1px -1px 0 rgba(17,24,39,.08),0 16px 42px rgba(15,23,42,.17)!important;
+  box-shadow:inset 0 1px 1px var(--glass-edge-highlight),inset 1px 0 0 rgba(255,255,255,.7),inset -1px -1px 0 rgba(17,24,39,.08),0 1px 4px rgba(15,23,42,.13)!important;
 }
 .liquid-glass-positioned{position:relative}
 .liquid-glass-backdrop-refraction{
@@ -341,9 +341,9 @@ select option{background:#f3f4f6;color:#111827}
 .liquid-glass-enhanced[data-liquid-glass="sheet"],.liquid-glass-enhanced[data-liquid-glass="modal"]{--glass-blur:30px;--glass-saturation:190%}
 
 @media(hover:hover) and (pointer:fine){
-  .tabs button:hover,.liquid-tab-bar button:hover .liquid-tab-icon{transform:translateY(-8px) scale(1.1);background:rgba(255,255,255,.35)!important;box-shadow:0 8px 25px rgba(0,0,0,.2)}
+  .tabs button:hover,.liquid-tab-bar button:hover .liquid-tab-icon{transform:translateY(-8px) scale(1.1);background:rgba(255,255,255,.35)!important;box-shadow:0 1px 4px rgba(0,0,0,.14)}
   .chips button:hover,.filter-toggle:hover,.filter-reset:hover,.favorite-button:hover,.detail-button:hover{transform:translateY(-2px) scale(1.04);background:rgba(255,255,255,.32)!important}
-  .film-card:hover{transform:translateY(-3px) scale(1.005);background:rgba(255,255,255,.14)!important;box-shadow:0 18px 44px rgba(0,0,0,.25)!important}
+  .film-card:hover{transform:translateY(-3px) scale(1.005);background:rgba(255,255,255,.14)!important;box-shadow:0 2px 6px rgba(0,0,0,.15)!important}
 }
 
 @media(max-width:700px){
