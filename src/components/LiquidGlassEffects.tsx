@@ -38,26 +38,12 @@ const PRESETS = {
 
 const mapCache = new Map<string, GlassMaps>()
 let nextFilterId = 0
-const EDGE_HIGHLIGHT_INSET = 0.9
 const EDGE_GEOMETRY_PROPERTIES = [
   '--glass-edge-top-offset',
   '--glass-edge-right-offset',
   '--glass-edge-bottom-offset',
   '--glass-edge-left-offset',
-  '--glass-rim-inner-inset',
-  '--glass-rim-inner-tl',
-  '--glass-rim-inner-tr',
-  '--glass-rim-inner-br',
-  '--glass-rim-inner-bl',
 ] as const
-
-function shrinkPixelRadius(value: string, inset: number) {
-  return value.split(/\s+/).map((token) => {
-    if (!token.endsWith('px')) return token
-    const radius = Number.parseFloat(token)
-    return Number.isFinite(radius) ? `${Math.max(0, radius - inset)}px` : token
-  }).join(' ')
-}
 
 function isIOSWebKitRuntime() {
   if (typeof navigator === 'undefined') return false
@@ -175,11 +161,6 @@ export default function LiquidGlassEffects() {
       element.style.setProperty('--glass-edge-right-offset', `${-borderRight}px`)
       element.style.setProperty('--glass-edge-bottom-offset', `${-borderBottom}px`)
       element.style.setProperty('--glass-edge-left-offset', `${-borderLeft}px`)
-      element.style.setProperty('--glass-rim-inner-inset', `${EDGE_HIGHLIGHT_INSET}px`)
-      element.style.setProperty('--glass-rim-inner-tl', shrinkPixelRadius(style.borderTopLeftRadius, EDGE_HIGHLIGHT_INSET))
-      element.style.setProperty('--glass-rim-inner-tr', shrinkPixelRadius(style.borderTopRightRadius, EDGE_HIGHLIGHT_INSET))
-      element.style.setProperty('--glass-rim-inner-br', shrinkPixelRadius(style.borderBottomRightRadius, EDGE_HIGHLIGHT_INSET))
-      element.style.setProperty('--glass-rim-inner-bl', shrinkPixelRadius(style.borderBottomLeftRadius, EDGE_HIGHLIGHT_INSET))
     }
 
     const clearSurface = (surface: FilterSurface) => {
