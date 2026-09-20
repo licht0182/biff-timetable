@@ -27,6 +27,12 @@ jobs:
           ref: experiment/dock-chromatic-glass
           path: preview-src
 
+      - name: Checkout dock optical preview source
+        uses: actions/checkout@v4
+        with:
+          ref: experiment/dock-optical-glass
+          path: preview-optical-src
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -65,10 +71,22 @@ jobs:
           npm run validate:curator
           npm run build
 
-      - name: Add isolated preview to Pages artifact
+      - name: Build dock optical preview
+        working-directory: preview-optical-src
+        env:
+          BIFF_BASE: /biff-timetable/preview/dock-optical/
         run: |
-          mkdir -p dist/preview/dock-chromatic
+          npm ci
+          npm run validate:data
+          npm run validate:films
+          npm run validate:curator
+          npm run build
+
+      - name: Add isolated previews to Pages artifact
+        run: |
+          mkdir -p dist/preview/dock-chromatic dist/preview/dock-optical
           cp -a preview-src/dist/. dist/preview/dock-chromatic/
+          cp -a preview-optical-src/dist/. dist/preview/dock-optical/
 
           # Production PWA owns /biff-timetable/. Preview requests must bypass
           # the production navigation fallback so the nested preview can load.
@@ -295,6 +313,83 @@ jobs:
           })
           NODE
 
+      - name: Verify dock optical preview
+        if: always()
+        env:
+          PREVIEW_URL: https://licht0182.github.io/biff-timetable/preview/dock-optical/
+        run: |
+          node <<'NODE'
+          const { chromium } = require('@playwright/test')
+
+          const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+          ;(async () => {
+            const browser = await chromium.launch()
+            const page = await browser.newPage({
+              viewport: { width: 393, height: 852 },
+              deviceScaleFactor: 2,
+            })
+
+            async function openReady(url) {
+              for (let attempt = 0; attempt < 12; attempt += 1) {
+                const separator = url.includes('?') ? '&' : '?'
+                const response = await page.goto(
+                  `${url}${separator}deployment=${Date.now()}`,
+                  { waitUntil: 'networkidle', timeout: 30000 },
+                ).catch(() => null)
+                const ready = Boolean(response?.ok()) && await page.locator('.liquid-tab-bar-surface').isVisible().catch(() => false)
+                if (ready) return
+                await sleep(5000)
+              }
+              throw new Error(`Optical preview did not become ready: ${url}`)
+            }
+
+            const dock = page.locator('.liquid-tab-bar-surface')
+
+            await openReady(`${process.env.PREVIEW_URL}?dockGlass=chromatic`)
+            if (await dock.getAttribute('data-liquid-glass-model') !== 'chromatic') {
+              throw new Error('Chromatic comparison mode did not activate in optical preview')
+            }
+            await page.screenshot({ path: 'dock-optical-preview-chromatic.png', fullPage: false })
+
+            await openReady(`${process.env.PREVIEW_URL}?dockGlass=optical`)
+            if (await dock.getAttribute('data-liquid-glass-model') !== 'optical') {
+              throw new Error('Optical preview flag did not activate')
+            }
+
+            const backdrop = await dock.evaluate((element) => {
+              const style = getComputedStyle(element)
+              return style.backdropFilter || style.webkitBackdropFilter
+            })
+            if (!backdrop.includes('url(')) {
+              throw new Error(`Optical dock is not refracting the real backdrop: ${backdrop}`)
+            }
+
+            const filterId = await dock.evaluate((element) => {
+              const value = element.style.getPropertyValue('--liquid-filter')
+              return value.match(/#([^")]+)/)?.[1] ?? ''
+            })
+            if (!filterId) throw new Error('Optical filter was not attached')
+
+            const maps = page.locator(`#${filterId} feDisplacementMap`)
+            if (await maps.count() !== 3) {
+              throw new Error('Optical dock should use three chromatic displacement passes')
+            }
+            const scales = await maps.evaluateAll((elements) =>
+              elements.map((element) => Number.parseFloat(element.getAttribute('scale') || '0')),
+            )
+            if (!(scales[0] > 3 && scales[0] < 24 && scales[0] > scales[1] && scales[1] > scales[2])) {
+              throw new Error(`Unexpected optical displacement scales: ${JSON.stringify(scales)}`)
+            }
+
+            await page.screenshot({ path: 'dock-optical-preview-optical.png', fullPage: false })
+            await browser.close()
+          })().catch((error) => {
+            console.error(error)
+            process.exit(1)
+          })
+          NODE
+
       - name: Upload live mobile screenshot
         if: always()
         uses: actions/upload-artifact@v4
@@ -304,4 +399,6 @@ jobs:
             live-liquid-glass-mobile.png
             dock-preview-legacy.png
             dock-preview-chromatic.png
+            dock-optical-preview-chromatic.png
+            dock-optical-preview-optical.png
           if-no-files-found: ignore
