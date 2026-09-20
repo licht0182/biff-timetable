@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon.svg', 'app-icon.svg', 'liquid-glass-background.jpg'],
+      includeAssets: ['favicon.svg', 'app-icon.svg'],
       manifest: {
         name: 'BIFF Timetable',
         short_name: 'BIFF 시간표',
@@ -25,7 +25,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,jpg}'],
+        globPatterns: ['**/*.{js,css,html,svg}'],
         navigateFallback: '/biff-timetable/index.html',
         navigateFallbackDenylist: [/\/screenings\.json/, /\/films-2026(?:\.meta)?\.json/],
         cleanupOutdatedCaches: true,

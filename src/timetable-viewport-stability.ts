@@ -100,6 +100,10 @@ function releaseViewportLock() {
   document.body.classList.remove('timetable-viewport-locked')
 }
 
+export function releaseTimetableViewportLock() {
+  releaseViewportLock()
+}
+
 function activateViewportLock(shell: HTMLElement, scroll: HTMLElement) {
   if (activeShell !== shell) {
     releaseViewportLock()
@@ -119,9 +123,10 @@ function activateViewportLock(shell: HTMLElement, scroll: HTMLElement) {
 
 function applyStability() {
   const shell = document.querySelector<HTMLElement>('.app-shell.timetable-grid-mode')
+  const settingsOpen = Boolean(shell?.querySelector('.react-settings-panel'))
   const scroll = shell?.querySelector<HTMLElement>('.timetable-page .timetable-scroll') ?? null
 
-  if (!shell || !scroll) {
+  if (!shell || settingsOpen || !scroll) {
     releaseViewportLock()
     return
   }

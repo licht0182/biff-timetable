@@ -4,6 +4,7 @@ type LiquidGlassPreset = 'navigation' | 'toolbar' | 'content' | 'sheet' | 'modal
 
 type FilterSurface = {
   element: HTMLElement
+  layer: HTMLSpanElement
   id: string
   preset: LiquidGlassPreset
   width: number
@@ -23,17 +24,18 @@ const TARGETS: Array<{ selector: string; preset: LiquidGlassPreset }> = [
 ]
 
 const PRESETS = {
-  navigation: { radius: 26, bezel: 28, scale: 20, specular: 0.65 },
-  toolbar: { radius: 20, bezel: 24, scale: 16, specular: 0.58 },
-  content: { radius: 22, bezel: 22, scale: 12, specular: 0.52 },
-  sheet: { radius: 30, bezel: 28, scale: 18, specular: 0.62 },
-  modal: { radius: 30, bezel: 28, scale: 18, specular: 0.62 },
+  navigation: { radius: 30, bezel: 34, scale: 38, specular: 0.9 },
+  toolbar: { radius: 22, bezel: 28, scale: 30, specular: 0.82 },
+  content: { radius: 24, bezel: 26, scale: 26, specular: 0.76 },
+  sheet: { radius: 32, bezel: 34, scale: 34, specular: 0.86 },
+  modal: { radius: 32, bezel: 34, scale: 34, specular: 0.86 },
 } satisfies Record<LiquidGlassPreset, { radius: number; bezel: number; scale: number; specular: number }>
 
 const mapCache = new Map<string, GlassMaps>()
 let nextFilterId = 0
+const AUTHORED_POSITION_TARGETS = '.tabs, .film-results-toolbar, .enhanced-timetable-actions'
 
-function isChromiumRuntime() {
+function supportsBackdropRefraction() {
   if (typeof navigator === 'undefined' || typeof CSS === 'undefined') return false
   const userAgentData = (navigator as Navigator & { userAgentData?: { brands?: Array<{ brand: string }> } }).userAgentData
   const brands = userAgentData?.brands?.map((brand) => brand.brand).join(' ') ?? ''
@@ -58,7 +60,9 @@ function createGlassMaps(width: number, height: number, preset: LiquidGlassPrese
   if (cached) return cached
 
   const settings = PRESETS[preset]
-  const renderScale = Math.min(1, 512 / width, 512 / height)
+  // The field is a smooth edge normal map, so a compact texture preserves the
+  // lens shape while avoiding a large synchronous canvas cost on mobile WebKit.
+  const renderScale = Math.min(1, 64 / width, 64 / height)
   const mapWidth = Math.max(8, Math.round(width * renderScale))
   const mapHeight = Math.max(8, Math.round(height * renderScale))
   const radius = Math.min(settings.radius * renderScale, mapWidth / 2, mapHeight / 2)
@@ -120,15 +124,17 @@ export default function LiquidGlassEffects() {
   const surfaces = useRef(new Map<HTMLElement, FilterSurface>())
 
   useEffect(() => {
-    if (!isChromiumRuntime()) return
-
+    const nativeBackdropRefraction = supportsBackdropRefraction()
     const transparencyPreference = window.matchMedia('(prefers-reduced-transparency: reduce)')
     let frame = 0
 
     const clearSurface = (surface: FilterSurface) => {
       surface.element.classList.remove('liquid-glass-enhanced')
+      surface.element.classList.remove('liquid-glass-backdrop-refraction')
+      surface.element.classList.remove('liquid-glass-positioned')
       surface.element.removeAttribute('data-liquid-glass')
       surface.element.style.removeProperty('--liquid-filter')
+      surface.layer.remove()
     }
 
     const publish = () => {
@@ -157,7 +163,9 @@ export default function LiquidGlassEffects() {
           surface.displacement = maps.displacement
           surface.specular = maps.specular
         }
+        if (!surface.layer.isConnected) element.append(surface.layer)
         element.classList.add('liquid-glass-enhanced')
+        element.classList.toggle('liquid-glass-backdrop-refraction', nativeBackdropRefraction)
         element.dataset.liquidGlass = surface.preset
         element.style.setProperty('--liquid-filter', `url("#${surface.id}")`)
         next.push({ ...surface })
@@ -174,8 +182,16 @@ export default function LiquidGlassEffects() {
       TARGETS.forEach(({ selector, preset }) => {
         document.querySelectorAll<HTMLElement>(selector).forEach((element) => {
           if (surfaces.current.has(element)) return
+          if (!element.matches(AUTHORED_POSITION_TARGETS) && getComputedStyle(element).position === 'static') {
+            element.classList.add('liquid-glass-positioned')
+          }
+          const layer = document.createElement('span')
+          layer.className = 'liquid-glass-refraction-layer'
+          layer.setAttribute('aria-hidden', 'true')
+          element.append(layer)
           const surface: FilterSurface = {
             element,
+            layer,
             id: `liquid-glass-${++nextFilterId}`,
             preset,
             width: 0,

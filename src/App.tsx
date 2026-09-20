@@ -21,6 +21,7 @@ import { programNoteForDisplay } from './program-note'
 import { filmMatchesQuery, rankFilmSearchMatches } from './film-search'
 import { bookingPrioritySymbol, detachBookingPlanEntry, failedFallbackPredecessorIds, fallbackMinimumPriority, filterBookingPlan, nextFallbackIds, normalizeBookingPlan, recalculateFallbackPriorities, removeBookingPlanEntries } from './booking-plan'
 import { loadFilmData } from './film-data'
+import { releaseTimetableViewportLock } from './timetable-viewport-stability'
 
 const CuratorPage = lazy(() => import('./components/CuratorPage'))
 
@@ -1201,6 +1202,7 @@ export default function App() {
 
   const openSettings = useCallback(() => {
     if (filmViewActive) filmScrollPositionRef.current = window.scrollY
+    if (activeTab === 'timetable') releaseTimetableViewportLock()
     const currentNavigation = readNavigationState()
     pushNavigationState({
       tab: activeTab,
@@ -1208,7 +1210,7 @@ export default function App() {
       curatorSlug: activeTab === 'curator' ? currentNavigation.curatorSlug : null,
     })
     setSettingsOpen(true)
-    window.setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }), 0)
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [activeTab, filmViewActive])
 
   return (
