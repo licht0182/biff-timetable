@@ -130,68 +130,130 @@ test('keeps SVG refraction on stable glass while content avoids ghost-prone filt
   await expect(modal.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(browserName === 'webkit' ? 0 : 1)
 })
 
-test('renders directional dark and white edge gradients on every glass surface', async ({ page, browserName }) => {
-  const selectors = ['.topbar', '.liquid-tab-bar-surface', '.film-card']
-  for (const selector of selectors) {
+test('aligns separate dark and white rim rings to each surface boundary', async ({ page, browserName }) => {
+  const expectAlignedRim = async (selector: string) => {
     const surface = page.locator(selector).first()
+    await expect(surface).toBeVisible()
     await expect(surface).toHaveClass(/liquid-glass-edge-host/)
     await expect(surface.locator(':scope > .liquid-glass-edge-layer')).toHaveCount(1)
+    await expect(surface.locator(':scope > .liquid-glass-edge-highlight-layer')).toHaveCount(1)
 
     const metrics = await surface.evaluate((element) => {
-      const host = getComputedStyle(element)
+      const hostStyle = getComputedStyle(element)
       const edge = element.querySelector<HTMLElement>(':scope > .liquid-glass-edge-layer')!
+      const highlight = element.querySelector<HTMLElement>(':scope > .liquid-glass-edge-highlight-layer')!
       const edgeStyle = getComputedStyle(edge)
-      const topHighlight = getComputedStyle(edge, '::before')
-      const bottomHighlight = getComputedStyle(edge, '::after')
+      const highlightStyle = getComputedStyle(highlight)
+      const hostRect = element.getBoundingClientRect()
+      const edgeRect = edge.getBoundingClientRect()
+      const highlightRect = highlight.getBoundingClientRect()
       return {
-        hostBorder: host.borderTopColor,
-        edgePosition: edgeStyle.position,
-        edgePointerEvents: edgeStyle.pointerEvents,
-        edgeBorderWidth: Number.parseFloat(edgeStyle.borderTopWidth),
+        hostRect: { x: hostRect.x, y: hostRect.y, width: hostRect.width, height: hostRect.height },
+        edgeRect: { x: edgeRect.x, y: edgeRect.y, width: edgeRect.width, height: edgeRect.height },
+        highlightRect: { x: highlightRect.x, y: highlightRect.y, width: highlightRect.width, height: highlightRect.height },
+        hostRadius: [
+          hostStyle.borderTopLeftRadius,
+          hostStyle.borderTopRightRadius,
+          hostStyle.borderBottomRightRadius,
+          hostStyle.borderBottomLeftRadius,
+        ],
+        edgeRadius: [
+          edgeStyle.borderTopLeftRadius,
+          edgeStyle.borderTopRightRadius,
+          edgeStyle.borderBottomRightRadius,
+          edgeStyle.borderBottomLeftRadius,
+        ],
+        highlightRadius: [
+          highlightStyle.borderTopLeftRadius,
+          highlightStyle.borderTopRightRadius,
+          highlightStyle.borderBottomRightRadius,
+          highlightStyle.borderBottomLeftRadius,
+        ],
+        edgePadding: Number.parseFloat(edgeStyle.paddingTop),
+        highlightPadding: Number.parseFloat(highlightStyle.paddingTop),
         edgeBackground: edgeStyle.backgroundImage,
-        edgeBackgroundSize: edgeStyle.backgroundSize,
-        topBackground: topHighlight.backgroundImage,
-        topBackgroundSize: topHighlight.backgroundSize,
-        bottomBackground: bottomHighlight.backgroundImage,
-        bottomBackgroundSize: bottomHighlight.backgroundSize,
+        highlightBackground: highlightStyle.backgroundImage,
+        edgeMask: edgeStyle.maskImage || edgeStyle.webkitMaskImage,
+        highlightMask: highlightStyle.maskImage || highlightStyle.webkitMaskImage,
+        edgePointerEvents: edgeStyle.pointerEvents,
+        highlightPointerEvents: highlightStyle.pointerEvents,
       }
     })
 
-    expect(metrics.hostBorder).toMatch(/rgba\([^)]*, 0\)|transparent/)
-    expect(metrics.edgePosition).toBe('absolute')
-    expect(metrics.edgePointerEvents).toBe('none')
-    expect(metrics.edgeBorderWidth).toBe(0)
+    expect(Math.abs(metrics.edgeRect.x - metrics.hostRect.x)).toBeLessThanOrEqual(0.2)
+    expect(Math.abs(metrics.edgeRect.y - metrics.hostRect.y)).toBeLessThanOrEqual(0.2)
+    expect(Math.abs(metrics.edgeRect.width - metrics.hostRect.width)).toBeLessThanOrEqual(0.2)
+    expect(Math.abs(metrics.edgeRect.height - metrics.hostRect.height)).toBeLessThanOrEqual(0.2)
 
-    // Dark rim: full-height left/right lines + 10% corner wraps on top/bottom.
+    const innerInsetX = metrics.highlightRect.x - metrics.hostRect.x
+    const innerInsetY = metrics.highlightRect.y - metrics.hostRect.y
+    expect(innerInsetX).toBeGreaterThanOrEqual(0.7)
+    expect(innerInsetX).toBeLessThanOrEqual(1.1)
+    expect(innerInsetY).toBeGreaterThanOrEqual(0.7)
+    expect(innerInsetY).toBeLessThanOrEqual(1.1)
+
+    expect(metrics.edgePadding).toBeGreaterThan(metrics.highlightPadding)
+    expect(metrics.highlightPadding).toBeGreaterThan(0)
+    expect(metrics.highlightPadding).toBeLessThanOrEqual(0.5)
+
     expect(metrics.edgeBackground).toContain('linear-gradient')
     expect(metrics.edgeBackground).toContain('17, 24, 39')
-    expect(metrics.edgeBackgroundSize).toContain('10%')
+    expect(metrics.highlightBackground).toContain('linear-gradient')
+    expect(metrics.highlightBackground).toContain('255, 255, 255')
+    expect(metrics.edgeMask).toContain('linear-gradient')
+    expect(metrics.highlightMask).toContain('linear-gradient')
+    expect(metrics.edgePointerEvents).toBe('none')
+    expect(metrics.highlightPointerEvents).toBe('none')
 
-    // White rim: full top/bottom highlights + 30% side wraps, so the side
-    // center remains free of white highlight.
-    expect(metrics.topBackground).toContain('linear-gradient')
-    expect(metrics.topBackground).toContain('255, 255, 255')
-    expect(metrics.topBackgroundSize).toContain('30%')
-    expect(metrics.bottomBackground).toContain('linear-gradient')
-    expect(metrics.bottomBackground).toContain('255, 255, 255')
-    expect(metrics.bottomBackgroundSize).toContain('30%')
+    expect(metrics.edgeRadius).toEqual(metrics.hostRadius)
+    for (let index = 0; index < metrics.hostRadius.length; index += 1) {
+      const hostRadius = Number.parseFloat(metrics.hostRadius[index])
+      const highlightRadius = Number.parseFloat(metrics.highlightRadius[index])
+      if (Number.isFinite(hostRadius) && Number.isFinite(highlightRadius)) {
+        expect(highlightRadius).toBeLessThanOrEqual(hostRadius + 0.01)
+        expect(highlightRadius).toBeGreaterThanOrEqual(Math.max(0, hostRadius - 1.1))
+      }
+    }
   }
 
-  const dock = page.locator('.liquid-tab-bar-surface')
-  if (browserName === 'webkit') {
-    await expect(dock.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(0)
-    await expect(dock.locator(':scope > .liquid-glass-edge-layer')).toHaveCount(1)
+  for (const selector of ['.topbar', '.liquid-tab-bar-surface', '.controls', '.film-results-toolbar', '.film-card']) {
+    await expectAlignedRim(selector)
   }
 
-  const favorite = page.locator('.film-card').first().getByRole('button', { name: /관심작/ })
-  await favorite.click()
-  await expect(favorite).toHaveClass(/active/)
-  await expect(favorite).toHaveAttribute('aria-label', /관심작 해제/)
+  const tabBar = page.locator('.liquid-tab-bar')
+  await tabBar.getByRole('button', { name: '설정' }).click()
+  await expectAlignedRim('.settings-intro')
+  await expectAlignedRim('.settings-card')
 
+  await tabBar.getByRole('button', { name: 'AI 도슨트' }).click()
+  await expectAlignedRim('.curator-hero')
+  await expectAlignedRim('.curator-card')
+
+  await tabBar.getByRole('button', { name: '영화 찾기' }).click()
   await page.getByRole('button', { name: '상세', exact: true }).first().click()
   const modal = page.locator('.film-modal')
-  await expect(modal.locator(':scope > .liquid-glass-edge-layer')).toHaveCount(1)
-  await expect(modal.locator(':scope > .liquid-glass-edge-layer')).toHaveCSS('pointer-events', 'none')
+  await expectAlignedRim('.film-modal')
+
+  const modalCorners = await modal.evaluate((element) => {
+    const host = getComputedStyle(element)
+    const highlight = getComputedStyle(element.querySelector<HTMLElement>(':scope > .liquid-glass-edge-highlight-layer')!)
+    return {
+      hostTopLeft: Number.parseFloat(host.borderTopLeftRadius),
+      hostBottomLeft: Number.parseFloat(host.borderBottomLeftRadius),
+      highlightTopLeft: Number.parseFloat(highlight.borderTopLeftRadius),
+      highlightBottomLeft: Number.parseFloat(highlight.borderBottomLeftRadius),
+    }
+  })
+  expect(modalCorners.highlightTopLeft).toBeLessThan(modalCorners.hostTopLeft)
+  expect(modalCorners.hostBottomLeft).toBe(0)
+  expect(modalCorners.highlightBottomLeft).toBe(0)
+
+  if (browserName === 'webkit') {
+    const dock = page.locator('.liquid-tab-bar-surface')
+    await expect(dock.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(0)
+    await expect(dock.locator(':scope > .liquid-glass-edge-layer')).toHaveCount(1)
+    await expect(dock.locator(':scope > .liquid-glass-edge-highlight-layer')).toHaveCount(1)
+  }
 })
 
 test('keeps black shadows tight to surface edges', async ({ page }) => {
