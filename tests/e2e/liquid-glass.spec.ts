@@ -173,6 +173,61 @@ test('enables edge-only chromatic refraction on the dock behind the experiment f
   await expect(page.locator(`#${topbarFilterId} feDisplacementMap`)).toHaveCount(1)
 })
 
+test('uses squircle Snell refraction for the optical dock experiment', async ({ page, browserName }) => {
+  await page.goto('./?dockGlass=optical')
+  await expect(page.locator('.film-card').first()).toBeVisible()
+
+  const topbar = page.locator('.topbar')
+  const dock = page.locator('.liquid-tab-bar-surface')
+  await expect(topbar).toHaveAttribute('data-liquid-glass-model', 'legacy')
+  await expect(dock).toHaveAttribute('data-liquid-glass', 'dock')
+  await expect(dock).toHaveAttribute('data-liquid-glass-model', 'optical')
+
+  if (browserName === 'webkit') {
+    await expect(dock.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(0)
+    await expect.poll(() => page.locator('.liquid-glass-filter-defs filter').count()).toBe(0)
+    return
+  }
+
+  await expect(dock.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(1)
+  await expect.poll(() => dock.evaluate((element) => {
+    const style = getComputedStyle(element)
+    return style.backdropFilter || style.webkitBackdropFilter
+  })).toContain('url(')
+
+  const filterId = await dock.evaluate((element) => {
+    const value = element.style.getPropertyValue('--liquid-filter')
+    return value.match(/#([^")]+)/)?.[1] ?? ''
+  })
+  expect(filterId).toBeTruthy()
+
+  const filter = page.locator(`#${filterId}`)
+  await expect(filter.locator('feDisplacementMap')).toHaveCount(3)
+  await expect(filter.locator('feColorMatrix')).toHaveCount(3)
+  await expect(filter.locator('feImage[result="edge-mask"]')).toHaveCount(1)
+  await expect(filter.locator('feComposite[result="clean-center"]')).toHaveCount(1)
+
+  const scales = await filter.locator('feDisplacementMap').evaluateAll((elements) =>
+    elements.map((element) => Number.parseFloat(element.getAttribute('scale') || '0')),
+  )
+  expect(scales[0]).toBeGreaterThan(3)
+  expect(scales[0]).toBeLessThan(24)
+  expect(scales[0]).toBeGreaterThan(scales[1])
+  expect(scales[1]).toBeGreaterThan(scales[2])
+
+  const layerOpacity = await dock.locator(':scope > .liquid-glass-refraction-layer').evaluate(
+    (element) => Number.parseFloat(getComputedStyle(element).opacity),
+  )
+  expect(layerOpacity).toBeLessThanOrEqual(0.3)
+
+  const topbarFilterId = await topbar.evaluate((element) => {
+    const value = element.style.getPropertyValue('--liquid-filter')
+    return value.match(/#([^")]+)/)?.[1] ?? ''
+  })
+  expect(topbarFilterId).toBeTruthy()
+  await expect(page.locator(`#${topbarFilterId} feDisplacementMap`)).toHaveCount(1)
+})
+
 test('renders one rounded rim geometry with black above white everywhere', async ({ page }) => {
   const expectAlignedRim = async (selector: string) => {
     const surface = page.locator(selector).first()
