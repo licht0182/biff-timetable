@@ -392,9 +392,11 @@ select option{background:#f3f4f6;color:#111827}
 
 
 /* Liquid Glass edge rim -----------------------------------------------------
- * Apple-style edge treatment: a continuous dark hairline around the surface,
- * with separate inner white specular lines at the top and bottom. The white
- * lines fade toward the side edges instead of outlining all four sides.
+ * Directional rim treatment:
+ * - dark outer hairlines live on the left/right edges and only wrap 10% into
+ *   the top/bottom edges before fading to transparent;
+ * - white inner highlights live on the top/bottom edges and wrap 30% down/up
+ *   the left/right edges, leaving the middle 40% of each side transparent.
  */
 .liquid-glass-edge-host[data-liquid-glass]{
   --glass-rim-dark:rgba(17,24,39,.28);
@@ -436,44 +438,35 @@ select option{background:#f3f4f6;color:#111827}
   display:block;
   overflow:hidden;
   box-sizing:border-box;
-  border:.5px solid var(--glass-rim-dark);
+  border:0;
   border-radius:inherit;
   pointer-events:none;
+  background:
+    linear-gradient(180deg,var(--glass-rim-dark),var(--glass-rim-dark)) left top/.5px 100% no-repeat,
+    linear-gradient(180deg,var(--glass-rim-dark),var(--glass-rim-dark)) right top/.5px 100% no-repeat,
+    linear-gradient(90deg,var(--glass-rim-dark) 0%,transparent 100%) left top/10% .5px no-repeat,
+    linear-gradient(270deg,var(--glass-rim-dark) 0%,transparent 100%) right top/10% .5px no-repeat,
+    linear-gradient(90deg,var(--glass-rim-dark) 0%,transparent 100%) left bottom/10% .5px no-repeat,
+    linear-gradient(270deg,var(--glass-rim-dark) 0%,transparent 100%) right bottom/10% .5px no-repeat;
 }
 .liquid-glass-edge-layer::before,
 .liquid-glass-edge-layer::after{
   content:"";
   position:absolute;
-  left:1px;
-  right:1px;
-  height:1px;
+  inset:1px;
   pointer-events:none;
 }
 .liquid-glass-edge-layer::before{
-  top:1px;
-  background:linear-gradient(
-    90deg,
-    transparent 0%,
-    transparent 5%,
-    var(--glass-rim-top-mid) 24%,
-    var(--glass-rim-top-peak) 50%,
-    var(--glass-rim-top-mid) 76%,
-    transparent 95%,
-    transparent 100%
-  );
+  background:
+    linear-gradient(90deg,var(--glass-rim-top-mid) 0%,var(--glass-rim-top-peak) 50%,var(--glass-rim-top-mid) 100%) left top/100% 1px no-repeat,
+    linear-gradient(180deg,var(--glass-rim-top-mid) 0%,transparent 100%) left top/1px 30% no-repeat,
+    linear-gradient(180deg,var(--glass-rim-top-mid) 0%,transparent 100%) right top/1px 30% no-repeat;
 }
 .liquid-glass-edge-layer::after{
-  bottom:1px;
-  background:linear-gradient(
-    90deg,
-    transparent 0%,
-    transparent 7%,
-    var(--glass-rim-bottom-mid) 26%,
-    var(--glass-rim-bottom-peak) 50%,
-    var(--glass-rim-bottom-mid) 74%,
-    transparent 93%,
-    transparent 100%
-  );
+  background:
+    linear-gradient(90deg,var(--glass-rim-bottom-mid) 0%,var(--glass-rim-bottom-peak) 50%,var(--glass-rim-bottom-mid) 100%) left bottom/100% 1px no-repeat,
+    linear-gradient(0deg,var(--glass-rim-bottom-mid) 0%,transparent 100%) left bottom/1px 30% no-repeat,
+    linear-gradient(0deg,var(--glass-rim-bottom-mid) 0%,transparent 100%) right bottom/1px 30% no-repeat;
 }
 .liquid-glass-edge-host>.liquid-glass-refraction-layer::before{
   border:0;

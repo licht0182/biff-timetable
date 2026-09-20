@@ -130,7 +130,7 @@ test('keeps SVG refraction on stable glass while content avoids ghost-prone filt
   await expect(modal.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(browserName === 'webkit' ? 0 : 1)
 })
 
-test('renders a dark hairline with fading inner highlights on every glass surface', async ({ page, browserName }) => {
+test('renders directional dark and white edge gradients on every glass surface', async ({ page, browserName }) => {
   const selectors = ['.topbar', '.liquid-tab-bar-surface', '.film-card']
   for (const selector of selectors) {
     const surface = page.locator(selector).first()
@@ -148,22 +148,33 @@ test('renders a dark hairline with fading inner highlights on every glass surfac
         edgePosition: edgeStyle.position,
         edgePointerEvents: edgeStyle.pointerEvents,
         edgeBorderWidth: Number.parseFloat(edgeStyle.borderTopWidth),
-        edgeBorderColor: edgeStyle.borderTopColor,
+        edgeBackground: edgeStyle.backgroundImage,
+        edgeBackgroundSize: edgeStyle.backgroundSize,
         topBackground: topHighlight.backgroundImage,
+        topBackgroundSize: topHighlight.backgroundSize,
         bottomBackground: bottomHighlight.backgroundImage,
+        bottomBackgroundSize: bottomHighlight.backgroundSize,
       }
     })
 
     expect(metrics.hostBorder).toMatch(/rgba\([^)]*, 0\)|transparent/)
     expect(metrics.edgePosition).toBe('absolute')
     expect(metrics.edgePointerEvents).toBe('none')
-    expect(metrics.edgeBorderWidth).toBeGreaterThan(0)
-    expect(metrics.edgeBorderWidth).toBeLessThanOrEqual(1)
-    expect(metrics.edgeBorderColor).not.toMatch(/rgba\([^)]*, 0\)|transparent/)
+    expect(metrics.edgeBorderWidth).toBe(0)
+
+    // Dark rim: full-height left/right lines + 10% corner wraps on top/bottom.
+    expect(metrics.edgeBackground).toContain('linear-gradient')
+    expect(metrics.edgeBackground).toContain('17, 24, 39')
+    expect(metrics.edgeBackgroundSize).toContain('10%')
+
+    // White rim: full top/bottom highlights + 30% side wraps, so the side
+    // center remains free of white highlight.
     expect(metrics.topBackground).toContain('linear-gradient')
     expect(metrics.topBackground).toContain('255, 255, 255')
+    expect(metrics.topBackgroundSize).toContain('30%')
     expect(metrics.bottomBackground).toContain('linear-gradient')
     expect(metrics.bottomBackground).toContain('255, 255, 255')
+    expect(metrics.bottomBackgroundSize).toContain('30%')
   }
 
   const dock = page.locator('.liquid-tab-bar-surface')
