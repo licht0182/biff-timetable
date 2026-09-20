@@ -52,6 +52,11 @@ test('anchors the movie filter sheet to the viewport and keeps it interactive', 
   await expect(sheet).toBeVisible()
   await expect(backdrop).toBeVisible()
 
+  await expect.poll(() => sheet.evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    return Math.abs(window.innerHeight - rect.bottom)
+  })).toBeLessThanOrEqual(1)
+
   const metrics = await sheet.evaluate((element) => {
     const rect = element.getBoundingClientRect()
     const style = getComputedStyle(element)
@@ -59,7 +64,6 @@ test('anchors the movie filter sheet to the viewport and keeps it interactive', 
       left: rect.left,
       right: rect.right,
       viewportWidth: window.innerWidth,
-      bottomGap: window.innerHeight - rect.bottom,
       position: style.position,
       pointerEvents: style.pointerEvents,
       overflow: document.documentElement.scrollWidth - window.innerWidth,
@@ -68,7 +72,6 @@ test('anchors the movie filter sheet to the viewport and keeps it interactive', 
   expect(metrics.position).toBe('fixed')
   expect(Math.abs(metrics.left)).toBeLessThanOrEqual(1)
   expect(Math.abs(metrics.right - metrics.viewportWidth)).toBeLessThanOrEqual(1)
-  expect(Math.abs(metrics.bottomGap)).toBeLessThanOrEqual(1)
   expect(metrics.pointerEvents).not.toBe('none')
   expect(metrics.overflow).toBeLessThanOrEqual(1)
 
@@ -129,21 +132,33 @@ test('aligns the first content surface across all primary mobile sections', asyn
   await page.goto('./')
   const dock = page.locator('.liquid-tab-bar')
 
-  const filmSurface = page.locator('.film-data-notice:visible').or(page.locator('#film-controls')).first()
-  const filmTop = await filmSurface.evaluate((el) => el.getBoundingClientRect().top)
+  const topGap = async (selector: string) => page.evaluate((target) => {
+    const header = document.querySelector<HTMLElement>('.topbar')
+    const surface = document.querySelector<HTMLElement>(target)
+    if (!header || !surface) throw new Error(`Missing alignment target: ${target}`)
+    return Math.round((surface.getBoundingClientRect().top - header.getBoundingClientRect().bottom) * 10) / 10
+  }, selector)
+
+  const filmSelector = await page.locator('.film-data-notice').isVisible() ? '.film-data-notice' : '#film-controls'
+  const filmGap = await topGap(filmSelector)
 
   await dock.getByRole('button', { name: '내 시간표' }).click()
-  const timetableTop = await page.locator('.timetable-empty').evaluate((el) => el.getBoundingClientRect().top)
+  await expect(page.locator('.timetable-empty')).toBeVisible()
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
+  const timetableGap = await topGap('.timetable-empty')
 
   await dock.getByRole('button', { name: 'AI 도슨트' }).click()
   await expect(page.locator('.curator-hero')).toBeVisible()
-  const curatorTop = await page.locator('.curator-hero').evaluate((el) => el.getBoundingClientRect().top)
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
+  const curatorGap = await topGap('.curator-hero')
 
   await dock.getByRole('button', { name: '설정' }).click()
-  const settingsTop = await page.locator('.settings-intro').evaluate((el) => el.getBoundingClientRect().top)
+  await expect(page.locator('.settings-intro')).toBeVisible()
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
+  const settingsGap = await topGap('.settings-intro')
 
-  const tops = [filmTop, timetableTop, curatorTop, settingsTop]
-  expect(Math.max(...tops) - Math.min(...tops)).toBeLessThanOrEqual(4)
+  const gaps = [filmGap, timetableGap, curatorGap, settingsGap]
+  expect(Math.max(...gaps) - Math.min(...gaps), `mobile top gaps: ${gaps.join(', ')}`).toBeLessThanOrEqual(4)
 })
 
 test('releases the grid viewport lock before leaving for every other primary section', async ({ page, request }) => {
