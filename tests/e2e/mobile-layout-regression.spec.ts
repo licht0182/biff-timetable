@@ -139,8 +139,13 @@ test('aligns the first content surface across all primary mobile sections', asyn
     return Math.round((surface.getBoundingClientRect().top - header.getBoundingClientRect().bottom) * 10) / 10
   }, selector)
 
-  const filmSelector = await page.locator('.film-data-notice').isVisible() ? '.film-data-notice' : '#film-controls'
-  const filmGap = await topGap(filmSelector)
+  const filmGap = await page.evaluate(() => {
+    const header = document.querySelector<HTMLElement>('.topbar')
+    const filmPage = document.querySelector<HTMLElement>('.film-page')
+    const surface = filmPage?.querySelector<HTMLElement>('.film-data-notice, #film-controls')
+    if (!header || !surface) throw new Error('Missing film page alignment target')
+    return Math.round((surface.getBoundingClientRect().top - header.getBoundingClientRect().bottom) * 10) / 10
+  })
 
   await dock.getByRole('button', { name: '내 시간표' }).click()
   await expect(page.locator('.timetable-empty')).toBeVisible()
