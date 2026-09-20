@@ -130,6 +130,59 @@ test('keeps SVG refraction on stable glass while content avoids ghost-prone filt
   await expect(modal.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(browserName === 'webkit' ? 0 : 1)
 })
 
+test('renders a dark hairline with fading inner highlights on every glass surface', async ({ page, browserName }) => {
+  const selectors = ['.topbar', '.liquid-tab-bar-surface', '.film-card']
+  for (const selector of selectors) {
+    const surface = page.locator(selector).first()
+    await expect(surface).toHaveClass(/liquid-glass-edge-host/)
+    await expect(surface.locator(':scope > .liquid-glass-edge-layer')).toHaveCount(1)
+
+    const metrics = await surface.evaluate((element) => {
+      const host = getComputedStyle(element)
+      const edge = element.querySelector<HTMLElement>(':scope > .liquid-glass-edge-layer')!
+      const edgeStyle = getComputedStyle(edge)
+      const topHighlight = getComputedStyle(edge, '::before')
+      const bottomHighlight = getComputedStyle(edge, '::after')
+      return {
+        hostBorder: host.borderTopColor,
+        edgePosition: edgeStyle.position,
+        edgePointerEvents: edgeStyle.pointerEvents,
+        edgeBorderWidth: Number.parseFloat(edgeStyle.borderTopWidth),
+        edgeBorderColor: edgeStyle.borderTopColor,
+        topBackground: topHighlight.backgroundImage,
+        bottomBackground: bottomHighlight.backgroundImage,
+      }
+    })
+
+    expect(metrics.hostBorder).toMatch(/rgba\([^)]*, 0\)|transparent/)
+    expect(metrics.edgePosition).toBe('absolute')
+    expect(metrics.edgePointerEvents).toBe('none')
+    expect(metrics.edgeBorderWidth).toBeGreaterThan(0)
+    expect(metrics.edgeBorderWidth).toBeLessThanOrEqual(1)
+    expect(metrics.edgeBorderColor).not.toMatch(/rgba\([^)]*, 0\)|transparent/)
+    expect(metrics.topBackground).toContain('linear-gradient')
+    expect(metrics.topBackground).toContain('255, 255, 255')
+    expect(metrics.bottomBackground).toContain('linear-gradient')
+    expect(metrics.bottomBackground).toContain('255, 255, 255')
+  }
+
+  const dock = page.locator('.liquid-tab-bar-surface')
+  if (browserName === 'webkit') {
+    await expect(dock.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(0)
+    await expect(dock.locator(':scope > .liquid-glass-edge-layer')).toHaveCount(1)
+  }
+
+  const favorite = page.locator('.film-card').first().getByRole('button', { name: /관심작/ })
+  await favorite.click()
+  await expect(favorite).toHaveClass(/active/)
+  await expect(favorite).toHaveAttribute('aria-label', /관심작 해제/)
+
+  await page.getByRole('button', { name: '상세', exact: true }).first().click()
+  const modal = page.locator('.film-modal')
+  await expect(modal.locator(':scope > .liquid-glass-edge-layer')).toHaveCount(1)
+  await expect(modal.locator(':scope > .liquid-glass-edge-layer')).toHaveCSS('pointer-events', 'none')
+})
+
 test('keeps black shadows tight to surface edges', async ({ page }) => {
   const maxBlurRadius = (value: string) => {
     const shadows: string[] = []
