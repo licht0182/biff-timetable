@@ -56,8 +56,8 @@ test('keeps the browser dock outside Safari toolbar tint sampling', async ({ pag
     }
   })
 
-  expect(metrics.bottomGap).toBeGreaterThanOrEqual(browserName === 'webkit' ? 7 : 5)
-  expect(metrics.bottomGap).toBeLessThanOrEqual(browserName === 'webkit' ? 9 : 7)
+  expect(metrics.bottomGap).toBeGreaterThanOrEqual(7)
+  expect(metrics.bottomGap).toBeLessThanOrEqual(9)
   expect(metrics.navPaddingBottom).toBe(0)
   expect(metrics.shellPaddingBottom).toBeGreaterThanOrEqual(metrics.surfaceHeight + 24)
   expect(metrics.surfaceBackground).not.toBe('none')
@@ -89,7 +89,7 @@ test('keeps the browser dock outside Safari toolbar tint sampling', async ({ pag
         gap: Math.round(window.innerHeight - rect.bottom),
         visible: rect.top < window.innerHeight && rect.bottom > 0,
       }
-    })).toEqual({ position: 'absolute', gap: 8, visible: true })
+    })).toEqual({ position: 'fixed', gap: 8, visible: true })
   }
 })
 

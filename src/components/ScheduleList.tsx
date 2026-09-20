@@ -158,7 +158,7 @@ export default function ScheduleList({
             }
 
             const conflict = block.items.length > 1
-            return <section className={`schedule-screening-group ${conflict ? 'has-conflict' : ''}`} key={block.items.map(({ screening }) => screening.id).join('-')}>
+            return <section className={`layout-surface schedule-screening-group ${conflict ? 'has-conflict' : ''}`} key={block.items.map(({ screening }) => screening.id).join('-')}>
               {conflict && <h3><span>일정 충돌</span> 같은 시간대에 {block.items.length}개 일정이 있습니다</h3>}
               {block.items.map(({ film, screening, priority, alternative, nextFallback }) => {
                 const status = ticketStatus[screening.id] ?? 'planned'

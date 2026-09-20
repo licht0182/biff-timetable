@@ -10,6 +10,7 @@ import ScheduleList from './components/ScheduleList'
 import LiquidTabBar from './components/LiquidTabBar'
 import LiquidGlassEffects from './components/LiquidGlassEffects'
 import PwaUpdatePrompt from './components/PwaUpdatePrompt'
+import TimetableOverflowMenu from './components/TimetableOverflowMenu'
 import { BOOKING_PRIORITIES, MAX_BOOKING_PRIORITY, type BookingPlanMap, type BookingPriority, type Film, type Screening, type TicketStatus, type TicketStatusMap } from './components/film-types'
 import { createCustomEventId, customEventAbsoluteWindow, customEventCategoryLabel, customEventPaletteIndex, customEventTimetableDate, customEventTimetableEndMinutes, customEventTimetableStartMinutes, normalizeCustomEvents, windowsOverlap, type CustomEvent, type CustomEventDraft } from './custom-events'
 import { REST_BREAK_MINUTES, VENUE_TRANSFER_SITES, getVenueSiteTransferMinutes } from './venue-travel'
@@ -1263,9 +1264,9 @@ export default function App() {
 
       {toast && <div className="toast" role="status">{toast}</div>}
 
-      {settingsOpen && <main className="biff-settings-panel react-settings-panel">
-        <section className="settings-intro"><p className="settings-kicker">PERSONAL SETTINGS</p><h2>설정</h2><p>시간표 계산과 표시 방식을 현재 기기에 맞게 조정할 수 있습니다. 변경사항은 이 브라우저에 자동 저장됩니다.</p></section>
-        <section className="settings-card">
+      {settingsOpen && <main className="app-page app-page--settings biff-settings-panel react-settings-panel">
+        <section className="layout-surface settings-intro"><p className="settings-kicker">PERSONAL SETTINGS</p><h2>설정</h2><p>시간표 계산과 표시 방식을 현재 기기에 맞게 조정할 수 있습니다. 변경사항은 이 브라우저에 자동 저장됩니다.</p></section>
+        <section className="layout-surface settings-card">
           <div className="settings-card-head"><div><h3>이동 시간</h3><p>등록된 BIFF 센텀권 상영관은 실제 출발 → 도착 방향에 따라 정밀 이동시간을 적용합니다.</p></div></div>
           <div className="precise-transfer-panel">
             <strong>방향별 권장 이동시간</strong>
@@ -1287,21 +1288,21 @@ export default function App() {
             <label className="settings-toggle-row"><span><strong>이동 여유 경고 표시</strong><small>실제 회차 순서의 출발지 → 도착지 이동시간보다 여유가 짧으면 표시합니다.</small></span><span className="settings-switch"><input type="checkbox" checked={userSettings.showTransferWarnings} onChange={(event) => setUserSettings((current) => ({ ...current, showTransferWarnings: event.target.checked }))} /><i /></span></label>
           </div>
         </section>
-        <section className="settings-card">
+        <section className="layout-surface settings-card">
           <div className="settings-card-head"><div><h3>시간표 표시</h3><p>작은 화면에서 필요한 정보만 남길 수 있습니다.</p></div></div>
           <div className="settings-list">
             <label className="settings-toggle-row"><span><strong>상영관명 표시</strong><small>내 시간표 영화 블록 안에 상영관명을 표시합니다.</small></span><span className="settings-switch"><input type="checkbox" checked={userSettings.showVenueInTimetable} onChange={(event) => setUserSettings((current) => ({ ...current, showVenueInTimetable: event.target.checked }))} /><i /></span></label>
             <label className="settings-toggle-row"><span><strong>예매 상태·순위 기호 표시</strong><small>1~10순위와 예매 완료/실패 기호를 영화 제목 앞에 표시합니다.</small></span><span className="settings-switch"><input type="checkbox" checked={userSettings.showBookingStatusInTimetable} onChange={(event) => setUserSettings((current) => ({ ...current, showBookingStatusInTimetable: event.target.checked }))} /><i /></span></label>
           </div>
         </section>
-        <section className="settings-card settings-reset-card"><div><h3>기본 설정</h3><p>이동 시간과 표시 설정을 처음 값으로 되돌립니다.</p></div><button type="button" className="settings-reset-button" onClick={() => setUserSettings({ ...DEFAULT_USER_SETTINGS })}>기본값으로 초기화</button></section>
+        <section className="layout-surface settings-card settings-reset-card"><div><h3>기본 설정</h3><p>이동 시간과 표시 설정을 처음 값으로 되돌립니다.</p></div><button type="button" className="settings-reset-button" onClick={() => setUserSettings({ ...DEFAULT_USER_SETTINGS })}>기본값으로 초기화</button></section>
       </main>}
 
-      {!settingsOpen && (activeTab === 'films' ? <main className="film-page" aria-busy={dataStatus === 'loading'}>
-        {dataNote && <div className="notice film-data-notice">{dataNote}{dataSource && <> <a href={dataSource} target="_blank" rel="noreferrer">공식 시간표 ↗</a></>}</div>}
-        {dataStatus === 'cached' && <div className="notice data-cache-notice" role="status"><span>네트워크에 연결할 수 없어 {cachedAtLabel}에 저장한 상영시간표를 표시합니다.</span><button type="button" onClick={retryFilmData}>최신 데이터 다시 확인</button></div>}
-        {loadError && <div className="notice error data-load-notice" role="alert"><span>{loadError}</span><button type="button" onClick={retryFilmData}>다시 시도</button></div>}
-        <section ref={filmControlsRef} id="film-controls" className="controls enhanced-controls">
+      {!settingsOpen && (activeTab === 'films' ? <main className="app-page app-page--films film-page" aria-busy={dataStatus === 'loading'}>
+        {dataNote && <div className="layout-surface notice film-data-notice">{dataNote}{dataSource && <> <a href={dataSource} target="_blank" rel="noreferrer">공식 시간표 ↗</a></>}</div>}
+        {dataStatus === 'cached' && <div className="layout-surface notice data-cache-notice" role="status"><span>네트워크에 연결할 수 없어 {cachedAtLabel}에 저장한 상영시간표를 표시합니다.</span><button type="button" onClick={retryFilmData}>최신 데이터 다시 확인</button></div>}
+        {loadError && <div className="layout-surface notice error data-load-notice" role="alert"><span>{loadError}</span><button type="button" onClick={retryFilmData}>다시 시도</button></div>}
+        <section ref={filmControlsRef} id="film-controls" className="layout-surface controls enhanced-controls">
           <FilmSearchAutocomplete
             query={query}
             suggestions={searchSuggestions}
@@ -1327,7 +1328,7 @@ export default function App() {
           {advancedFilterPanel}
         </>}
 
-        <div className="film-results-toolbar">
+        <div className="layout-surface layout-toolbar film-results-toolbar">
           <span role="status" aria-live="polite">검색 결과 {filteredFilms.length}편</span>
           <button type="button" className="mobile-filter-jump" onClick={focusFilmFilters}>검색·필터</button>
         </div>
@@ -1350,17 +1351,17 @@ export default function App() {
             onBookingChange={setScreeningBookingState}
           />
         ) : !loadError && <div className="empty">조건에 맞는 상영작이 없습니다.</div>}
-      </main> : activeTab === 'curator' ? <Suspense fallback={<main className="curator-page curator-loading" aria-busy="true"><div className="empty">AI 도슨트 칼럼을 불러오는 중입니다.</div></main>}><CuratorPage key={curatorPageKey} onOpenFilms={openFilms} onOpenFilm={openFilmFromCurator} /></Suspense> : <main className="timetable-page">
+      </main> : activeTab === 'curator' ? <Suspense fallback={<main className="app-page app-page--curator curator-page curator-loading" aria-busy="true"><div className="empty">AI 도슨트 칼럼을 불러오는 중입니다.</div></main>}><CuratorPage key={curatorPageKey} onOpenFilms={openFilms} onOpenFilm={openFilmFromCurator} /></Suspense> : <main className="app-page app-page--timetable timetable-page">
         <input ref={importInputRef} type="file" accept="application/json,.json" className="visually-hidden" onChange={importBackup} />
-        {selectedItems.length === 0 && customEvents.length === 0 ? <div className="empty timetable-empty"><strong>아직 시간표에 일정이 없습니다.</strong><span>영화 회차를 고르거나 직접 일정을 추가해 주세요.</span><div className="timetable-empty-actions"><div className="timetable-view-switch" role="group" aria-label="시간표 보기 방식"><button type="button" className={timetableView === 'list' ? 'active' : ''} aria-pressed={timetableView === 'list'} onClick={() => setTimetableView('list')}>목록</button><button type="button" className={timetableView === 'grid' ? 'active' : ''} aria-pressed={timetableView === 'grid'} onClick={() => setTimetableView('grid')}>시간표</button></div><button onClick={openFilms}>영화 찾기</button><button type="button" className="custom-event-add-button" onClick={openCreateCustomEvent}>+ 일정 추가</button><details className="backup-menu timetable-empty-backup"><summary>더보기</summary><div><button onClick={exportBackup}>JSON 저장</button><button onClick={() => importInputRef.current?.click()}>JSON 가져오기</button></div></details></div></div> : <>
-          <div className="timetable-actions enhanced-timetable-actions">
+        {selectedItems.length === 0 && customEvents.length === 0 ? <div className="layout-surface empty timetable-empty"><strong>아직 시간표에 일정이 없습니다.</strong><span>영화 회차를 고르거나 직접 일정을 추가해 주세요.</span><div className="layout-actions timetable-empty-actions"><div className="timetable-view-switch" role="group" aria-label="시간표 보기 방식"><button type="button" className={timetableView === 'list' ? 'active' : ''} aria-pressed={timetableView === 'list'} onClick={() => setTimetableView('list')}>목록</button><button type="button" className={timetableView === 'grid' ? 'active' : ''} aria-pressed={timetableView === 'grid'} onClick={() => setTimetableView('grid')}>시간표</button></div><button onClick={openFilms}>영화 찾기</button><button type="button" className="custom-event-add-button" onClick={openCreateCustomEvent}>일정 추가</button><TimetableOverflowMenu label="더보기" className="timetable-empty-backup"><button onClick={exportBackup}>JSON 저장</button><button onClick={() => importInputRef.current?.click()}>JSON 가져오기</button></TimetableOverflowMenu></div></div> : <>
+          <div className="layout-surface layout-toolbar timetable-actions enhanced-timetable-actions">
             <div><span className="booking-summary">{timetableSelectionMode ? `삭제할 일정 ${timetableDeleteSelection.length}개 선택` : timetableView === 'list' ? listSummaryText : bookingSummaryText}</span></div>
-            <div className="timetable-action-buttons">
+            <div className="layout-actions timetable-action-buttons">
               <div className="timetable-view-switch" role="group" aria-label="시간표 보기 방식">
                 <button type="button" className={timetableView === 'list' ? 'active' : ''} aria-pressed={timetableView === 'list'} onClick={() => setTimetableView('list')}>목록</button>
                 <button type="button" className={timetableView === 'grid' ? 'active' : ''} aria-pressed={timetableView === 'grid'} onClick={() => setTimetableView('grid')}>시간표</button>
               </div>
-              <button type="button" className="custom-event-add-button" onClick={openCreateCustomEvent}>+ 일정</button>
+              <button type="button" className="custom-event-add-button" onClick={openCreateCustomEvent}>일정 추가</button>
               <button
                 type="button"
                 className="png-export-trigger"
@@ -1368,11 +1369,14 @@ export default function App() {
                 onClick={() => void savePng()}
                 disabled={pngExportState === 'working'}
               >{pngExportState === 'working' ? 'PNG 생성 중…' : pngExportState === 'ready' ? 'PNG 준비 완료' : pngExportState === 'done' ? '저장 완료' : pngExportState === 'error' ? '저장 실패' : 'PNG 저장'}</button>
-              <button onClick={exportIcs}>캘린더</button>
-              <details className="backup-menu"><summary>백업</summary><div><button onClick={exportBackup}>JSON 저장</button><button onClick={() => importInputRef.current?.click()}>가져오기</button></div></details>
               <button type="button" className={`timetable-selection-button ${timetableSelectionMode ? 'active' : ''}`} onClick={toggleTimetableSelectionMode}>{timetableSelectionMode ? '선택 취소' : '선택'}</button>
               {timetableSelectionMode && <button type="button" className="timetable-delete-button" onClick={deleteTimetableSelection} disabled={timetableDeleteSelection.length === 0}>삭제 {timetableDeleteSelection.length}</button>}
-              <button onClick={clearSelected}>전체 비우기</button>
+              <TimetableOverflowMenu label="더보기">
+                <button onClick={exportIcs}>캘린더</button>
+                <button onClick={exportBackup}>JSON 저장</button>
+                <button onClick={() => importInputRef.current?.click()}>JSON 가져오기</button>
+                <button className="timetable-clear-button" onClick={clearSelected}>전체 비우기</button>
+              </TimetableOverflowMenu>
             </div>
           </div>
           {timetableView === 'list' ? <ScheduleList
@@ -1401,7 +1405,7 @@ export default function App() {
               onRemoveAlternative={removeAlternative}
               onApplyAlternative={prepareApplyFallback}
             />
-            <div className={`timetable-scroll ${timetableMetrics.dense ? 'dense' : ''} ${timetableMetrics.ultraDense ? 'ultra-dense' : ''} ${timetableSelectionMode ? 'timetable-selection-mode' : ''}`}>
+            <div className={`layout-surface timetable-scroll ${timetableMetrics.dense ? 'dense' : ''} ${timetableMetrics.ultraDense ? 'ultra-dense' : ''} ${timetableSelectionMode ? 'timetable-selection-mode' : ''}`}>
             <div className="timetable" style={timetableStyle}>
               <div className="corner" />
               {dates.map((date) => <div className="date-head" key={date} title={formatDate(date)}>{formatDate(date, timetableMetrics.dense)}</div>)}

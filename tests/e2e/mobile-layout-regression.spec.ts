@@ -132,6 +132,8 @@ test('aligns the first content surface across all primary mobile sections', asyn
   await page.goto('./')
   const dock = page.locator('.liquid-tab-bar')
 
+  await expect(page.locator('.film-page .film-data-notice, .film-page #film-controls').first()).toBeVisible()
+
   const topGap = async (selector: string) => page.evaluate((target) => {
     const header = document.querySelector<HTMLElement>('.topbar')
     const surface = document.querySelector<HTMLElement>(target)
@@ -222,10 +224,10 @@ test('keeps the mobile grid toolbar inside 320px while secondary actions remain 
   await expect(actions).toBeVisible()
   const png = actions.locator('.png-export-trigger')
   await expect(png).toBeVisible()
-  const calendar = actions.locator(':scope > .png-export-trigger + button')
+  const more = actions.locator('.backup-menu.timetable-more-menu')
+  const calendar = more.getByRole('button', { name: '캘린더' })
   await expect(calendar).toBeHidden()
 
-  const more = actions.locator('.backup-menu.timetable-more-menu')
   const summary = more.locator(':scope > summary')
   await expect(summary).toHaveText('더보기')
   await summary.click()

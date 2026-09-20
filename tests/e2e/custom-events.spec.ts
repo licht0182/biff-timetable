@@ -276,7 +276,7 @@ test('keeps the custom event form within a 320px mobile viewport with long conte
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
   await page.getByRole('button', { name: '시간표', exact: true }).click()
-  await page.getByRole('button', { name: '+ 일정 추가' }).click()
+  await page.getByRole('button', { name: '일정 추가', exact: true }).click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toBeVisible()
   await dialog.getByLabel('일정명 *').fill('아주 긴 사용자 일정 제목이 모바일 화면을 넘어가지 않는지 확인하는 테스트 일정')

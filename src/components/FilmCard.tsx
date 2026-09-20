@@ -36,7 +36,7 @@ function FilmCard({
   onBookingChange,
 }: FilmCardProps) {
   return (
-    <article className="film-card">
+    <article className="layout-surface film-card">
       <div className="film-heading">
         <div>
           <span className="section-label">{film.section ?? '섹션 미정'}</span>
