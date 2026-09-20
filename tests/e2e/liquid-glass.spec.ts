@@ -160,7 +160,7 @@ test('renders dark side hairlines with fading top and bottom highlights', async 
     expect(metrics.edgeBorderWidth).toBe(0)
     expect((metrics.edgeBackground.match(/linear-gradient/g) ?? []).length).toBeGreaterThanOrEqual(2)
     expect(metrics.edgeBackground).toContain('17, 24, 39')
-    expect(metrics.edgeBackground).toContain('rgba(0, 0, 0, 0)')
+    expect(metrics.edgeBackground).toMatch(/transparent|rgba\(0, 0, 0, 0\)/)
     expect(metrics.topBackground).toContain('linear-gradient')
     expect(metrics.topBackground).toContain('255, 255, 255')
     expect(metrics.bottomBackground).toContain('linear-gradient')
