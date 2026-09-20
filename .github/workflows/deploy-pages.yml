@@ -21,6 +21,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout dock chromatic preview source
+        uses: actions/checkout@v4
+        with:
+          ref: experiment/dock-chromatic-glass
+          path: preview-src
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -47,6 +53,32 @@ jobs:
 
       - name: Run Chromium and WebKit E2E tests
         run: npm run test:e2e
+
+      - name: Build dock chromatic preview
+        working-directory: preview-src
+        env:
+          BIFF_BASE: /biff-timetable/preview/dock-chromatic/
+        run: |
+          npm ci
+          npm run validate:data
+          npm run validate:films
+          npm run validate:curator
+          npm run build
+
+      - name: Add isolated preview to Pages artifact
+        run: |
+          mkdir -p dist/preview/dock-chromatic
+          cp -a preview-src/dist/. dist/preview/dock-chromatic/
+
+          # Production PWA owns /biff-timetable/. Preview requests must bypass
+          # the production navigation fallback so the nested preview can load.
+          if [ -f dist/sw.js ]; then
+            {
+              printf '%s\n' 'self.addEventListener("fetch",event=>{try{if(new URL(event.request.url).pathname.startsWith("/biff-timetable/preview/"))event.stopImmediatePropagation()}catch{}});'
+              cat dist/sw.js
+            } > dist/sw.patched.js
+            mv dist/sw.patched.js dist/sw.js
+          fi
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -84,8 +116,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install WebKit
-        run: npx playwright install --with-deps webkit
+      - name: Install Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Verify deployed mobile Liquid Glass rims
         env:
@@ -199,10 +231,75 @@ jobs:
           })
           NODE
 
+      - name: Verify dock chromatic preview
+        env:
+          PREVIEW_URL: https://licht0182.github.io/biff-timetable/preview/dock-chromatic/
+        run: |
+          node <<'NODE'
+          const { chromium } = require('@playwright/test')
+
+          const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+          ;(async () => {
+            const browser = await chromium.launch()
+            const page = await browser.newPage({
+              viewport: { width: 393, height: 852 },
+              deviceScaleFactor: 2,
+            })
+
+            async function openReady(url) {
+              for (let attempt = 0; attempt < 12; attempt += 1) {
+                const separator = url.includes('?') ? '&' : '?'
+                const response = await page.goto(
+                  `${url}${separator}deployment=${Date.now()}`,
+                  { waitUntil: 'networkidle', timeout: 30000 },
+                ).catch(() => null)
+                const ready = Boolean(response?.ok()) && await page.locator('.liquid-tab-bar-surface').isVisible().catch(() => false)
+                if (ready) return
+                await sleep(5000)
+              }
+              throw new Error(`Preview did not become ready: ${url}`)
+            }
+
+            await openReady(process.env.PREVIEW_URL)
+            const dock = page.locator('.liquid-tab-bar-surface')
+            if (await dock.getAttribute('data-liquid-glass') !== 'dock') {
+              throw new Error('Preview is not using the isolated dock preset')
+            }
+            if (await dock.getAttribute('data-liquid-glass-model') !== 'legacy') {
+              throw new Error('Preview default is not legacy')
+            }
+            await page.screenshot({ path: 'dock-preview-legacy.png', fullPage: false })
+
+            await openReady(`${process.env.PREVIEW_URL}?dockGlass=chromatic`)
+            if (await dock.getAttribute('data-liquid-glass-model') !== 'chromatic') {
+              throw new Error('Chromatic preview flag did not activate')
+            }
+            const filterId = await dock.evaluate((element) => {
+              const value = element.style.getPropertyValue('--liquid-filter')
+              return value.match(/#([^")]+)/)?.[1] ?? ''
+            })
+            if (!filterId) throw new Error('Chromatic filter was not attached')
+            const displacementCount = await page.locator(`#${filterId} feDisplacementMap`).count()
+            if (displacementCount !== 3) {
+              throw new Error(`Expected 3 chromatic displacement maps, got ${displacementCount}`)
+            }
+            await page.screenshot({ path: 'dock-preview-chromatic.png', fullPage: false })
+
+            await browser.close()
+          })().catch((error) => {
+            console.error(error)
+            process.exit(1)
+          })
+          NODE
+
       - name: Upload live mobile screenshot
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: live-liquid-glass-mobile
-          path: live-liquid-glass-mobile.png
+          path: |
+            live-liquid-glass-mobile.png
+            dock-preview-legacy.png
+            dock-preview-chromatic.png
           if-no-files-found: ignore
