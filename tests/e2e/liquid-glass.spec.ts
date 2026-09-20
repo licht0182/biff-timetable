@@ -99,8 +99,11 @@ test('keeps SVG refraction on stable glass while content avoids ghost-prone filt
   const firstFilmCard = page.locator('.film-card').first()
 
   await expect(topbar).toHaveAttribute('data-liquid-glass', 'navigation')
-  await expect(tabBarSurface).toHaveAttribute('data-liquid-glass', 'navigation')
+  await expect(topbar).toHaveAttribute('data-liquid-glass-model', 'legacy')
+  await expect(tabBarSurface).toHaveAttribute('data-liquid-glass', 'dock')
+  await expect(tabBarSurface).toHaveAttribute('data-liquid-glass-model', 'legacy')
   await expect(firstFilmCard).toHaveAttribute('data-liquid-glass', 'content')
+  await expect(firstFilmCard).toHaveAttribute('data-liquid-glass-model', 'legacy')
   await expect(firstFilmCard.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(0)
   await expect(firstFilmCard).not.toHaveClass(/liquid-glass-backdrop-refraction/)
 
@@ -128,6 +131,46 @@ test('keeps SVG refraction on stable glass while content avoids ghost-prone filt
   const modal = page.locator('.film-modal')
   await expect(modal).toHaveAttribute('data-liquid-glass', 'modal')
   await expect(modal.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(browserName === 'webkit' ? 0 : 1)
+})
+
+test('enables edge-only chromatic refraction on the dock behind the experiment flag', async ({ page, browserName }) => {
+  await page.goto('./?dockGlass=chromatic')
+  await expect(page.locator('.film-card').first()).toBeVisible()
+
+  const topbar = page.locator('.topbar')
+  const dock = page.locator('.liquid-tab-bar-surface')
+  await expect(topbar).toHaveAttribute('data-liquid-glass-model', 'legacy')
+  await expect(dock).toHaveAttribute('data-liquid-glass', 'dock')
+  await expect(dock).toHaveAttribute('data-liquid-glass-model', 'chromatic')
+
+  if (browserName === 'webkit') {
+    await expect(dock.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(0)
+    await expect.poll(() => page.locator('.liquid-glass-filter-defs filter').count()).toBe(0)
+    return
+  }
+
+  await expect(dock.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(1)
+  const filterId = await dock.evaluate((element) => {
+    const value = element.style.getPropertyValue('--liquid-filter')
+    return value.match(/#([^")]+)/)?.[1] ?? ''
+  })
+  expect(filterId).toBeTruthy()
+
+  const filter = page.locator(`#${filterId}`)
+  await expect(filter).toHaveCount(1)
+  await expect(filter.locator('feDisplacementMap')).toHaveCount(3)
+  await expect(filter.locator('feColorMatrix')).toHaveCount(3)
+  await expect(filter.locator('feImage[result="edge-mask"]')).toHaveCount(1)
+  await expect(filter.locator('feComposite[result="edge-refracted"]')).toHaveCount(1)
+  await expect(filter.locator('feComposite[result="clean-center"]')).toHaveCount(1)
+  await expect(filter.locator('feComposite[result="refracted"]')).toHaveCount(1)
+
+  const topbarFilterId = await topbar.evaluate((element) => {
+    const value = element.style.getPropertyValue('--liquid-filter')
+    return value.match(/#([^")]+)/)?.[1] ?? ''
+  })
+  expect(topbarFilterId).toBeTruthy()
+  await expect(page.locator(`#${topbarFilterId} feDisplacementMap`)).toHaveCount(1)
 })
 
 test('renders one rounded rim geometry with black above white everywhere', async ({ page }) => {
