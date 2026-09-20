@@ -174,7 +174,8 @@ test('renders a dark hairline with fading inner highlights on every glass surfac
 
   const favorite = page.locator('.film-card').first().getByRole('button', { name: /관심작/ })
   await favorite.click()
-  await expect(favorite).toHaveAttribute('aria-pressed', 'true')
+  await expect(favorite).toHaveClass(/active/)
+  await expect(favorite).toHaveAttribute('aria-label', /관심작 해제/)
 
   await page.getByRole('button', { name: '상세', exact: true }).first().click()
   const modal = page.locator('.film-modal')
