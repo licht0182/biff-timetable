@@ -1,0 +1,567 @@
+/*
+ * Application layout ownership layer.
+ *
+ * Visual glass treatment stays in liquid-glass.css; geometry, overflow and
+ * cross-page spacing live here so theme changes cannot reflow the application.
+ */
+:root{
+  --layout-shell-max:1180px;
+  --layout-page-gutter:24px;
+  --layout-page-top-gap:0px;
+  --layout-surface-gap:10px;
+  --layout-surface-padding:16px;
+  --layout-surface-radius:22px;
+  --layout-control-height:40px;
+  --layout-touch-target:44px;
+  --layout-dock-clearance:144px;
+  --layout-dock-bottom:8px;
+  --mobile-page-gutter:var(--layout-page-gutter);
+  --mobile-page-top-gap:var(--layout-page-top-gap);
+  --mobile-panel-radius:var(--layout-surface-radius);
+}
+
+html,body{min-width:0}
+
+.app-shell,
+.app-shell.timetable-mode{
+  width:min(100%,var(--layout-shell-max));
+  max-width:var(--layout-shell-max);
+  min-width:0;
+  min-height:100dvh;
+  margin:0 auto;
+  padding:22px var(--layout-page-gutter) 54px;
+  box-sizing:border-box;
+}
+
+.app-page{
+  display:grid;
+  grid-auto-flow:row;
+  grid-template-columns:minmax(0,1fr);
+  gap:var(--layout-surface-gap);
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  margin:var(--layout-page-top-gap) 0 0;
+  padding:0;
+}
+
+.layout-surface{
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  margin:0;
+  box-sizing:border-box;
+  border-radius:var(--layout-surface-radius);
+}
+
+.layout-toolbar{
+  width:100%;
+  min-width:0;
+  margin:0;
+}
+
+.layout-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+}
+
+.topbar{
+  position:relative;
+  overflow:hidden;
+  padding:22px 26px;
+  border-radius:26px 26px 0 0;
+}
+
+.selection-count{
+  position:relative;
+  z-index:1;
+  display:flex;
+  align-items:center;
+  min-height:38px;
+}
+
+.tabs{
+  position:sticky;
+  top:10px;
+  z-index:60;
+}
+
+.tabs button{position:relative;z-index:1;min-height:46px}
+
+.controls{padding:var(--layout-surface-padding)}
+.chips{gap:8px;padding:3px 0 1px;scrollbar-width:none}
+.film-results-toolbar{min-height:52px;padding:10px var(--layout-surface-padding)}
+.film-card{overflow:hidden}
+.enhanced-timetable-actions{position:sticky;top:74px;z-index:45}
+
+.liquid-tab-bar{display:none}
+.filter-sheet-backdrop,.filter-sheet-head{display:none}
+
+.app-page>.settings-card,
+.app-page>.settings-intro,
+.app-page>.curator-hero,
+.app-page>.curator-latest,
+.app-page>.curator-method,
+.app-page>.curator-article,
+.app-page>.timetable-empty,
+.app-page>.enhanced-timetable-actions{
+  margin:0;
+}
+
+.topbar>div:first-child::before{
+  top:50%!important;
+  transform:translateY(-50%);
+}
+
+.tabs,
+.timetable-mode .tabs{
+  margin-bottom:var(--layout-surface-gap);
+  border-radius:0 0 22px 22px;
+}
+
+.film-data-notice{
+  display:block;
+  width:100%;
+  max-width:none;
+  min-width:0;
+  align-self:stretch;
+  margin:0;
+  box-sizing:border-box;
+}
+
+/* Toast geometry is owned here. Never combine a top anchor with the bottom dock anchor. */
+.toast{
+  top:auto;
+  right:auto;
+  bottom:calc(24px + env(safe-area-inset-bottom));
+  width:max-content;
+  max-width:min(520px,calc(100vw - 32px));
+  height:auto;
+  max-height:min(30vh,160px);
+  white-space:normal;
+  line-height:1.35;
+  text-align:center;
+}
+
+/* The mobile filter overlay is viewport-owned, never control-card-owned. */
+@media(max-width:700px){
+  :root{
+    --layout-page-gutter:10px;
+    --layout-page-top-gap:10px;
+    --layout-surface-radius:20px;
+  }
+
+  .app-shell,.timetable-mode{
+    width:100%;
+    max-width:none;
+    padding:0 var(--layout-page-gutter) var(--layout-dock-clearance)!important;
+    scroll-padding-bottom:var(--layout-dock-clearance);
+  }
+
+  .topbar,.timetable-mode .topbar{
+    width:calc(100% + (var(--layout-page-gutter) * 2));
+    margin:0 calc(-1 * var(--layout-page-gutter));
+    padding:calc(15px + env(safe-area-inset-top)) 16px 14px;
+    border-radius:0;
+  }
+  .topbar>div:first-child,.timetable-mode .topbar>div:first-child{padding-left:42px}
+  .subtitle{max-width:220px;margin-top:3px}
+  .selection-count{min-height:34px;padding:0 11px}
+  .tabs{display:none!important}
+  .notice{border-radius:var(--layout-surface-radius)}
+
+  .liquid-tab-bar{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:var(--layout-dock-bottom);
+    z-index:1000;
+    display:flex;
+    justify-content:center;
+    padding:10px 10px 0;
+    pointer-events:none;
+  }
+  .liquid-tab-bar-surface{
+    position:relative;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    width:min(100%,460px);
+    min-height:68px;
+    padding:5px;
+    border-radius:26px;
+    pointer-events:auto;
+    overflow:hidden;
+  }
+  .liquid-tab-bar .liquid-tab-bar-surface{
+    min-height:104px!important;
+    padding:10px 12px!important;
+    border-radius:36px!important;
+  }
+  .liquid-tab-bar button{
+    position:relative;
+    z-index:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:3px;
+    min-width:0;
+    min-height:56px;
+    border-radius:20px;
+  }
+  .liquid-tab-bar button{min-height:84px!important}
+
+  .controls{padding:10px}
+
+  /*
+   * Grid view fills the viewport behind the floating dock instead of reserving
+   * a permanent gray footer band. The translucent dock can therefore sit over
+   * timetable content just like it does on the other primary sections.
+   */
+  .app-shell.timetable-grid-mode.timetable-viewport-stable{
+    padding-bottom:0!important;
+    scroll-padding-bottom:0;
+  }
+
+  body.filter-sheet-open{overflow:hidden;overscroll-behavior:none}
+
+  .filter-sheet-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:2090;
+    display:block;
+    width:100%;
+    height:100%;
+    margin:0;
+    padding:0;
+    border:0;
+    border-radius:0;
+    touch-action:none;
+    pointer-events:auto;
+  }
+
+  #film-advanced-filters.filter-row{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    z-index:2100;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    gap:12px;
+    width:100%;
+    max-width:100vw;
+    max-height:min(78dvh,660px);
+    margin:0;
+    padding:12px 16px calc(20px + env(safe-area-inset-bottom));
+    overflow-x:hidden;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    transform:translate3d(0,105%,0);
+    visibility:hidden;
+    pointer-events:none;
+    contain:layout paint;
+  }
+
+  #film-advanced-filters.filter-row.mobile-open{
+    transform:translate3d(0,0,0);
+    visibility:visible;
+    pointer-events:auto;
+  }
+
+  body.filter-sheet-open .liquid-tab-bar{pointer-events:none}
+
+  /* Every primary section starts on the same vertical and horizontal rhythm. */
+  .app-shell>main{margin-top:var(--layout-page-top-gap)}
+
+  .app-shell>main>.controls:first-child{margin-top:0}
+  .film-page>.notice:first-child{margin-top:0}
+
+  .film-results-toolbar{
+    position:sticky;
+    top:8px;
+    z-index:40;
+  }
+
+  .curator-page,
+  .timetable-page,
+  .react-settings-panel{
+    min-width:0;
+    max-width:100%;
+  }
+
+  .layout-surface{border-radius:var(--layout-surface-radius)!important}
+
+  /* Settings outer shell is layout-only; its children are the visible surfaces. */
+  .react-settings-panel{
+    padding:0!important;
+    margin-bottom:0!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+
+  .settings-intro{
+    margin:0;
+    padding:var(--layout-surface-padding);
+    border:1px solid var(--ios-glass-border)!important;
+  }
+
+  .settings-card{margin:0}
+
+  .travel-matrix-wrap{
+    width:100%;
+    max-width:100%;
+    min-width:0;
+  }
+
+  /* Timetable toolbar uses one action row and one summary row instead of squeezing both together. */
+  .enhanced-timetable-actions{
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:7px;
+    margin-bottom:8px;
+    padding:8px 10px;
+    top:8px;
+    border-radius:var(--layout-surface-radius)!important;
+  }
+
+  .enhanced-timetable-actions>div:first-child{
+    order:2;
+    width:100%;
+    min-width:0;
+    padding:0 2px;
+  }
+
+  .enhanced-timetable-actions .booking-summary{
+    display:block;
+    min-width:0;
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+
+  .timetable-action-buttons{
+    order:1;
+    width:100%;
+    min-width:0;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:6px;
+    flex-wrap:wrap;
+    overflow:visible;
+  }
+
+  .timetable-action-buttons>.timetable-view-switch,
+  .timetable-action-buttons>.custom-event-add-button,
+  .timetable-action-buttons>.timetable-selection-button,
+  .timetable-action-buttons>.backup-menu{
+    flex:0 0 auto;
+  }
+
+  .timetable-action-buttons>.backup-menu{margin-left:auto}
+
+  .timetable-empty{
+    width:100%;
+    margin:0;
+    padding:16px;
+  }
+
+  .timetable-empty-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    width:100%;
+  }
+
+  .timetable-empty-backup{position:relative}
+  .timetable-empty-backup>summary{
+    min-height:40px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:0 13px;
+    border-radius:999px;
+  }
+  .timetable-empty-backup>div{
+    right:0;
+    left:auto;
+    z-index:2150;
+  }
+
+  /* List view is a normal document; only grid view may own the fixed viewport. */
+  .app-shell.timetable-list-mode{
+    height:auto!important;
+    min-height:100dvh!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+
+  .app-shell.timetable-list-mode .timetable-page{overflow:visible}
+  .app-shell.timetable-grid-mode .timetable-page{min-height:0}
+
+  /* Keep editorial horizontal scrollers local to their own component. */
+  .curator-page,
+  .curator-page>section,
+  .curator-hero,
+  .curator-featured,
+  .curator-latest{
+    width:100%;
+    max-width:100%;
+    min-width:0;
+  }
+
+  .curator-filter-chips,
+  .travel-matrix-wrap{
+    overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .toast{
+    bottom:calc(94px + env(safe-area-inset-bottom));
+    max-width:calc(100vw - 30px);
+  }
+}
+
+@media(min-width:701px) and (max-width:900px){
+  :root{--layout-page-gutter:18px}
+
+  .filter-row{
+    grid-template-columns:minmax(130px,.9fr) minmax(180px,1.25fr) repeat(3,minmax(64px,auto));
+  }
+  .filter-row>.time-range-filter{grid-column:1 / -1;grid-row:2}
+  .filter-row>.filter-toggle:first-of-type{grid-column:3;grid-row:1}
+  .filter-row>.filter-toggle:nth-of-type(2){grid-column:4;grid-row:1}
+  .filter-row>.filter-reset{grid-column:5;grid-row:1}
+  .filter-row select,
+  .time-range-inputs input,
+  .time-range-action,
+  .filter-toggle,
+  .filter-reset{height:var(--layout-control-height);min-height:var(--layout-control-height)}
+  .chips{
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    padding-bottom:5px;
+    scroll-snap-type:x proximity;
+    scrollbar-width:thin;
+    overscroll-behavior-inline:contain;
+  }
+  .chips button{flex:0 0 auto;min-height:36px;scroll-snap-align:start}
+}
+
+.mobile-advanced-filter-toggle{display:none}
+
+@media(min-width:701px){
+  #film-advanced-filters.filter-row{
+    position:static;
+    visibility:visible;
+    pointer-events:auto;
+    transform:none;
+  }
+
+  .travel-matrix-hint{display:none}
+}
+
+@media(max-width:700px){
+  .topbar{gap:10px}
+  .tabs{border-radius:0 0 20px 20px}
+
+  .tabs button,
+  .timetable-mode .tabs button{
+    flex:1 1 0;
+    min-width:0;
+    min-height:var(--layout-touch-target);
+    padding:10px 4px;
+  }
+
+  .controls input{min-height:var(--layout-touch-target)}
+  .filter-row select,
+  .time-range-inputs input,
+  .time-range-action,
+  .filter-toggle,
+  .filter-reset{height:var(--layout-control-height);min-height:var(--layout-control-height)}
+
+  .mobile-advanced-filter-toggle{
+    min-height:var(--layout-control-height);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:0 11px;
+    font-size:11px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .mobile-advanced-filter-toggle strong{font-size:10px}
+  .filter-row:not(.mobile-open){display:none}
+
+  .chips{
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    margin-right:calc(-1 * var(--layout-page-gutter));
+    margin-left:calc(-1 * var(--layout-page-gutter));
+    padding:0 var(--layout-page-gutter) 5px;
+    scroll-padding-inline:var(--layout-page-gutter);
+    scroll-snap-type:x proximity;
+    scrollbar-width:none;
+    overscroll-behavior-inline:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .chips::-webkit-scrollbar{display:none}
+  .chips button{flex:0 0 auto;min-height:36px;scroll-snap-align:start}
+
+  .film-results-toolbar{min-height:48px}
+  .mobile-filter-jump{min-height:var(--layout-control-height);padding:8px 11px}
+
+  .favorite-button,
+  .detail-button,
+  .screening-row>.screening-actions>button,
+  .screening-row>.screening-actions>.ticket-select{min-height:36px;height:36px}
+
+  .timetable-action-buttons>button,
+  .timetable-action-buttons>.backup-menu>summary{min-height:36px}
+
+  .event-block strong{font-size:9px}
+  .event-block span{font-size:7.5px}
+  .timetable-scroll.dense .event-block strong{font-size:8px}
+  .timetable-scroll.dense .event-block span{font-size:7px}
+  .timetable-scroll.ultra-dense .event-block strong{font-size:7.2px}
+  .timetable-scroll.ultra-dense .event-block span{display:none}
+  .transfer-note,
+  .timetable-page:has(.timetable-scroll)::after{font-size:8.5px}
+
+  .travel-matrix-hint{
+    display:block;
+    margin:0 0 7px!important;
+    font-size:9px!important;
+    font-weight:700;
+  }
+  .travel-matrix-wrap{
+    scrollbar-width:thin;
+    overscroll-behavior-inline:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+}
+
+@media(max-width:700px) and (display-mode:browser){
+  .ios-webkit .liquid-tab-bar{
+    position:fixed;
+    top:auto;
+    bottom:var(--layout-dock-bottom);
+    transform:none;
+    animation:none;
+    will-change:auto;
+  }
+}
+
+@media(max-width:700px) and (display-mode:standalone){
+  .liquid-tab-bar{bottom:0;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+}

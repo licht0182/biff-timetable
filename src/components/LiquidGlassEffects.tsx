@@ -135,31 +135,9 @@ export default function LiquidGlassEffects() {
   useEffect(() => {
     const nativeBackdropRefraction = supportsBackdropRefraction()
     const iosWebKit = isIOSWebKitRuntime()
-    const standalone = window.matchMedia('(display-mode: standalone)').matches
-      || Boolean((navigator as Navigator & { standalone?: boolean }).standalone)
-    const useAbsoluteBrowserDock = iosWebKit && !standalone
     document.documentElement.classList.toggle('ios-webkit', iosWebKit)
     const transparencyPreference = window.matchMedia('(prefers-reduced-transparency: reduce)')
     let frame = 0
-    let dockFrame = 0
-
-    const updateBrowserDock = () => {
-      dockFrame = 0
-      const dock = document.querySelector<HTMLElement>('.liquid-tab-bar')
-      if (!dock || !useAbsoluteBrowserDock) return
-      const viewport = window.visualViewport
-      const viewportOffset = viewport?.offsetTop ?? 0
-      const viewportHeight = viewport?.height ?? window.innerHeight
-      const dockStart = Math.max(0, viewportOffset + viewportHeight - dock.offsetHeight - 8)
-      const scrollRoot = document.scrollingElement ?? document.documentElement
-      const scrollRange = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight)
-      dock.style.setProperty('--ios-browser-dock-start', `${Math.round(dockStart)}px`)
-      dock.style.setProperty('--ios-browser-dock-range', `${Math.round(scrollRange)}px`)
-    }
-
-    const scheduleBrowserDock = () => {
-      if (useAbsoluteBrowserDock && !dockFrame) dockFrame = window.requestAnimationFrame(updateBrowserDock)
-    }
 
     const clearSurface = (surface: FilterSurface) => {
       surface.element.classList.remove('liquid-glass-enhanced')
@@ -247,33 +225,18 @@ export default function LiquidGlassEffects() {
         })
       })
       schedulePublish()
-      scheduleBrowserDock()
     }
 
     const mutationObserver = new MutationObserver(discover)
     mutationObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] })
     transparencyPreference.addEventListener('change', schedulePublish)
-    window.addEventListener('resize', scheduleBrowserDock, { passive: true })
-    window.addEventListener('scroll', scheduleBrowserDock, { passive: true })
-    window.addEventListener('pageshow', scheduleBrowserDock)
-    window.visualViewport?.addEventListener('resize', scheduleBrowserDock, { passive: true })
-    window.visualViewport?.addEventListener('scroll', scheduleBrowserDock, { passive: true })
     discover()
 
     return () => {
       if (frame) window.cancelAnimationFrame(frame)
-      if (dockFrame) window.cancelAnimationFrame(dockFrame)
       mutationObserver.disconnect()
       resizeObserver.disconnect()
       transparencyPreference.removeEventListener('change', schedulePublish)
-      window.removeEventListener('resize', scheduleBrowserDock)
-      window.removeEventListener('scroll', scheduleBrowserDock)
-      window.removeEventListener('pageshow', scheduleBrowserDock)
-      window.visualViewport?.removeEventListener('resize', scheduleBrowserDock)
-      window.visualViewport?.removeEventListener('scroll', scheduleBrowserDock)
-      const dock = document.querySelector<HTMLElement>('.liquid-tab-bar')
-      dock?.style.removeProperty('--ios-browser-dock-start')
-      dock?.style.removeProperty('--ios-browser-dock-range')
       document.documentElement.classList.remove('ios-webkit')
       surfaces.current.forEach(clearSurface)
       surfaces.current.clear()

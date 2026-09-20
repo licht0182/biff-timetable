@@ -37,7 +37,7 @@ export default function BookingPlanPanel({
     : `${groups[0].priority}~${groups[groups.length - 1].priority}순위 · 총 ${plannedItems.length}`
 
   return (
-    <details className="booking-plan-panel">
+    <details className="layout-surface booking-plan-panel">
       <summary>
         <span>예매 계획</span>
         <small aria-live="polite">{`${summary}${nextFallbackIds.size ? ` · 다음 대안 ${nextFallbackIds.size}` : ''}`}</small>

@@ -39,3 +39,10 @@
   .time-axis>div{right:2px}
   .event-block strong{line-height:1.04}
 }
+
+/* Keep the first/last time labels and edge screenings away from clipping. */
+.timetable{grid-template-rows:var(--header-height) calc(var(--grid-height) + 16px)}
+.time-axis,.day-column{height:calc(var(--grid-height) + 16px)}
+.time-axis>div{transform:translateY(calc(-50% + 8px))}
+.hour-line{transform:translateY(8px)}
+.event-block{margin-top:8px}

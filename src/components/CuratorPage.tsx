@@ -13,10 +13,10 @@ function scrollPageTop(behavior: ScrollBehavior = 'auto') {
 
 function ArticleDetail({ article, onBack, onOpenFilms, onOpenFilm }: { article: CuratorArticle; onBack: () => void; onOpenFilms: () => void; onOpenFilm: (title: string) => void }) {
   return (
-    <main className="curator-page curator-detail-page">
+    <main className="app-page app-page--curator curator-page curator-detail-page">
       <div className="curator-reading-shell">
         <button type="button" className="curator-back" onClick={onBack}>← 목록으로</button>
-        <article className="curator-article">
+        <article className="layout-surface curator-article">
           <header className="curator-article-header">
             <span className="curator-category">{article.category}</span>
             <h2>{article.title}</h2>
@@ -154,8 +154,8 @@ export default function CuratorPage({ onOpenFilms, onOpenFilm }: Props) {
   }
 
   return (
-    <main className="curator-page">
-      <section className="curator-hero">
+    <main className="app-page app-page--curator curator-page">
+      <section className="layout-surface curator-hero">
         <div>
           <p className="curator-kicker">AI DOCENT · BIFF EDITORIAL</p>
           <h2>영화 고르기 전에 읽는 BIFF 분석</h2>
@@ -164,7 +164,7 @@ export default function CuratorPage({ onOpenFilms, onOpenFilm }: Props) {
         <span className="curator-edition">2026</span>
       </section>
 
-      <section className="curator-latest" aria-labelledby="curator-latest-title">
+      <section className="layout-surface curator-latest" aria-labelledby="curator-latest-title">
         <div className="curator-section-heading">
           <div><p>DOCENT COLUMNS</p><h3 id="curator-latest-title">AI 도슨트 칼럼</h3></div>
           <span>{CURATOR_ARTICLES.length}개의 칼럼 · {categories.length}개 분류</span>
@@ -203,7 +203,7 @@ export default function CuratorPage({ onOpenFilms, onOpenFilm }: Props) {
         </div>
       </section>
 
-      <section className="curator-method">
+      <section className="layout-surface curator-method">
         <div>
           <p className="curator-kicker">HOW IT WORKS</p>
           <h3>AI 도슨트는 이렇게 글을 만듭니다</h3>

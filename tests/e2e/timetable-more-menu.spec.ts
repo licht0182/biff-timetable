@@ -32,18 +32,20 @@ test('toggles calendar, backup, and clear-all inside the timetable more menu wit
   const actions = page.locator('.timetable-action-buttons')
   const more = actions.locator('.backup-menu.timetable-more-menu')
   const summary = more.locator(':scope > summary')
-  const calendar = actions.locator(':scope > .png-export-trigger + button')
-  const clearAll = actions.locator(':scope > button:last-child')
-  const backupActions = more.locator(':scope > div > button')
+  const menuActions = more.locator(':scope > div > button')
+  const calendar = more.getByRole('button', { name: '캘린더' })
+  const clearAll = more.getByRole('button', { name: '전체 비우기' })
+  const saveBackup = more.getByRole('button', { name: 'JSON 저장' })
+  const importBackup = more.getByRole('button', { name: 'JSON 가져오기' })
   const timetable = page.locator('.timetable-scroll')
 
   await expect(summary).toHaveText('더보기')
   await expect(summary).toHaveAttribute('aria-label', '더보기 메뉴 열기')
   await expect(calendar).toBeHidden()
   await expect(clearAll).toBeHidden()
-  await expect(backupActions).toHaveCount(2)
-  await expect(backupActions.nth(0)).toBeHidden()
-  await expect(backupActions.nth(1)).toBeHidden()
+  await expect(menuActions).toHaveCount(4)
+  await expect(saveBackup).toBeHidden()
+  await expect(importBackup).toBeHidden()
 
   const beforeHeight = (await timetable.boundingBox())?.height ?? 0
   await summary.click()
@@ -52,10 +54,8 @@ test('toggles calendar, backup, and clear-all inside the timetable more menu wit
   await expect(summary).toHaveAttribute('aria-label', '더보기 메뉴 닫기')
   await expect(calendar).toBeVisible()
   await expect(clearAll).toBeVisible()
-  await expect(backupActions.nth(0)).toBeVisible()
-  await expect(backupActions.nth(0)).toHaveText('JSON 저장')
-  await expect(backupActions.nth(1)).toBeVisible()
-  await expect(backupActions.nth(1)).toHaveText('가져오기')
+  await expect(saveBackup).toBeVisible()
+  await expect(importBackup).toBeVisible()
 
   const afterOpenHeight = (await timetable.boundingBox())?.height ?? 0
   expect(Math.abs(afterOpenHeight - beforeHeight)).toBeLessThanOrEqual(1)
@@ -65,8 +65,8 @@ test('toggles calendar, backup, and clear-all inside the timetable more menu wit
   await expect(summary).toHaveAttribute('aria-label', '더보기 메뉴 열기')
   await expect(calendar).toBeHidden()
   await expect(clearAll).toBeHidden()
-  await expect(backupActions.nth(0)).toBeHidden()
-  await expect(backupActions.nth(1)).toBeHidden()
+  await expect(saveBackup).toBeHidden()
+  await expect(importBackup).toBeHidden()
 
   const afterCloseHeight = (await timetable.boundingBox())?.height ?? 0
   expect(Math.abs(afterCloseHeight - beforeHeight)).toBeLessThanOrEqual(1)

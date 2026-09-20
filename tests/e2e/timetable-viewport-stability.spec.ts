@@ -28,10 +28,14 @@ async function timetableGeometry(page: Page) {
     const labels = Array.from(document.querySelectorAll<HTMLElement>('.time-axis>div:not(.runtime-pre-hour)'))
     const middleLabel = labels[Math.floor(labels.length / 2)]
     const style = getComputedStyle(timetable)
+    const dock = document.querySelector<HTMLElement>('.liquid-tab-bar-surface')!
+    const scrollBox = scroll.getBoundingClientRect()
+    const dockBox = dock.getBoundingClientRect()
     return {
       shellHeight: shell.getBoundingClientRect().height,
-      scrollHeight: scroll.getBoundingClientRect().height,
+      scrollHeight: scrollBox.height,
       timetableHeight: timetable.getBoundingClientRect().height,
+      dockOverlap: scrollBox.bottom - dockBox.top,
       hourHeight: Number.parseFloat(style.getPropertyValue('--hour-height')),
       gridHeight: Number.parseFloat(style.getPropertyValue('--grid-height')),
       reactHourHeight: timetable.style.getPropertyValue('--hour-height'),
@@ -64,9 +68,10 @@ test('keeps mobile timetable geometry fixed across Safari-style height-only resi
 
   expect(before.stableClass).toBeTruthy()
   expect(before.stableData).toBe('true')
-  expect(before.bodyPosition).toBe('fixed')
+  expect(before.bodyPosition).not.toBe('fixed')
   expect(before.bodyOverflow).toBe('hidden')
   expect(before.htmlOverflow).toBe('hidden')
+  expect(before.dockOverlap).toBeGreaterThan(40)
   expect(Math.abs(before.timetableHeight - before.scrollHeight)).toBeLessThanOrEqual(2)
   expect(before.hourHeight).toBeGreaterThan(0)
   expect(before.gridHeight).toBeGreaterThan(0)

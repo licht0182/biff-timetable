@@ -90,6 +90,10 @@ function stabilizeTimetableGeometry(scroll: HTMLElement) {
 }
 
 function releaseViewportLock() {
+  if (frame) {
+    cancelAnimationFrame(frame)
+    frame = 0
+  }
   if (resizeObserver) {
     resizeObserver.disconnect()
     resizeObserver = null

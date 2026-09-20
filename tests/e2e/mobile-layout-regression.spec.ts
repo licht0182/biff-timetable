@@ -132,6 +132,8 @@ test('aligns the first content surface across all primary mobile sections', asyn
   await page.goto('./')
   const dock = page.locator('.liquid-tab-bar')
 
+  await expect(page.locator('.film-page .film-data-notice, .film-page #film-controls').first()).toBeVisible()
+
   const topGap = async (selector: string) => page.evaluate((target) => {
     const header = document.querySelector<HTMLElement>('.topbar')
     const surface = document.querySelector<HTMLElement>(target)
@@ -139,8 +141,13 @@ test('aligns the first content surface across all primary mobile sections', asyn
     return Math.round((surface.getBoundingClientRect().top - header.getBoundingClientRect().bottom) * 10) / 10
   }, selector)
 
-  const filmSelector = await page.locator('.film-data-notice').isVisible() ? '.film-data-notice' : '#film-controls'
-  const filmGap = await topGap(filmSelector)
+  const filmGap = await page.evaluate(() => {
+    const header = document.querySelector<HTMLElement>('.topbar')
+    const filmPage = document.querySelector<HTMLElement>('.film-page')
+    const surface = filmPage?.querySelector<HTMLElement>('.film-data-notice, #film-controls')
+    if (!header || !surface) throw new Error('Missing film page alignment target')
+    return Math.round((surface.getBoundingClientRect().top - header.getBoundingClientRect().bottom) * 10) / 10
+  })
 
   await dock.getByRole('button', { name: '내 시간표' }).click()
   await expect(page.locator('.timetable-empty')).toBeVisible()
@@ -170,6 +177,31 @@ test('releases the grid viewport lock before leaving for every other primary sec
   await dock.getByRole('button', { name: '영화 찾기' }).click()
   await expectViewportLockReleased(page)
   await expect(page.locator('#film-controls')).toBeVisible()
+  await expect(page.locator('.film-card').first()).toBeVisible()
+
+  await expect.poll(() => page.evaluate(() => {
+    const surface = document.querySelector<HTMLElement>('.liquid-tab-bar-surface')!
+    const main = document.querySelector<HTMLElement>('main')!
+    return main.getBoundingClientRect().bottom - surface.getBoundingClientRect().top
+  })).toBeGreaterThan(40)
+
+  const filmTransition = await page.evaluate(() => {
+    const nav = document.querySelector<HTMLElement>('.liquid-tab-bar')!
+    const surface = document.querySelector<HTMLElement>('.liquid-tab-bar-surface')!
+    const surfaceStyle = getComputedStyle(surface)
+    const surfaceBox = surface.getBoundingClientRect()
+    return {
+      bodyPosition: getComputedStyle(document.body).position,
+      navPosition: getComputedStyle(nav).position,
+      surfaceBackdrop: surfaceStyle.backdropFilter || surfaceStyle.webkitBackdropFilter,
+      bottomGap: window.innerHeight - surfaceBox.bottom,
+    }
+  })
+  expect(filmTransition.bodyPosition).not.toBe('fixed')
+  expect(filmTransition.navPosition).toBe('fixed')
+  expect(filmTransition.surfaceBackdrop).toContain('blur(')
+  expect(filmTransition.bottomGap).toBeGreaterThanOrEqual(5)
+  expect(filmTransition.bottomGap).toBeLessThanOrEqual(10)
 
   await openGrid(page)
   await dock.getByRole('button', { name: 'AI 도슨트' }).click()
@@ -192,10 +224,10 @@ test('keeps the mobile grid toolbar inside 320px while secondary actions remain 
   await expect(actions).toBeVisible()
   const png = actions.locator('.png-export-trigger')
   await expect(png).toBeVisible()
-  const calendar = actions.locator(':scope > .png-export-trigger + button')
+  const more = actions.locator('.backup-menu.timetable-more-menu')
+  const calendar = more.getByRole('button', { name: '캘린더' })
   await expect(calendar).toBeHidden()
 
-  const more = actions.locator('.backup-menu.timetable-more-menu')
   const summary = more.locator(':scope > summary')
   await expect(summary).toHaveText('더보기')
   await summary.click()

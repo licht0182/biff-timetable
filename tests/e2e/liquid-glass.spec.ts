@@ -24,12 +24,6 @@ test('keeps the browser dock outside Safari toolbar tint sampling', async ({ pag
   const viewport = await page.locator('meta[name="viewport"]').getAttribute('content')
   expect(viewport).toContain('viewport-fit=cover')
 
-  if (browserName === 'webkit') {
-    await expect.poll(() => page.locator('.liquid-tab-bar').evaluate((element) => (
-      Number.parseFloat(getComputedStyle(element).getPropertyValue('--ios-browser-dock-range'))
-    ))).toBeGreaterThan(0)
-  }
-
   const metrics = await page.evaluate(() => {
     const shell = document.querySelector<HTMLElement>('.app-shell')!
     const nav = document.querySelector<HTMLElement>('.liquid-tab-bar')!
@@ -47,7 +41,6 @@ test('keeps the browser dock outside Safari toolbar tint sampling', async ({ pag
       bottomGap: window.innerHeight - surface.getBoundingClientRect().bottom,
       navPosition: navStyle.position,
       navTimeline: navStyle.animationTimeline,
-      navScrollRange: Number.parseFloat(navStyle.getPropertyValue('--ios-browser-dock-range')),
       navPaddingBottom: Number.parseFloat(navStyle.paddingBottom),
       shellPaddingBottom: Number.parseFloat(getComputedStyle(shell).paddingBottom),
       surfaceHeight: surface.getBoundingClientRect().height,
@@ -63,26 +56,22 @@ test('keeps the browser dock outside Safari toolbar tint sampling', async ({ pag
     }
   })
 
-  expect(metrics.bottomGap).toBeGreaterThanOrEqual(browserName === 'webkit' ? 7 : 5)
-  expect(metrics.bottomGap).toBeLessThanOrEqual(browserName === 'webkit' ? 9 : 7)
+  expect(metrics.bottomGap).toBeGreaterThanOrEqual(7)
+  expect(metrics.bottomGap).toBeLessThanOrEqual(9)
   expect(metrics.navPaddingBottom).toBe(0)
   expect(metrics.shellPaddingBottom).toBeGreaterThanOrEqual(metrics.surfaceHeight + 24)
   expect(metrics.surfaceBackground).not.toBe('none')
   const dockAlpha = Number(metrics.surfaceBackgroundColor.match(/[\d.]+(?=\)$)/)?.[0])
   expect(dockAlpha).toBeGreaterThan(0.2)
   expect(dockAlpha).toBeLessThan(0.95)
+  expect(metrics.navPosition).toBe('fixed')
+  expect(metrics.surfaceBackdrop).toContain('blur(')
+  expect(metrics.surfaceBackdrop).toContain('12px')
   if (browserName === 'webkit') {
-    expect(metrics.navPosition).toBe('absolute')
-    expect(metrics.navTimeline).toContain('scroll(root)')
-    expect(metrics.navScrollRange).toBeGreaterThan(0)
-    expect(metrics.surfaceBackdrop).toBe('none')
+    expect(metrics.navTimeline).not.toContain('scroll(root)')
     expect(metrics.surfaceFilter).toBe('none')
     expect(metrics.refractionDisplay).toBeUndefined()
     expect(metrics.surfaceHighlightDisplay).toBe('none')
-  } else {
-    expect(metrics.navPosition).toBe('fixed')
-    expect(metrics.surfaceBackdrop).toContain('blur(')
-    expect(metrics.surfaceBackdrop).toContain('12px')
   }
   expect(metrics.dockScrimContent).toBe('none')
   expect(metrics.iconWidth).toBeGreaterThanOrEqual(54)
@@ -100,7 +89,7 @@ test('keeps the browser dock outside Safari toolbar tint sampling', async ({ pag
         gap: Math.round(window.innerHeight - rect.bottom),
         visible: rect.top < window.innerHeight && rect.bottom > 0,
       }
-    })).toEqual({ position: 'absolute', gap: 8, visible: true })
+    })).toEqual({ position: 'fixed', gap: 8, visible: true })
   }
 })
 

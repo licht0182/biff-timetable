@@ -136,6 +136,14 @@ test('shows one selected date at a time and keeps the mobile list scrollable', a
   await expect(visibleDay.locator(`[data-screening-id="${firstDayItems[0].screening.id}"]`)).toBeVisible()
   await expect(visibleDay.locator(`[data-screening-id="${secondDayItem!.screening.id}"]`)).toHaveCount(0)
 
+  const selectedDateStyle = await tabs.nth(0).evaluate((element) => {
+    const style = getComputedStyle(element)
+    return { backgroundColor: style.backgroundColor, color: style.color }
+  })
+  expect(selectedDateStyle.backgroundColor).not.toBe('rgb(52, 58, 67)')
+  expect(selectedDateStyle.backgroundColor).not.toBe('rgb(0, 0, 0)')
+  expect(selectedDateStyle.color).not.toBe('rgb(255, 255, 255)')
+
   const scrollState = await page.evaluate(() => ({
     bodyLocked: document.body.classList.contains('timetable-viewport-locked'),
     htmlLocked: document.documentElement.classList.contains('timetable-viewport-locked'),
