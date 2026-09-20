@@ -292,6 +292,12 @@ export default function App() {
   const [timetableView, setTimetableView] = useState<TimetableViewMode>(() => normalizeTimetableView(readStorageValue(TIMETABLE_VIEW_KEY)))
 
   useEffect(() => {
+    if (activeTab !== 'timetable' || settingsOpen || timetableView !== 'grid') {
+      releaseTimetableViewportLock()
+    }
+  }, [activeTab, settingsOpen, timetableView])
+
+  useEffect(() => {
     document.body.classList.toggle('filter-sheet-open', mobileFiltersOpen)
     const focusTimeout = mobileFiltersOpen
       ? window.setTimeout(() => filterSheetRef.current?.focus(), 80)
@@ -1138,6 +1144,7 @@ export default function App() {
   }, [])
 
   const openFilms = useCallback(() => {
+    releaseTimetableViewportLock()
     const target = filmScrollPositionRef.current
     pushNavigationState({ tab: 'films', settingsOpen: false, curatorSlug: null })
     setActiveTab('films')
@@ -1177,6 +1184,7 @@ export default function App() {
   }, [])
 
   const openFilmsFromMenu = useCallback(() => {
+    releaseTimetableViewportLock()
     pushNavigationState({ tab: 'films', settingsOpen: false, curatorSlug: null })
     setActiveTab('films')
     setSettingsOpen(false)
@@ -1192,6 +1200,7 @@ export default function App() {
   }, [filmViewActive])
 
   const openCurator = useCallback(() => {
+    releaseTimetableViewportLock()
     if (filmViewActive) filmScrollPositionRef.current = window.scrollY
     pushNavigationState({ tab: 'curator', settingsOpen: false, curatorSlug: null })
     setActiveTab('curator')
@@ -1201,8 +1210,8 @@ export default function App() {
   }, [filmViewActive])
 
   const openSettings = useCallback(() => {
+    releaseTimetableViewportLock()
     if (filmViewActive) filmScrollPositionRef.current = window.scrollY
-    if (activeTab === 'timetable') releaseTimetableViewportLock()
     const currentNavigation = readNavigationState()
     pushNavigationState({
       tab: activeTab,
@@ -1212,6 +1221,31 @@ export default function App() {
     setSettingsOpen(true)
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [activeTab, filmViewActive])
+
+
+  const advancedFilterPanel = <div ref={filterSheetRef} id="film-advanced-filters" className={`filter-row ${mobileFiltersOpen ? 'mobile-open' : ''}`} aria-labelledby="filter-sheet-title" tabIndex={mobileFiltersOpen ? -1 : undefined}>
+    <div className="filter-sheet-head"><span aria-hidden="true" /><strong id="filter-sheet-title">상세 필터</strong><button type="button" onClick={() => setMobileFiltersOpen(false)} aria-label="상세 필터 닫기">완료</button></div>
+    <label><span>날짜</span><select value={dateFilter} onChange={(event) => setDateFilter(event.target.value)}><option value="전체">전체 날짜</option>{allDates.map((date) => <option key={date} value={date}>{formatDate(date)}</option>)}</select></label>
+    <label><span>상영관</span><select value={venueFilter} onChange={(event) => setVenueFilter(event.target.value)}><option value="전체">전체 상영관</option>{allVenues.map((venue) => <option key={venue} value={venue}>{venue}</option>)}</select></label>
+    <div className="time-range-filter">
+      <div className="time-range-filter-head">
+        <span>회차 시간대</span>
+        <small className={timeRangeActive ? 'active' : ''} aria-live="polite">{timeRangeStatus}</small>
+      </div>
+      <div className="time-range-control-row">
+        <div className="time-range-inputs">
+          <input type="time" step="300" value={draftStartTime} onChange={(event) => setDraftStartTime(event.target.value)} aria-label="회차 시작 시간부터" />
+          <span className="time-range-separator" aria-hidden="true">~</span>
+          <input type="time" step="300" value={draftEndTime} onChange={(event) => setDraftEndTime(event.target.value)} aria-label="회차 시작 시간까지" />
+        </div>
+        <button type="button" className="time-range-action apply" onClick={applyTimeRangeFilter} disabled={!timeRangeDraftChanged} aria-label="시간대 적용">적용</button>
+        <button type="button" className="time-range-action clear" onClick={clearTimeRangeFilter} disabled={!timeRangeActive && !timeRangeHasDraft} aria-label="시간대 해제">해제</button>
+      </div>
+    </div>
+    <button className={`filter-toggle ${gvOnly ? 'active' : ''}`} onClick={() => setGvOnly((value) => !value)} aria-pressed={gvOnly}>GV만</button>
+    <button className={`filter-toggle ${favoritesOnly ? 'active' : ''}`} onClick={() => setFavoritesOnly((value) => !value)} aria-pressed={favoritesOnly}>★ 관심작</button>
+    <button className="filter-reset" onClick={resetFilters}>초기화</button>
+  </div>
 
   return (
     <div className={`app-shell has-liquid-navigation ${activeTab === 'timetable' ? `timetable-mode timetable-${timetableView}-mode` : ''}`}>
@@ -1285,32 +1319,13 @@ export default function App() {
             <span>날짜·상영관·시간대</span>
             <strong>{activeFilterCount > 0 ? `${activeFilterCount}개 적용` : mobileFiltersOpen ? '접기' : '상세 필터'}</strong>
           </button>
-          {mobileFiltersOpen && <button type="button" className="filter-sheet-backdrop" aria-label="상세 필터 닫기" onClick={() => setMobileFiltersOpen(false)} />}
-          <div ref={filterSheetRef} id="film-advanced-filters" className={`filter-row ${mobileFiltersOpen ? 'mobile-open' : ''}`} aria-labelledby="filter-sheet-title" tabIndex={mobileFiltersOpen ? -1 : undefined}>
-            <div className="filter-sheet-head"><span aria-hidden="true" /><strong id="filter-sheet-title">상세 필터</strong><button type="button" onClick={() => setMobileFiltersOpen(false)} aria-label="상세 필터 닫기">완료</button></div>
-            <label><span>날짜</span><select value={dateFilter} onChange={(event) => setDateFilter(event.target.value)}><option value="전체">전체 날짜</option>{allDates.map((date) => <option key={date} value={date}>{formatDate(date)}</option>)}</select></label>
-            <label><span>상영관</span><select value={venueFilter} onChange={(event) => setVenueFilter(event.target.value)}><option value="전체">전체 상영관</option>{allVenues.map((venue) => <option key={venue} value={venue}>{venue}</option>)}</select></label>
-            <div className="time-range-filter">
-              <div className="time-range-filter-head">
-                <span>회차 시간대</span>
-                <small className={timeRangeActive ? 'active' : ''} aria-live="polite">{timeRangeStatus}</small>
-              </div>
-              <div className="time-range-control-row">
-                <div className="time-range-inputs">
-                  <input type="time" step="300" value={draftStartTime} onChange={(event) => setDraftStartTime(event.target.value)} aria-label="회차 시작 시간부터" />
-                  <span className="time-range-separator" aria-hidden="true">~</span>
-                  <input type="time" step="300" value={draftEndTime} onChange={(event) => setDraftEndTime(event.target.value)} aria-label="회차 시작 시간까지" />
-                </div>
-                <button type="button" className="time-range-action apply" onClick={applyTimeRangeFilter} disabled={!timeRangeDraftChanged} aria-label="시간대 적용">적용</button>
-                <button type="button" className="time-range-action clear" onClick={clearTimeRangeFilter} disabled={!timeRangeActive && !timeRangeHasDraft} aria-label="시간대 해제">해제</button>
-              </div>
-            </div>
-            <button className={`filter-toggle ${gvOnly ? 'active' : ''}`} onClick={() => setGvOnly((value) => !value)} aria-pressed={gvOnly}>GV만</button>
-            <button className={`filter-toggle ${favoritesOnly ? 'active' : ''}`} onClick={() => setFavoritesOnly((value) => !value)} aria-pressed={favoritesOnly}>★ 관심작</button>
-            <button className="filter-reset" onClick={resetFilters}>초기화</button>
-          </div>
+          {viewport.width > 700 && advancedFilterPanel}
           <div className="chips" aria-label="상영작 섹션">{sections.map((item) => <button type="button" key={item} className={section === item ? 'active' : ''} aria-pressed={section === item} onClick={() => setSection(item)}>{item}</button>)}</div>
         </section>
+        {viewport.width <= 700 && <>
+          {mobileFiltersOpen && <button type="button" className="filter-sheet-backdrop" aria-label="상세 필터 닫기" onClick={() => setMobileFiltersOpen(false)} />}
+          {advancedFilterPanel}
+        </>}
 
         <div className="film-results-toolbar">
           <span role="status" aria-live="polite">검색 결과 {filteredFilms.length}편</span>
@@ -1336,7 +1351,8 @@ export default function App() {
           />
         ) : !loadError && <div className="empty">조건에 맞는 상영작이 없습니다.</div>}
       </main> : activeTab === 'curator' ? <Suspense fallback={<main className="curator-page curator-loading" aria-busy="true"><div className="empty">AI 도슨트 칼럼을 불러오는 중입니다.</div></main>}><CuratorPage key={curatorPageKey} onOpenFilms={openFilms} onOpenFilm={openFilmFromCurator} /></Suspense> : <main className="timetable-page">
-        {selectedItems.length === 0 && customEvents.length === 0 ? <div className="empty timetable-empty"><strong>아직 시간표에 일정이 없습니다.</strong><span>영화 회차를 고르거나 직접 일정을 추가해 주세요.</span><div className="timetable-empty-actions"><div className="timetable-view-switch" role="group" aria-label="시간표 보기 방식"><button type="button" className={timetableView === 'list' ? 'active' : ''} aria-pressed={timetableView === 'list'} onClick={() => setTimetableView('list')}>목록</button><button type="button" className={timetableView === 'grid' ? 'active' : ''} aria-pressed={timetableView === 'grid'} onClick={() => setTimetableView('grid')}>시간표</button></div><button onClick={openFilms}>영화 찾기</button><button type="button" className="custom-event-add-button" onClick={openCreateCustomEvent}>+ 일정 추가</button></div></div> : <>
+        <input ref={importInputRef} type="file" accept="application/json,.json" className="visually-hidden" onChange={importBackup} />
+        {selectedItems.length === 0 && customEvents.length === 0 ? <div className="empty timetable-empty"><strong>아직 시간표에 일정이 없습니다.</strong><span>영화 회차를 고르거나 직접 일정을 추가해 주세요.</span><div className="timetable-empty-actions"><div className="timetable-view-switch" role="group" aria-label="시간표 보기 방식"><button type="button" className={timetableView === 'list' ? 'active' : ''} aria-pressed={timetableView === 'list'} onClick={() => setTimetableView('list')}>목록</button><button type="button" className={timetableView === 'grid' ? 'active' : ''} aria-pressed={timetableView === 'grid'} onClick={() => setTimetableView('grid')}>시간표</button></div><button onClick={openFilms}>영화 찾기</button><button type="button" className="custom-event-add-button" onClick={openCreateCustomEvent}>+ 일정 추가</button><details className="backup-menu timetable-empty-backup"><summary>더보기</summary><div><button onClick={exportBackup}>JSON 저장</button><button onClick={() => importInputRef.current?.click()}>JSON 가져오기</button></div></details></div></div> : <>
           <div className="timetable-actions enhanced-timetable-actions">
             <div><span className="booking-summary">{timetableSelectionMode ? `삭제할 일정 ${timetableDeleteSelection.length}개 선택` : timetableView === 'list' ? listSummaryText : bookingSummaryText}</span></div>
             <div className="timetable-action-buttons">
@@ -1358,7 +1374,6 @@ export default function App() {
               {timetableSelectionMode && <button type="button" className="timetable-delete-button" onClick={deleteTimetableSelection} disabled={timetableDeleteSelection.length === 0}>삭제 {timetableDeleteSelection.length}</button>}
               <button onClick={clearSelected}>전체 비우기</button>
             </div>
-            <input ref={importInputRef} type="file" accept="application/json,.json" className="visually-hidden" onChange={importBackup} />
           </div>
           {timetableView === 'list' ? <ScheduleList
             items={allScreeningItems}
