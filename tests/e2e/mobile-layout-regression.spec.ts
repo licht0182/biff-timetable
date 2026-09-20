@@ -58,6 +58,7 @@ test('anchors the movie filter sheet to the viewport and keeps it interactive', 
     return {
       left: rect.left,
       right: rect.right,
+      viewportWidth: window.innerWidth,
       bottomGap: window.innerHeight - rect.bottom,
       position: style.position,
       pointerEvents: style.pointerEvents,
@@ -66,7 +67,7 @@ test('anchors the movie filter sheet to the viewport and keeps it interactive', 
   })
   expect(metrics.position).toBe('fixed')
   expect(Math.abs(metrics.left)).toBeLessThanOrEqual(1)
-  expect(Math.abs(metrics.right - window.innerWidth)).toBeLessThanOrEqual(1)
+  expect(Math.abs(metrics.right - metrics.viewportWidth)).toBeLessThanOrEqual(1)
   expect(Math.abs(metrics.bottomGap)).toBeLessThanOrEqual(1)
   expect(metrics.pointerEvents).not.toBe('none')
   expect(metrics.overflow).toBeLessThanOrEqual(1)
