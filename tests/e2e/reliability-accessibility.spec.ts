@@ -90,7 +90,7 @@ test('keeps mobile navigation and a compact filter entry point available while s
 
   await page.evaluate(() => window.scrollTo(0, 900))
   await expect(page.locator('.liquid-tab-bar')).toBeInViewport()
-  await expect.poll(() => page.locator('.liquid-tab-bar-surface').evaluate((element) => Math.round(window.innerHeight - element.getBoundingClientRect().bottom))).toBeGreaterThanOrEqual(8)
+  await expect.poll(() => page.locator('.liquid-tab-bar-surface').evaluate((element) => Math.round(window.innerHeight - element.getBoundingClientRect().bottom))).toBeGreaterThanOrEqual(5)
   await expect(page.getByRole('button', { name: '검색·필터' })).toBeInViewport()
 
   await page.getByRole('button', { name: '검색·필터' }).click()

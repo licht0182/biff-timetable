@@ -20,9 +20,15 @@ test('uses an accessible floating tab bar for primary mobile navigation', async 
   await expect(page.locator('.settings-intro').getByRole('heading', { name: '설정' })).toBeVisible()
 })
 
-test('extends into the iPhone safe area with a transparent refractive glass dock', async ({ page }) => {
+test('keeps the browser dock outside Safari toolbar tint sampling', async ({ page, browserName }) => {
   const viewport = await page.locator('meta[name="viewport"]').getAttribute('content')
   expect(viewport).toContain('viewport-fit=cover')
+
+  if (browserName === 'webkit') {
+    await expect.poll(() => page.locator('.liquid-tab-bar').evaluate((element) => (
+      Number.parseFloat(getComputedStyle(element).getPropertyValue('--ios-browser-dock-range'))
+    ))).toBeGreaterThan(0)
+  }
 
   const metrics = await page.evaluate(() => {
     const shell = document.querySelector<HTMLElement>('.app-shell')!
@@ -30,29 +36,75 @@ test('extends into the iPhone safe area with a transparent refractive glass dock
     const surface = document.querySelector<HTMLElement>('.liquid-tab-bar-surface')!
     const icon = document.querySelector<HTMLElement>('.liquid-tab-icon')!
     const surfaceStyle = getComputedStyle(surface)
+    const navStyle = getComputedStyle(nav)
+    const dockBackdrop = surfaceStyle.backdropFilter || surfaceStyle.webkitBackdropFilter
+    const refractionLayer = surface.querySelector<HTMLElement>(':scope > .liquid-glass-refraction-layer')
+    const refractionStyle = refractionLayer ? getComputedStyle(refractionLayer) : null
+    const surfaceHighlight = getComputedStyle(surface, '::after')
+    const dockScrim = getComputedStyle(nav, '::before')
     const iconStyle = getComputedStyle(icon)
     return {
       bottomGap: window.innerHeight - surface.getBoundingClientRect().bottom,
+      navPosition: navStyle.position,
+      navTimeline: navStyle.animationTimeline,
+      navScrollRange: Number.parseFloat(navStyle.getPropertyValue('--ios-browser-dock-range')),
+      navPaddingBottom: Number.parseFloat(navStyle.paddingBottom),
       shellPaddingBottom: Number.parseFloat(getComputedStyle(shell).paddingBottom),
       surfaceHeight: surface.getBoundingClientRect().height,
       surfaceBackground: surfaceStyle.backgroundImage,
       surfaceBackgroundColor: surfaceStyle.backgroundColor,
-      surfaceBackdrop: surfaceStyle.backdropFilter || surfaceStyle.webkitBackdropFilter,
+      surfaceBackdrop: dockBackdrop,
+      surfaceFilter: surfaceStyle.filter,
+      refractionDisplay: refractionStyle?.display,
+      surfaceHighlightDisplay: surfaceHighlight.display,
+      dockScrimContent: dockScrim.content,
       iconWidth: icon.getBoundingClientRect().width,
       iconRadius: iconStyle.borderRadius,
     }
   })
 
-  expect(metrics.bottomGap).toBeGreaterThanOrEqual(11)
+  expect(metrics.bottomGap).toBeGreaterThanOrEqual(browserName === 'webkit' ? 7 : 5)
+  expect(metrics.bottomGap).toBeLessThanOrEqual(browserName === 'webkit' ? 9 : 7)
+  expect(metrics.navPaddingBottom).toBe(0)
   expect(metrics.shellPaddingBottom).toBeGreaterThanOrEqual(metrics.surfaceHeight + 24)
   expect(metrics.surfaceBackground).not.toBe('none')
-  expect(Number(metrics.surfaceBackgroundColor.match(/[\d.]+(?=\)$)/)?.[0])).toBeLessThanOrEqual(0.2)
-  expect(metrics.surfaceBackdrop).toContain('blur(')
+  const dockAlpha = Number(metrics.surfaceBackgroundColor.match(/[\d.]+(?=\)$)/)?.[0])
+  expect(dockAlpha).toBeGreaterThan(0.2)
+  expect(dockAlpha).toBeLessThan(0.95)
+  if (browserName === 'webkit') {
+    expect(metrics.navPosition).toBe('absolute')
+    expect(metrics.navTimeline).toContain('scroll(root)')
+    expect(metrics.navScrollRange).toBeGreaterThan(0)
+    expect(metrics.surfaceBackdrop).toBe('none')
+    expect(metrics.surfaceFilter).toBe('none')
+    expect(metrics.refractionDisplay).toBe('none')
+    expect(metrics.surfaceHighlightDisplay).toBe('none')
+  } else {
+    expect(metrics.navPosition).toBe('fixed')
+    expect(metrics.surfaceBackdrop).toContain('blur(')
+    expect(metrics.surfaceBackdrop).toContain('12px')
+  }
+  expect(metrics.dockScrimContent).toBe('none')
   expect(metrics.iconWidth).toBeGreaterThanOrEqual(54)
   expect(metrics.iconRadius).toBe('19px')
+
+  if (browserName === 'webkit') {
+    await page.setViewportSize({ width: 588, height: 1194 })
+    await page.evaluate(() => window.scrollTo(0, 900))
+    await expect.poll(() => page.evaluate(() => {
+      const nav = document.querySelector<HTMLElement>('.liquid-tab-bar')!
+      const surface = document.querySelector<HTMLElement>('.liquid-tab-bar-surface')!
+      const rect = surface.getBoundingClientRect()
+      return {
+        position: getComputedStyle(nav).position,
+        gap: Math.round(window.innerHeight - rect.bottom),
+        visible: rect.top < window.innerHeight && rect.bottom > 0,
+      }
+    })).toEqual({ position: 'absolute', gap: 8, visible: true })
+  }
 })
 
-test('progressively enhances navigation, content, and overlay surfaces with SVG refraction', async ({ page, browserName }) => {
+test('keeps SVG refraction on stable glass while content avoids ghost-prone filter layers', async ({ page, browserName }) => {
   const topbar = page.locator('.topbar')
   const tabBarSurface = page.locator('.liquid-tab-bar-surface')
   const firstFilmCard = page.locator('.film-card').first()
@@ -60,11 +112,19 @@ test('progressively enhances navigation, content, and overlay surfaces with SVG 
   await expect(topbar).toHaveAttribute('data-liquid-glass', 'navigation')
   await expect(tabBarSurface).toHaveAttribute('data-liquid-glass', 'navigation')
   await expect(firstFilmCard).toHaveAttribute('data-liquid-glass', 'content')
-  await expect.poll(() => page.locator('.liquid-glass-filter-defs filter').count()).toBeGreaterThanOrEqual(5)
+  await expect.poll(() => page.locator('.liquid-glass-filter-defs filter').count()).toBeGreaterThanOrEqual(3)
   await expect(topbar.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(1)
   await expect(tabBarSurface.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(1)
-  await expect(firstFilmCard.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(1)
-  await expect.poll(() => firstFilmCard.locator(':scope > .liquid-glass-refraction-layer').evaluate((element) => getComputedStyle(element).filter)).toContain('url(')
+  await expect(firstFilmCard.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(0)
+  await expect(firstFilmCard).not.toHaveClass(/liquid-glass-backdrop-refraction/)
+
+  const layerCompositing = await topbar.locator(':scope > .liquid-glass-refraction-layer').evaluate((element) => {
+    const style = getComputedStyle(element)
+    return { mixBlendMode: style.mixBlendMode, willChange: style.willChange, filter: style.filter }
+  })
+  expect(layerCompositing.mixBlendMode).toBe('normal')
+  expect(layerCompositing.willChange).not.toContain('filter')
+  expect(layerCompositing.filter).toContain('url(')
 
   if (browserName === 'chromium') {
     await expect.poll(() => topbar.evaluate((element) => getComputedStyle(element).backdropFilter)).toContain('url(')
@@ -130,17 +190,29 @@ test('keeps content, controls, and overlays on translucent glass surfaces', asyn
 test('uses a solid light-gray canvas with dark readable text', async ({ page }) => {
   const palette = await page.evaluate(() => {
     const bodyBefore = getComputedStyle(document.body, '::before')
+    const html = getComputedStyle(document.documentElement)
+    const body = getComputedStyle(document.body)
+    const root = getComputedStyle(document.querySelector('#root')!)
+    const shell = getComputedStyle(document.querySelector('.app-shell')!)
     const heading = getComputedStyle(document.querySelector('.film-card h2')!)
     const input = getComputedStyle(document.querySelector('.film-search-autocomplete input')!)
     return {
-      backgroundImage: bodyBefore.backgroundImage,
-      backgroundColor: bodyBefore.backgroundColor,
+      themeColorCount: document.querySelectorAll('meta[name="theme-color"]').length,
+      htmlBackgroundColor: html.backgroundColor,
+      bodyBackgroundColor: body.backgroundColor,
+      rootBackgroundColor: root.backgroundColor,
+      shellBackgroundColor: shell.backgroundColor,
+      bodyBeforeContent: bodyBefore.content,
       headingColor: heading.color,
       inputColor: input.color,
     }
   })
-  expect(palette.backgroundImage).toBe('none')
-  expect(palette.backgroundColor).toBe('rgb(229, 231, 235)')
+  expect(palette.themeColorCount).toBe(0)
+  expect(palette.htmlBackgroundColor).toBe('rgba(0, 0, 0, 0)')
+  expect(palette.bodyBackgroundColor).toBe('rgb(229, 231, 235)')
+  expect(palette.rootBackgroundColor).toBe('rgba(0, 0, 0, 0)')
+  expect(palette.shellBackgroundColor).toBe('rgb(229, 231, 235)')
+  expect(palette.bodyBeforeContent).toBe('none')
   expect(palette.headingColor).toBe('rgb(17, 24, 39)')
   expect(palette.inputColor).toBe('rgb(17, 24, 39)')
 })
@@ -156,5 +228,7 @@ test('publishes an installable scoped web app manifest', async ({ page, request 
     start_url: '/biff-timetable/',
     scope: '/biff-timetable/',
     display: 'standalone',
+    background_color: '#e5e7eb',
   })
+  expect(manifest).not.toHaveProperty('theme_color')
 })

@@ -216,13 +216,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   --muted:var(--ios-secondary);
 }
 
-html{min-height:100%;background:var(--ios-bg);color:var(--ios-label)}
-body{min-height:100dvh;background:transparent;color:var(--ios-label)}
+html{min-height:100%;background-color:transparent!important;background-image:none!important;color:var(--ios-label)}
+body{min-height:100dvh;background-color:#e5e7eb!important;background-image:none!important;color:var(--ios-label)}
+#root{min-height:100dvh;background:transparent}
+.app-shell{min-height:100dvh;background:#e5e7eb}
 body::before{
-  inset:0;
-  background:#e5e7eb;
-  filter:none;
-  transform:none;
+  content:none;
+  display:none;
 }
 
 h1,h2,h3,h4,strong,.film-detail-grid dd,.settings-number-row strong,.settings-toggle-row strong,.precise-transfer-panel>strong{color:var(--ios-label);text-shadow:0 1px 0 rgba(255,255,255,.72)}
@@ -302,11 +302,13 @@ select option{background:#f3f4f6;color:#111827}
 
 .film-card{transition:transform .3s ease,box-shadow .3s ease,background .3s ease}
 .liquid-glass-enhanced{
+  --glass-blur:22px;
+  --glass-saturation:175%;
   isolation:isolate;
   border-color:rgba(255,255,255,.84)!important;
-  background:linear-gradient(135deg,rgba(255,255,255,.24),rgba(255,255,255,.08) 42%,rgba(255,255,255,.025) 72%,rgba(255,255,255,.16))!important;
-  backdrop-filter:blur(18px) saturate(175%)!important;
-  -webkit-backdrop-filter:blur(18px) saturate(175%)!important;
+  background:linear-gradient(135deg,rgba(255,255,255,.28),rgba(255,255,255,.1) 42%,rgba(255,255,255,.04) 72%,rgba(255,255,255,.18)),rgba(255,255,255,.2)!important;
+  backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturation))!important;
+  -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturation))!important;
   box-shadow:inset 0 1px 1px var(--glass-edge-highlight),inset 1px 0 0 rgba(255,255,255,.7),inset -1px -1px 0 rgba(17,24,39,.08),0 16px 42px rgba(15,23,42,.17)!important;
 }
 .liquid-glass-positioned{position:relative}
@@ -326,9 +328,8 @@ select option{background:#f3f4f6;color:#111827}
     radial-gradient(ellipse 50% 42% at 104% 108%,rgba(125,211,252,.26),transparent 70%),
     linear-gradient(118deg,rgba(255,255,255,.32),transparent 25% 68%,rgba(196,181,253,.2));
   filter:var(--liquid-filter);
-  opacity:.92;
-  mix-blend-mode:soft-light;
-  will-change:filter;
+  opacity:.72;
+  mix-blend-mode:normal;
 }
 .liquid-glass-refraction-layer::before{
   content:"";
@@ -346,7 +347,10 @@ select option{background:#f3f4f6;color:#111827}
   transform:translateX(-18%);
   opacity:.7;
 }
-.liquid-glass-enhanced[data-liquid-glass="toolbar"]{--glass-blur:25px;--glass-saturation:180%}
+.liquid-glass-enhanced[data-liquid-glass="navigation"]{--glass-blur:32px;--glass-saturation:180%;background:linear-gradient(145deg,rgba(255,255,255,.38),rgba(255,255,255,.12) 44%,rgba(255,255,255,.22)),rgba(255,255,255,.52)!important}
+.liquid-glass-enhanced[data-liquid-glass="toolbar"]{--glass-blur:30px;--glass-saturation:180%;background:linear-gradient(145deg,rgba(255,255,255,.36),rgba(255,255,255,.1) 44%,rgba(255,255,255,.2)),rgba(255,255,255,.58)!important}
+.liquid-tab-bar .liquid-tab-bar-surface.liquid-glass-enhanced{background:linear-gradient(145deg,rgba(255,255,255,.4),rgba(255,255,255,.1) 44%,rgba(255,255,255,.2)),rgba(229,231,235,.82)!important;backdrop-filter:blur(12px) saturate(160%)!important;-webkit-backdrop-filter:blur(12px) saturate(160%)!important}
+.film-results-toolbar.liquid-glass-enhanced,.enhanced-timetable-actions.liquid-glass-enhanced{background:linear-gradient(145deg,rgba(255,255,255,.4),rgba(255,255,255,.1) 44%,rgba(255,255,255,.2)),rgba(229,231,235,.97)!important}
 .liquid-glass-enhanced[data-liquid-glass="content"]{--glass-blur:25px;--glass-saturation:180%}
 .liquid-glass-enhanced[data-liquid-glass="sheet"],.liquid-glass-enhanced[data-liquid-glass="modal"]{--glass-blur:30px;--glass-saturation:190%}
 
@@ -358,8 +362,8 @@ select option{background:#f3f4f6;color:#111827}
 
 @media(max-width:700px){
   body::before{inset:0}
-  .app-shell,.timetable-mode{padding-bottom:calc(140px + env(safe-area-inset-bottom))!important}
-  .liquid-tab-bar{padding:10px 10px max(12px,env(safe-area-inset-bottom));background:transparent}
+  .app-shell,.timetable-mode{padding-bottom:144px!important;scroll-padding-bottom:144px}
+  .liquid-tab-bar{bottom:6px;padding:10px 10px 0;background:transparent}
   .topbar,.timetable-mode .topbar{background:rgba(255,255,255,.16)!important;border-bottom:1px solid rgba(17,24,39,.12)!important}
   .controls{background:rgba(255,255,255,.16)!important}
   .film-search-autocomplete input{background:rgba(255,255,255,.48)!important}
@@ -367,6 +371,44 @@ select option{background:#f3f4f6;color:#111827}
   #film-advanced-filters.filter-row{background:rgba(255,255,255,.48)!important}
   .film-results-toolbar{background:rgba(255,255,255,.16)!important}
   .liquid-tab-icon b{border-color:rgba(17,24,39,.24)!important}
+}
+
+@media(max-width:700px) and (display-mode:browser){
+  .ios-webkit .liquid-tab-bar{
+    position:absolute;
+    top:0;
+    bottom:auto;
+    --ios-browser-dock-start:calc(100dvh - 122px);
+    --ios-browser-dock-range:0px;
+    transform:translate3d(0,var(--ios-browser-dock-start),0);
+    animation:ios-browser-dock-follow 1ms linear both;
+    animation-timeline:scroll(root block);
+    will-change:transform;
+  }
+  .ios-webkit .liquid-tab-bar .liquid-tab-bar-surface.liquid-glass-enhanced{
+    isolation:auto!important;
+    filter:none!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+  .ios-webkit .liquid-tab-bar .liquid-glass-refraction-layer,
+  .ios-webkit .liquid-tab-bar .liquid-tab-bar-surface::after{display:none!important}
+}
+
+@keyframes ios-browser-dock-follow{
+  from{transform:translate3d(0,var(--ios-browser-dock-start),0)}
+  to{transform:translate3d(0,calc(var(--ios-browser-dock-start) + var(--ios-browser-dock-range)),0)}
+}
+
+@supports not (animation-timeline:scroll()){
+  @media(max-width:700px) and (display-mode:browser){
+    .ios-webkit .liquid-tab-bar{position:fixed;top:auto;bottom:8px;animation:none;transform:none;will-change:auto}
+  }
+}
+
+@media(max-width:700px) and (display-mode:standalone){
+  .liquid-tab-bar{bottom:0;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+  .ios-webkit .liquid-tab-bar .liquid-tab-bar-surface.liquid-glass-enhanced{backdrop-filter:blur(12px) saturate(160%)!important;-webkit-backdrop-filter:blur(12px) saturate(160%)!important}
 }
 
 @media(prefers-reduced-transparency:reduce){

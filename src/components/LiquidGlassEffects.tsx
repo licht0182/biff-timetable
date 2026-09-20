@@ -4,9 +4,10 @@ type LiquidGlassPreset = 'navigation' | 'toolbar' | 'content' | 'sheet' | 'modal
 
 type FilterSurface = {
   element: HTMLElement
-  layer: HTMLSpanElement
+  layer: HTMLSpanElement | null
   id: string
   preset: LiquidGlassPreset
+  usesRefraction: boolean
   width: number
   height: number
   displacement: string
@@ -15,12 +16,14 @@ type FilterSurface = {
 
 type GlassMaps = Pick<FilterSurface, 'displacement' | 'specular'>
 
-const TARGETS: Array<{ selector: string; preset: LiquidGlassPreset }> = [
-  { selector: '.topbar, .tabs, .liquid-tab-bar-surface', preset: 'navigation' },
-  { selector: '.film-results-toolbar, .enhanced-timetable-actions', preset: 'toolbar' },
-  { selector: '.notice, .controls, .film-card, .schedule-screening-group, .booking-plan-panel, .timetable-scroll, .timetable-empty, .settings-card, .settings-reset-card, .curator-hero, .curator-featured, .curator-latest, .curator-method, .curator-card, .curator-article', preset: 'content' },
-  { selector: '#film-advanced-filters.filter-row.mobile-open', preset: 'sheet' },
-  { selector: '.film-modal, .booking-conflict-dialog, .booking-apply-dialog, .custom-event-dialog, .custom-event-modal', preset: 'modal' },
+const TARGETS: Array<{ selector: string; preset: LiquidGlassPreset; usesRefraction: boolean }> = [
+  { selector: '.topbar, .tabs, .liquid-tab-bar-surface', preset: 'navigation', usesRefraction: true },
+  { selector: '.film-results-toolbar, .enhanced-timetable-actions', preset: 'toolbar', usesRefraction: true },
+  // Refracting every virtualized card creates dozens of WebKit compositing layers.
+  // Content keeps the translucent lens/bevel treatment without a live SVG filter.
+  { selector: '.notice, .controls, .film-card, .schedule-screening-group, .booking-plan-panel, .timetable-scroll, .timetable-empty, .settings-card, .settings-reset-card, .curator-hero, .curator-featured, .curator-latest, .curator-method, .curator-card, .curator-article', preset: 'content', usesRefraction: false },
+  { selector: '#film-advanced-filters.filter-row.mobile-open', preset: 'sheet', usesRefraction: true },
+  { selector: '.film-modal, .booking-conflict-dialog, .booking-apply-dialog, .custom-event-dialog, .custom-event-modal', preset: 'modal', usesRefraction: true },
 ]
 
 const PRESETS = {
@@ -35,12 +38,18 @@ const mapCache = new Map<string, GlassMaps>()
 let nextFilterId = 0
 const AUTHORED_POSITION_TARGETS = '.tabs, .film-results-toolbar, .enhanced-timetable-actions'
 
+function isIOSWebKitRuntime() {
+  if (typeof navigator === 'undefined') return false
+  const iPadDesktopUA = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1
+  return (/iPhone|iPad|iPod/i.test(navigator.userAgent) || iPadDesktopUA) && /WebKit/i.test(navigator.userAgent)
+}
+
 function supportsBackdropRefraction() {
   if (typeof navigator === 'undefined' || typeof CSS === 'undefined') return false
   const userAgentData = (navigator as Navigator & { userAgentData?: { brands?: Array<{ brand: string }> } }).userAgentData
   const brands = userAgentData?.brands?.map((brand) => brand.brand).join(' ') ?? ''
   const chromium = /Chromium|Google Chrome|Microsoft Edge/i.test(brands || navigator.userAgent)
-  const iosWebKit = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+  const iosWebKit = isIOSWebKitRuntime()
   return chromium && !iosWebKit && CSS.supports('backdrop-filter', 'url("#liquid-glass-probe")')
 }
 
@@ -125,8 +134,32 @@ export default function LiquidGlassEffects() {
 
   useEffect(() => {
     const nativeBackdropRefraction = supportsBackdropRefraction()
+    const iosWebKit = isIOSWebKitRuntime()
+    const standalone = window.matchMedia('(display-mode: standalone)').matches
+      || Boolean((navigator as Navigator & { standalone?: boolean }).standalone)
+    const useAbsoluteBrowserDock = iosWebKit && !standalone
+    document.documentElement.classList.toggle('ios-webkit', iosWebKit)
     const transparencyPreference = window.matchMedia('(prefers-reduced-transparency: reduce)')
     let frame = 0
+    let dockFrame = 0
+
+    const updateBrowserDock = () => {
+      dockFrame = 0
+      const dock = document.querySelector<HTMLElement>('.liquid-tab-bar')
+      if (!dock || !useAbsoluteBrowserDock) return
+      const viewport = window.visualViewport
+      const viewportOffset = viewport?.offsetTop ?? 0
+      const viewportHeight = viewport?.height ?? window.innerHeight
+      const dockStart = Math.max(0, viewportOffset + viewportHeight - dock.offsetHeight - 8)
+      const scrollRoot = document.scrollingElement ?? document.documentElement
+      const scrollRange = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight)
+      dock.style.setProperty('--ios-browser-dock-start', `${Math.round(dockStart)}px`)
+      dock.style.setProperty('--ios-browser-dock-range', `${Math.round(scrollRange)}px`)
+    }
+
+    const scheduleBrowserDock = () => {
+      if (useAbsoluteBrowserDock && !dockFrame) dockFrame = window.requestAnimationFrame(updateBrowserDock)
+    }
 
     const clearSurface = (surface: FilterSurface) => {
       surface.element.classList.remove('liquid-glass-enhanced')
@@ -134,7 +167,7 @@ export default function LiquidGlassEffects() {
       surface.element.classList.remove('liquid-glass-positioned')
       surface.element.removeAttribute('data-liquid-glass')
       surface.element.style.removeProperty('--liquid-filter')
-      surface.layer.remove()
+      surface.layer?.remove()
     }
 
     const publish = () => {
@@ -156,19 +189,23 @@ export default function LiquidGlassEffects() {
         const rect = element.getBoundingClientRect()
         const width = quantize(rect.width)
         const height = quantize(rect.height)
-        if (width !== surface.width || height !== surface.height) {
+        if (surface.usesRefraction && (width !== surface.width || height !== surface.height)) {
           const maps = createGlassMaps(width, height, surface.preset)
           surface.width = width
           surface.height = height
           surface.displacement = maps.displacement
           surface.specular = maps.specular
         }
-        if (!surface.layer.isConnected) element.append(surface.layer)
+        if (surface.layer && !surface.layer.isConnected) element.append(surface.layer)
         element.classList.add('liquid-glass-enhanced')
-        element.classList.toggle('liquid-glass-backdrop-refraction', nativeBackdropRefraction)
+        element.classList.toggle('liquid-glass-backdrop-refraction', nativeBackdropRefraction && surface.usesRefraction)
         element.dataset.liquidGlass = surface.preset
-        element.style.setProperty('--liquid-filter', `url("#${surface.id}")`)
-        next.push({ ...surface })
+        if (surface.usesRefraction) {
+          element.style.setProperty('--liquid-filter', `url("#${surface.id}")`)
+          next.push({ ...surface })
+        } else {
+          element.style.removeProperty('--liquid-filter')
+        }
       })
       setFilters(next)
     }
@@ -179,21 +216,24 @@ export default function LiquidGlassEffects() {
 
     const resizeObserver = new ResizeObserver(schedulePublish)
     const discover = () => {
-      TARGETS.forEach(({ selector, preset }) => {
+      TARGETS.forEach(({ selector, preset, usesRefraction }) => {
         document.querySelectorAll<HTMLElement>(selector).forEach((element) => {
           if (surfaces.current.has(element)) return
           if (!element.matches(AUTHORED_POSITION_TARGETS) && getComputedStyle(element).position === 'static') {
             element.classList.add('liquid-glass-positioned')
           }
-          const layer = document.createElement('span')
-          layer.className = 'liquid-glass-refraction-layer'
-          layer.setAttribute('aria-hidden', 'true')
-          element.append(layer)
+          const layer = usesRefraction ? document.createElement('span') : null
+          if (layer) {
+            layer.className = 'liquid-glass-refraction-layer'
+            layer.setAttribute('aria-hidden', 'true')
+            element.append(layer)
+          }
           const surface: FilterSurface = {
             element,
             layer,
             id: `liquid-glass-${++nextFilterId}`,
             preset,
+            usesRefraction,
             width: 0,
             height: 0,
             displacement: '',
@@ -204,18 +244,28 @@ export default function LiquidGlassEffects() {
         })
       })
       schedulePublish()
+      scheduleBrowserDock()
     }
 
     const mutationObserver = new MutationObserver(discover)
     mutationObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] })
     transparencyPreference.addEventListener('change', schedulePublish)
+    window.addEventListener('resize', scheduleBrowserDock, { passive: true })
+    window.visualViewport?.addEventListener('resize', scheduleBrowserDock, { passive: true })
     discover()
 
     return () => {
       if (frame) window.cancelAnimationFrame(frame)
+      if (dockFrame) window.cancelAnimationFrame(dockFrame)
       mutationObserver.disconnect()
       resizeObserver.disconnect()
       transparencyPreference.removeEventListener('change', schedulePublish)
+      window.removeEventListener('resize', scheduleBrowserDock)
+      window.visualViewport?.removeEventListener('resize', scheduleBrowserDock)
+      const dock = document.querySelector<HTMLElement>('.liquid-tab-bar')
+      dock?.style.removeProperty('--ios-browser-dock-start')
+      dock?.style.removeProperty('--ios-browser-dock-range')
+      document.documentElement.classList.remove('ios-webkit')
       surfaces.current.forEach(clearSurface)
       surfaces.current.clear()
     }
@@ -228,10 +278,10 @@ export default function LiquidGlassEffects() {
       {filters.map((surface) => <filter
         id={surface.id}
         key={surface.id}
-        x="0"
-        y="0"
-        width={surface.width}
-        height={surface.height}
+        x={-PRESETS[surface.preset].scale}
+        y={-PRESETS[surface.preset].scale}
+        width={surface.width + PRESETS[surface.preset].scale * 2}
+        height={surface.height + PRESETS[surface.preset].scale * 2}
         filterUnits="userSpaceOnUse"
         primitiveUnits="userSpaceOnUse"
         colorInterpolationFilters="sRGB"
