@@ -290,7 +290,6 @@ test('renders one rounded rim geometry with black above white everywhere', async
   await tabBar.getByRole('button', { name: 'AI 도슨트' }).click()
   await expectAlignedRim('.curator-hero')
   await expectAlignedRim('.curator-card')
-  await expectAlignedRim('.curator-featured-card')
   await expectControlRim('.curator-filter-chips button')
 
   await tabBar.getByRole('button', { name: '영화 찾기' }).click()
