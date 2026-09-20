@@ -130,7 +130,7 @@ test('keeps SVG refraction on stable glass while content avoids ghost-prone filt
   await expect(modal.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(browserName === 'webkit' ? 0 : 1)
 })
 
-test('overlays fixed black and white rims on the exact same surface edge', async ({ page }) => {
+test('renders symmetric unclipped Liquid Glass edges on surfaces and controls', async ({ page }) => {
   const expectAlignedRim = async (selector: string) => {
     const surface = page.locator(selector).first()
     await expect(surface).toBeVisible()
@@ -169,10 +169,17 @@ test('overlays fixed black and white rims on the exact same surface edge', async
           highlightStyle.borderBottomRightRadius,
           highlightStyle.borderBottomLeftRadius,
         ],
-        edgePadding: Number.parseFloat(edgeStyle.paddingTop),
-        highlightPadding: Number.parseFloat(highlightStyle.paddingTop),
+        borderWidths: [
+          hostStyle.borderTopWidth,
+          hostStyle.borderRightWidth,
+          hostStyle.borderBottomWidth,
+          hostStyle.borderLeftWidth,
+        ],
+        overflow: hostStyle.overflow,
         edgeBackground: edgeStyle.backgroundImage,
+        edgeBackgroundSize: edgeStyle.backgroundSize,
         highlightBackground: highlightStyle.backgroundImage,
+        highlightBackgroundSize: highlightStyle.backgroundSize,
         edgeMask: edgeStyle.maskImage || edgeStyle.webkitMaskImage,
         highlightMask: highlightStyle.maskImage || highlightStyle.webkitMaskImage,
         edgeZIndex: Number.parseInt(edgeStyle.zIndex, 10),
@@ -183,61 +190,110 @@ test('overlays fixed black and white rims on the exact same surface edge', async
     })
 
     const closeEnough = (left: number, right: number) => Math.abs(left - right) <= 0.2
-    expect(closeEnough(metrics.edgeRect.x, metrics.hostRect.x)).toBeTruthy()
-    expect(closeEnough(metrics.edgeRect.y, metrics.hostRect.y)).toBeTruthy()
-    expect(closeEnough(metrics.edgeRect.width, metrics.hostRect.width)).toBeTruthy()
-    expect(closeEnough(metrics.edgeRect.height, metrics.hostRect.height)).toBeTruthy()
+    for (const rect of [metrics.edgeRect, metrics.highlightRect]) {
+      expect(closeEnough(rect.x, metrics.hostRect.x)).toBeTruthy()
+      expect(closeEnough(rect.y, metrics.hostRect.y)).toBeTruthy()
+      expect(closeEnough(rect.width, metrics.hostRect.width)).toBeTruthy()
+      expect(closeEnough(rect.height, metrics.hostRect.height)).toBeTruthy()
+    }
 
-    expect(closeEnough(metrics.highlightRect.x, metrics.hostRect.x)).toBeTruthy()
-    expect(closeEnough(metrics.highlightRect.y, metrics.hostRect.y)).toBeTruthy()
-    expect(closeEnough(metrics.highlightRect.width, metrics.hostRect.width)).toBeTruthy()
-    expect(closeEnough(metrics.highlightRect.height, metrics.hostRect.height)).toBeTruthy()
-
+    expect(metrics.borderWidths).toEqual(['0px', '0px', '0px', '0px'])
     expect(metrics.edgeRadius).toEqual(metrics.hostRadius)
     expect(metrics.highlightRadius).toEqual(metrics.hostRadius)
-    expect(metrics.edgePadding).toBeGreaterThan(metrics.highlightPadding)
-    expect(metrics.highlightPadding).toBeGreaterThan(0)
-    expect(metrics.highlightPadding).toBeLessThanOrEqual(0.5)
-
     expect(metrics.edgeZIndex).toBeGreaterThan(metrics.highlightZIndex)
-    expect(metrics.edgeBackground).toContain('linear-gradient')
+
+    expect(metrics.edgeBackground.match(/linear-gradient/g)?.length).toBe(4)
     expect(metrics.edgeBackground).toContain('0, 0, 0')
-    expect(metrics.edgeBackground).not.toContain('17, 24, 39')
-    expect(metrics.highlightBackground).toContain('linear-gradient')
+    expect(metrics.highlightBackground.match(/linear-gradient/g)?.length).toBe(4)
     expect(metrics.highlightBackground).toContain('255, 255, 255')
+    expect(metrics.edgeMask).toBe('none')
+    expect(metrics.highlightMask).toBe('none')
 
-    const whiteStops = metrics.highlightBackground.match(/rgba?\([^)]*\)/g) ?? []
-    expect(whiteStops.length).toBeGreaterThanOrEqual(6)
-    expect(whiteStops[0]).toBe(whiteStops.at(-1))
-    expect(whiteStops[1]).toBe(whiteStops.at(-2))
+    const edgeSizes = metrics.edgeBackgroundSize.split(',').map((part) => part.trim())
+    const highlightSizes = metrics.highlightBackgroundSize.split(',').map((part) => part.trim())
+    expect(edgeSizes).toHaveLength(4)
+    expect(highlightSizes).toHaveLength(4)
+    expect(edgeSizes[0]).toBe(edgeSizes[1])
+    expect(edgeSizes[2]).toBe(edgeSizes[3])
+    expect(highlightSizes[0]).toBe(highlightSizes[1])
+    expect(highlightSizes[2]).toBe(highlightSizes[3])
 
-    const darkStops = metrics.edgeBackground.match(/rgba?\([^)]*\)/g) ?? []
-    expect(darkStops.length).toBeGreaterThanOrEqual(6)
-    expect(darkStops[0]).toBe(darkStops.at(-1))
-    expect(darkStops[1]).toBe(darkStops.at(-2))
-
-    expect(metrics.edgeMask).toContain('linear-gradient')
-    expect(metrics.highlightMask).toContain('linear-gradient')
     expect(metrics.edgePointerEvents).toBe('none')
     expect(metrics.highlightPointerEvents).toBe('none')
+    return metrics
+  }
+
+  const expectControlRim = async (selector: string) => {
+    const control = page.locator(selector).first()
+    await expect(control).toBeVisible()
+    const metrics = await control.evaluate((element) => {
+      const style = getComputedStyle(element)
+      const white = getComputedStyle(element, '::before')
+      const dark = getComputedStyle(element, '::after')
+      return {
+        borderColor: style.borderColor,
+        boxShadow: style.boxShadow,
+        whiteContent: white.content,
+        whiteBackground: white.backgroundImage,
+        whiteBackgroundSize: white.backgroundSize,
+        whiteZIndex: Number.parseInt(white.zIndex, 10),
+        darkContent: dark.content,
+        darkBackground: dark.backgroundImage,
+        darkBackgroundSize: dark.backgroundSize,
+        darkZIndex: Number.parseInt(dark.zIndex, 10),
+      }
+    })
+
+    expect(metrics.borderColor).toBe('rgba(0, 0, 0, 0)')
+    expect(metrics.whiteContent).not.toBe('none')
+    expect(metrics.darkContent).not.toBe('none')
+    expect(metrics.whiteBackground.match(/linear-gradient/g)?.length).toBe(4)
+    expect(metrics.darkBackground.match(/linear-gradient/g)?.length).toBe(4)
+    expect(metrics.whiteBackground).toContain('255, 255, 255')
+    expect(metrics.darkBackground).toContain('0, 0, 0')
+    expect(metrics.darkZIndex).toBeGreaterThan(metrics.whiteZIndex)
+
+    const whiteSizes = metrics.whiteBackgroundSize.split(',').map((part) => part.trim())
+    const darkSizes = metrics.darkBackgroundSize.split(',').map((part) => part.trim())
+    expect(whiteSizes[0]).toBe(whiteSizes[1])
+    expect(whiteSizes[2]).toBe(whiteSizes[3])
+    expect(darkSizes[0]).toBe(darkSizes[1])
+    expect(darkSizes[2]).toBe(darkSizes[3])
+    expect(metrics.boxShadow).not.toContain('inset')
   }
 
   for (const selector of ['.topbar', '.liquid-tab-bar-surface', '.controls', '.film-results-toolbar', '.film-card']) {
     await expectAlignedRim(selector)
   }
 
+  const filmCardMetrics = await expectAlignedRim('.film-card')
+  expect(filmCardMetrics.overflow).toBe('hidden')
+
+  await expectControlRim('.film-search-autocomplete')
+  await expectControlRim('.mobile-advanced-filter-toggle')
+  await expectControlRim('.chips button.active')
+  await expectControlRim('.favorite-button')
+  await expectControlRim('.detail-button')
+
+  const searchInput = page.locator('.film-search-autocomplete > input')
+  await expect(searchInput).toBeVisible()
+  expect(await searchInput.evaluate((element) => getComputedStyle(element).boxShadow)).toBe('none')
+
   const tabBar = page.locator('.liquid-tab-bar')
   await tabBar.getByRole('button', { name: '설정' }).click()
   await expectAlignedRim('.settings-intro')
   await expectAlignedRim('.settings-card')
+  await expectControlRim('.settings-reset-button')
 
   await tabBar.getByRole('button', { name: 'AI 도슨트' }).click()
   await expectAlignedRim('.curator-hero')
   await expectAlignedRim('.curator-card')
+  await expectControlRim('.curator-filter-chips button')
 
   await tabBar.getByRole('button', { name: '영화 찾기' }).click()
   await page.getByRole('button', { name: '상세', exact: true }).first().click()
   await expectAlignedRim('.film-modal')
+  await expectControlRim('.modal-close')
 
   const modalCorners = await page.locator('.film-modal').evaluate((element) => {
     const host = getComputedStyle(element)

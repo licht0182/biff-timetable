@@ -392,9 +392,12 @@ select option{background:#f3f4f6;color:#111827}
 
 
 /* Liquid Glass edge rim -----------------------------------------------------
- * Both optical rings occupy the exact same authored surface boundary.
- * The black directional rim is painted above the white directional rim so
- * corner overlap always resolves to black while preserving the existing fades.
+ * Paint the four physical edge segments explicitly instead of using a masked
+ * fractional ring. This keeps top/bottom and left/right rasterization
+ * identical in Safari and keeps the rim visible on overflow-clipped cards.
+ *
+ * Both optical layers share the exact outer surface geometry. The black layer
+ * is painted above the white layer; opacity and fade distances stay unchanged.
  */
 .liquid-glass-edge-host[data-liquid-glass]{
   --glass-rim-dark:rgba(0,0,0,.28);
@@ -402,6 +405,7 @@ select option{background:#f3f4f6;color:#111827}
   --glass-rim-white-peak:rgba(255,255,255,.68);
   --glass-rim-dark-width:.55px;
   --glass-rim-white-width:.4px;
+  border-width:0!important;
   border-color:transparent!important;
 }
 .liquid-glass-edge-host[data-liquid-glass="navigation"]{
@@ -426,53 +430,304 @@ select option{background:#f3f4f6;color:#111827}
 .liquid-glass-edge-layer,
 .liquid-glass-edge-highlight-layer{
   position:absolute;
-  top:var(--glass-edge-top-offset,0);
-  right:var(--glass-edge-right-offset,0);
-  bottom:var(--glass-edge-bottom-offset,0);
-  left:var(--glass-edge-left-offset,0);
+  inset:0;
   display:block;
   box-sizing:border-box;
   border:0;
   border-radius:inherit;
   pointer-events:none;
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite:xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite:exclude;
-}
-.liquid-glass-edge-layer{
-  z-index:8;
-  padding:var(--glass-rim-dark-width);
-  background:linear-gradient(
-    90deg,
-    var(--glass-rim-dark) 0%,
-    var(--glass-rim-dark) 1.5%,
-    transparent 10%,
-    transparent 90%,
-    var(--glass-rim-dark) 98.5%,
-    var(--glass-rim-dark) 100%
-  );
+  background-repeat:no-repeat;
 }
 .liquid-glass-edge-highlight-layer{
   z-index:7;
-  padding:var(--glass-rim-white-width);
-  background:linear-gradient(
-    180deg,
-    var(--glass-rim-white-peak) 0%,
-    var(--glass-rim-white-mid) 8%,
-    transparent 30%,
-    transparent 70%,
-    var(--glass-rim-white-mid) 92%,
-    var(--glass-rim-white-peak) 100%
-  );
+  background:
+    linear-gradient(90deg,var(--glass-rim-white-peak),var(--glass-rim-white-peak)) top / 100% var(--glass-rim-white-width) no-repeat,
+    linear-gradient(90deg,var(--glass-rim-white-peak),var(--glass-rim-white-peak)) bottom / 100% var(--glass-rim-white-width) no-repeat,
+    linear-gradient(
+      180deg,
+      var(--glass-rim-white-peak) 0%,
+      var(--glass-rim-white-mid) 8%,
+      transparent 30%,
+      transparent 70%,
+      var(--glass-rim-white-mid) 92%,
+      var(--glass-rim-white-peak) 100%
+    ) left / var(--glass-rim-white-width) 100% no-repeat,
+    linear-gradient(
+      180deg,
+      var(--glass-rim-white-peak) 0%,
+      var(--glass-rim-white-mid) 8%,
+      transparent 30%,
+      transparent 70%,
+      var(--glass-rim-white-mid) 92%,
+      var(--glass-rim-white-peak) 100%
+    ) right / var(--glass-rim-white-width) 100% no-repeat;
+}
+.liquid-glass-edge-layer{
+  z-index:8;
+  background:
+    linear-gradient(var(--glass-rim-dark),var(--glass-rim-dark)) left / var(--glass-rim-dark-width) 100% no-repeat,
+    linear-gradient(var(--glass-rim-dark),var(--glass-rim-dark)) right / var(--glass-rim-dark-width) 100% no-repeat,
+    linear-gradient(
+      90deg,
+      var(--glass-rim-dark) 0%,
+      var(--glass-rim-dark) 1.5%,
+      transparent 10%,
+      transparent 90%,
+      var(--glass-rim-dark) 98.5%,
+      var(--glass-rim-dark) 100%
+    ) top / 100% var(--glass-rim-dark-width) no-repeat,
+    linear-gradient(
+      90deg,
+      var(--glass-rim-dark) 0%,
+      var(--glass-rim-dark) 1.5%,
+      transparent 10%,
+      transparent 90%,
+      var(--glass-rim-dark) 98.5%,
+      var(--glass-rim-dark) 100%
+    ) bottom / 100% var(--glass-rim-dark-width) no-repeat;
 }
 .liquid-glass-edge-host>.liquid-glass-refraction-layer::before{
   border:0;
   box-shadow:none;
+}
+
+/* Primary interactive surfaces use the same physical edge recipe.
+ * The native one-sided inset highlight is removed so it cannot make the top
+ * look heavier than the bottom. Generated white is below generated black.
+ */
+:is(
+  .film-search-autocomplete,
+  .mobile-advanced-filter-toggle,
+  .mobile-filter-jump,
+  .chips button,
+  .filter-toggle,
+  .filter-reset,
+  .time-range-action,
+  .favorite-button,
+  .detail-button,
+  .screening-row button,
+  .modal-screenings button,
+  .timetable-view-switch button,
+  .timetable-action-buttons>button,
+  .timetable-action-buttons summary,
+  .custom-event-add-button,
+  .png-export-trigger,
+  .custom-event-form-actions button,
+  .booking-plan-item-actions button,
+  .booking-conflict-actions button,
+  .booking-apply-actions button,
+  .settings-reset-button,
+  .modal-close,
+  .png-ios-actions button,
+  .schedule-list-remove,
+  .curator-filter-chips button,
+  .curator-top-button,
+  .curator-film-search-button,
+  .schedule-date-tab,
+  .data-cache-notice button,
+  .data-load-notice button
+){
+  --control-rim-dark:rgba(0,0,0,.28);
+  --control-rim-white-mid:rgba(255,255,255,.28);
+  --control-rim-white-peak:rgba(255,255,255,.68);
+  --control-rim-dark-width:.55px;
+  --control-rim-white-width:.4px;
+  position:relative;
+  border-color:transparent!important;
+  box-shadow:0 1px 3px rgba(15,23,42,.1)!important;
+}
+:root :is(
+  .film-search-autocomplete,
+  .mobile-advanced-filter-toggle,
+  .mobile-filter-jump,
+  .chips button,
+  .filter-toggle,
+  .filter-reset,
+  .time-range-action,
+  .favorite-button,
+  .detail-button,
+  .screening-row button,
+  .modal-screenings button,
+  .timetable-view-switch button,
+  .timetable-action-buttons>button,
+  .timetable-action-buttons summary,
+  .custom-event-add-button,
+  .png-export-trigger,
+  .custom-event-form-actions button,
+  .booking-plan-item-actions button,
+  .booking-conflict-actions button,
+  .booking-apply-actions button,
+  .settings-reset-button,
+  .modal-close,
+  .png-ios-actions button,
+  .schedule-list-remove,
+  .curator-filter-chips button,
+  .curator-top-button,
+  .curator-film-search-button,
+  .schedule-date-tab,
+  .data-cache-notice button,
+  .data-load-notice button
+){
+  border-color:transparent!important;
+}
+.film-search-autocomplete{
+  border-radius:14px;
+}
+.film-search-autocomplete>input{
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+.film-search-autocomplete:focus-within>input{
+  box-shadow:0 0 0 3px rgba(10,132,255,.18)!important;
+}
+:is(
+  .film-search-autocomplete,
+  .mobile-advanced-filter-toggle,
+  .mobile-filter-jump,
+  .chips button,
+  .filter-toggle,
+  .filter-reset,
+  .time-range-action,
+  .favorite-button,
+  .detail-button,
+  .screening-row button,
+  .modal-screenings button,
+  .timetable-view-switch button,
+  .timetable-action-buttons>button,
+  .timetable-action-buttons summary,
+  .custom-event-add-button,
+  .png-export-trigger,
+  .custom-event-form-actions button,
+  .booking-plan-item-actions button,
+  .booking-conflict-actions button,
+  .booking-apply-actions button,
+  .settings-reset-button,
+  .modal-close,
+  .png-ios-actions button,
+  .schedule-list-remove,
+  .curator-filter-chips button,
+  .curator-top-button,
+  .curator-film-search-button,
+  .schedule-date-tab,
+  .data-cache-notice button,
+  .data-load-notice button
+)::before,
+:is(
+  .film-search-autocomplete,
+  .mobile-advanced-filter-toggle,
+  .mobile-filter-jump,
+  .chips button,
+  .filter-toggle,
+  .filter-reset,
+  .time-range-action,
+  .favorite-button,
+  .detail-button,
+  .screening-row button,
+  .modal-screenings button,
+  .timetable-view-switch button,
+  .timetable-action-buttons>button,
+  .timetable-action-buttons summary,
+  .custom-event-add-button,
+  .png-export-trigger,
+  .custom-event-form-actions button,
+  .booking-plan-item-actions button,
+  .booking-conflict-actions button,
+  .booking-apply-actions button,
+  .settings-reset-button,
+  .modal-close,
+  .png-ios-actions button,
+  .schedule-list-remove,
+  .curator-filter-chips button,
+  .curator-top-button,
+  .curator-film-search-button,
+  .schedule-date-tab,
+  .data-cache-notice button,
+  .data-load-notice button
+)::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  background-repeat:no-repeat;
+}
+:is(
+  .film-search-autocomplete,
+  .mobile-advanced-filter-toggle,
+  .mobile-filter-jump,
+  .chips button,
+  .filter-toggle,
+  .filter-reset,
+  .time-range-action,
+  .favorite-button,
+  .detail-button,
+  .screening-row button,
+  .modal-screenings button,
+  .timetable-view-switch button,
+  .timetable-action-buttons>button,
+  .timetable-action-buttons summary,
+  .custom-event-add-button,
+  .png-export-trigger,
+  .custom-event-form-actions button,
+  .booking-plan-item-actions button,
+  .booking-conflict-actions button,
+  .booking-apply-actions button,
+  .settings-reset-button,
+  .modal-close,
+  .png-ios-actions button,
+  .schedule-list-remove,
+  .curator-filter-chips button,
+  .curator-top-button,
+  .curator-film-search-button,
+  .schedule-date-tab,
+  .data-cache-notice button,
+  .data-load-notice button
+)::before{
+  z-index:7;
+  background:
+    linear-gradient(90deg,var(--control-rim-white-peak),var(--control-rim-white-peak)) top / 100% var(--control-rim-white-width) no-repeat,
+    linear-gradient(90deg,var(--control-rim-white-peak),var(--control-rim-white-peak)) bottom / 100% var(--control-rim-white-width) no-repeat,
+    linear-gradient(180deg,var(--control-rim-white-peak) 0%,var(--control-rim-white-mid) 8%,transparent 30%,transparent 70%,var(--control-rim-white-mid) 92%,var(--control-rim-white-peak) 100%) left / var(--control-rim-white-width) 100% no-repeat,
+    linear-gradient(180deg,var(--control-rim-white-peak) 0%,var(--control-rim-white-mid) 8%,transparent 30%,transparent 70%,var(--control-rim-white-mid) 92%,var(--control-rim-white-peak) 100%) right / var(--control-rim-white-width) 100% no-repeat;
+}
+:is(
+  .film-search-autocomplete,
+  .mobile-advanced-filter-toggle,
+  .mobile-filter-jump,
+  .chips button,
+  .filter-toggle,
+  .filter-reset,
+  .time-range-action,
+  .favorite-button,
+  .detail-button,
+  .screening-row button,
+  .modal-screenings button,
+  .timetable-view-switch button,
+  .timetable-action-buttons>button,
+  .timetable-action-buttons summary,
+  .custom-event-add-button,
+  .png-export-trigger,
+  .custom-event-form-actions button,
+  .booking-plan-item-actions button,
+  .booking-conflict-actions button,
+  .booking-apply-actions button,
+  .settings-reset-button,
+  .modal-close,
+  .png-ios-actions button,
+  .schedule-list-remove,
+  .curator-filter-chips button,
+  .curator-top-button,
+  .curator-film-search-button,
+  .schedule-date-tab,
+  .data-cache-notice button,
+  .data-load-notice button
+)::after{
+  z-index:8;
+  background:
+    linear-gradient(var(--control-rim-dark),var(--control-rim-dark)) left / var(--control-rim-dark-width) 100% no-repeat,
+    linear-gradient(var(--control-rim-dark),var(--control-rim-dark)) right / var(--control-rim-dark-width) 100% no-repeat,
+    linear-gradient(90deg,var(--control-rim-dark) 0%,var(--control-rim-dark) 1.5%,transparent 10%,transparent 90%,var(--control-rim-dark) 98.5%,var(--control-rim-dark) 100%) top / 100% var(--control-rim-dark-width) no-repeat,
+    linear-gradient(90deg,var(--control-rim-dark) 0%,var(--control-rim-dark) 1.5%,transparent 10%,transparent 90%,var(--control-rim-dark) 98.5%,var(--control-rim-dark) 100%) bottom / 100% var(--control-rim-dark-width) no-repeat;
 }
 @media(hover:hover) and (pointer:fine){
   .film-card.liquid-glass-edge-host:hover{box-shadow:var(--ios-shadow-strong)!important}
@@ -481,5 +736,40 @@ select option{background:#f3f4f6;color:#111827}
   .liquid-glass-edge-host[data-liquid-glass]{
     --glass-rim-white-mid:rgba(255,255,255,.22);
     --glass-rim-white-peak:rgba(255,255,255,.56);
+  }
+  :is(
+    .film-search-autocomplete,
+    .mobile-advanced-filter-toggle,
+    .mobile-filter-jump,
+    .chips button,
+    .filter-toggle,
+    .filter-reset,
+    .time-range-action,
+    .favorite-button,
+    .detail-button,
+    .screening-row button,
+    .modal-screenings button,
+    .timetable-view-switch button,
+    .timetable-action-buttons>button,
+    .timetable-action-buttons summary,
+    .custom-event-add-button,
+    .png-export-trigger,
+    .custom-event-form-actions button,
+    .booking-plan-item-actions button,
+    .booking-conflict-actions button,
+    .booking-apply-actions button,
+    .settings-reset-button,
+    .modal-close,
+    .png-ios-actions button,
+    .schedule-list-remove,
+    .curator-filter-chips button,
+    .curator-top-button,
+    .curator-film-search-button,
+    .schedule-date-tab,
+    .data-cache-notice button,
+    .data-load-notice button
+  ){
+    --control-rim-white-mid:rgba(255,255,255,.22);
+    --control-rim-white-peak:rgba(255,255,255,.56);
   }
 }
