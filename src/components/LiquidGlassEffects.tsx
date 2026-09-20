@@ -91,10 +91,10 @@ function createGlassMaps(
   const renderScale = Math.min(1, maxMapDimension / width, maxMapDimension / height)
   const mapWidth = Math.max(8, Math.round(width * renderScale))
   const mapHeight = Math.max(8, Math.round(height * renderScale))
-  const radiusCss = optical ? surfaceRadius : settings.radius
-  const radius = Math.min(radiusCss * renderScale, mapWidth / 2, mapHeight / 2)
-  const bezelCss = optical ? DOCK_OPTICAL_SETTINGS.bezel : settings.bezel
-  const bezel = Math.max(2, bezelCss * renderScale)
+  const legacyRadius = Math.min(settings.radius * renderScale, mapWidth / 2, mapHeight / 2)
+  const opticalRadius = Math.min(surfaceRadius * renderScale, mapWidth / 2, mapHeight / 2)
+  const legacyBezel = Math.max(2, settings.bezel * renderScale)
+  const opticalBezel = Math.max(2, DOCK_OPTICAL_SETTINGS.bezel * renderScale)
 
   const displacementCanvas = document.createElement('canvas')
   const specularCanvas = document.createElement('canvas')
@@ -115,7 +115,7 @@ function createGlassMaps(
 
   const opticalMagnitudeAt = (x: number, y: number, distance: number) => {
     if (!optical || distance > 0) return 0
-    const depthMap = Math.min(bezel, Math.max(0, -distance))
+    const depthMap = Math.min(opticalBezel, Math.max(0, -distance))
     const depthCss = depthMap / renderScale
     const raw = opticalDisplacementAtDepth(depthCss, DOCK_OPTICAL_SETTINGS)
     const textureEdgeDistance = Math.min(x, y, mapWidth - x - 1, mapHeight - y - 1)
@@ -127,10 +127,10 @@ function createGlassMaps(
   if (optical) {
     for (let y = 0; y < mapHeight; y += 1) {
       for (let x = 0; x < mapWidth; x += 1) {
-        const distance = roundedRectangleDistance(x + 0.5, y + 0.5, mapWidth, mapHeight, radius)
+        const opticalDistance = roundedRectangleDistance(x + 0.5, y + 0.5, mapWidth, mapHeight, opticalRadius)
         maximumOpticalDisplacement = Math.max(
           maximumOpticalDisplacement,
-          opticalMagnitudeAt(x, y, distance),
+          opticalMagnitudeAt(x, y, opticalDistance),
         )
       }
     }
@@ -141,26 +141,43 @@ function createGlassMaps(
   for (let y = 0; y < mapHeight; y += 1) {
     for (let x = 0; x < mapWidth; x += 1) {
       const index = (y * mapWidth + x) * 4
-      const distance = roundedRectangleDistance(x + 0.5, y + 0.5, mapWidth, mapHeight, radius)
-      const edge = distance <= 0 ? Math.max(0, 1 + distance / bezel) : 0
+      const legacyDistance = roundedRectangleDistance(x + 0.5, y + 0.5, mapWidth, mapHeight, legacyRadius)
+      const opticalDistance = optical
+        ? roundedRectangleDistance(x + 0.5, y + 0.5, mapWidth, mapHeight, opticalRadius)
+        : legacyDistance
+      const edge = legacyDistance <= 0 ? Math.max(0, 1 + legacyDistance / legacyBezel) : 0
       const easedEdge = edge * edge * (3 - 2 * edge)
-      const dx = roundedRectangleDistance(x + epsilon, y, mapWidth, mapHeight, radius)
-        - roundedRectangleDistance(x - epsilon, y, mapWidth, mapHeight, radius)
-      const dy = roundedRectangleDistance(x, y + epsilon, mapWidth, mapHeight, radius)
-        - roundedRectangleDistance(x, y - epsilon, mapWidth, mapHeight, radius)
-      const length = Math.hypot(dx, dy) || 1
-      const normalX = dx / length
-      const normalY = dy / length
+
+      const legacyDx = roundedRectangleDistance(x + epsilon, y, mapWidth, mapHeight, legacyRadius)
+        - roundedRectangleDistance(x - epsilon, y, mapWidth, mapHeight, legacyRadius)
+      const legacyDy = roundedRectangleDistance(x, y + epsilon, mapWidth, mapHeight, legacyRadius)
+        - roundedRectangleDistance(x, y - epsilon, mapWidth, mapHeight, legacyRadius)
+      const legacyLength = Math.hypot(legacyDx, legacyDy) || 1
+      const legacyNormalX = legacyDx / legacyLength
+      const legacyNormalY = legacyDy / legacyLength
+
+      let refractionNormalX = legacyNormalX
+      let refractionNormalY = legacyNormalY
+      if (optical) {
+        const opticalDx = roundedRectangleDistance(x + epsilon, y, mapWidth, mapHeight, opticalRadius)
+          - roundedRectangleDistance(x - epsilon, y, mapWidth, mapHeight, opticalRadius)
+        const opticalDy = roundedRectangleDistance(x, y + epsilon, mapWidth, mapHeight, opticalRadius)
+          - roundedRectangleDistance(x, y - epsilon, mapWidth, mapHeight, opticalRadius)
+        const opticalLength = Math.hypot(opticalDx, opticalDy) || 1
+        refractionNormalX = opticalDx / opticalLength
+        refractionNormalY = opticalDy / opticalLength
+      }
+
       const displacementAmount = optical
-        ? opticalMagnitudeAt(x, y, distance) / opticalNormalizer
+        ? opticalMagnitudeAt(x, y, opticalDistance) / opticalNormalizer
         : easedEdge * 0.9
 
-      displacementImage.data[index] = Math.round(128 + normalX * 127 * displacementAmount)
-      displacementImage.data[index + 1] = Math.round(128 + normalY * 127 * displacementAmount)
+      displacementImage.data[index] = Math.round(128 + refractionNormalX * 127 * displacementAmount)
+      displacementImage.data[index + 1] = Math.round(128 + refractionNormalY * 127 * displacementAmount)
       displacementImage.data[index + 2] = 128
       displacementImage.data[index + 3] = 255
 
-      const light = Math.max(0, -(normalX * 0.55 + normalY * 0.83))
+      const light = Math.max(0, -(legacyNormalX * 0.55 + legacyNormalY * 0.83))
       const highlight = Math.round(255 * settings.specular * easedEdge * light * light)
       specularImage.data[index] = 255
       specularImage.data[index + 1] = 255
