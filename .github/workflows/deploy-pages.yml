@@ -66,3 +66,143 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+
+  verify-live:
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install WebKit
+        run: npx playwright install --with-deps webkit
+
+      - name: Verify deployed mobile Liquid Glass rims
+        env:
+          LIVE_URL: https://licht0182.github.io/biff-timetable/
+        run: |
+          node <<'NODE'
+          const { webkit } = require('@playwright/test')
+
+          const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+          const closeEnough = (left, right) => Math.abs(left - right) <= 0.25
+
+          ;(async () => {
+            const browser = await webkit.launch()
+            const page = await browser.newPage({
+              viewport: { width: 393, height: 852 },
+              deviceScaleFactor: 3,
+            })
+
+            let ready = false
+            for (let attempt = 0; attempt < 12; attempt += 1) {
+              const response = await page.goto(
+                `${process.env.LIVE_URL}?deployment=${process.env.GITHUB_SHA ?? Date.now()}`,
+                { waitUntil: 'networkidle', timeout: 30000 },
+              ).catch(() => null)
+              ready = Boolean(response?.ok()) && await page.locator('.film-card').first().isVisible().catch(() => false)
+              if (ready) break
+              await sleep(5000)
+            }
+            if (!ready) throw new Error('GitHub Pages did not become ready for live rim verification')
+
+            const selectors = [
+              '.controls',
+              '.film-results-toolbar',
+              '.film-card',
+              '.liquid-tab-bar-surface',
+            ]
+
+            for (const selector of selectors) {
+              const target = page.locator(selector).first()
+              await target.waitFor({ state: 'visible' })
+              const metrics = await target.evaluate((element) => {
+                const host = getComputedStyle(element)
+                const darkElement = element.querySelector(':scope > .liquid-glass-edge-layer')
+                const whiteElement = element.querySelector(':scope > .liquid-glass-edge-highlight-layer')
+                if (!darkElement || !whiteElement) throw new Error('missing generated rim layers')
+                const dark = getComputedStyle(darkElement)
+                const white = getComputedStyle(whiteElement)
+                const hostRect = element.getBoundingClientRect()
+                const darkRect = darkElement.getBoundingClientRect()
+                const whiteRect = whiteElement.getBoundingClientRect()
+                return {
+                  hostRect: [hostRect.x, hostRect.y, hostRect.width, hostRect.height],
+                  darkRect: [darkRect.x, darkRect.y, darkRect.width, darkRect.height],
+                  whiteRect: [whiteRect.x, whiteRect.y, whiteRect.width, whiteRect.height],
+                  hostRadius: host.borderTopLeftRadius,
+                  darkRadius: dark.borderTopLeftRadius,
+                  whiteRadius: white.borderTopLeftRadius,
+                  darkZ: Number.parseInt(dark.zIndex, 10),
+                  whiteZ: Number.parseInt(white.zIndex, 10),
+                  darkMask: dark.maskImage || dark.webkitMaskImage,
+                  whiteMask: white.maskImage || white.webkitMaskImage,
+                  darkPadding: dark.paddingTop,
+                  whitePadding: white.paddingTop,
+                }
+              })
+
+              if (!(metrics.darkZ > metrics.whiteZ && metrics.darkZ === 10 && metrics.whiteZ === 8)) {
+                throw new Error(`${selector}: black rim is not above white rim: ${JSON.stringify(metrics)}`)
+              }
+              if (metrics.darkRadius !== metrics.hostRadius || metrics.whiteRadius !== metrics.hostRadius) {
+                throw new Error(`${selector}: rim radius mismatch: ${JSON.stringify(metrics)}`)
+              }
+              if (metrics.darkPadding !== '1px' || metrics.whitePadding !== '1px') {
+                throw new Error(`${selector}: rim thickness mismatch: ${JSON.stringify(metrics)}`)
+              }
+              if (!metrics.darkMask.includes('linear-gradient') || !metrics.whiteMask.includes('linear-gradient')) {
+                throw new Error(`${selector}: rounded ring mask missing: ${JSON.stringify(metrics)}`)
+              }
+              for (const rect of [metrics.darkRect, metrics.whiteRect]) {
+                if (!rect.every((value, index) => closeEnough(value, metrics.hostRect[index]))) {
+                  throw new Error(`${selector}: rim geometry mismatch: ${JSON.stringify(metrics)}`)
+                }
+              }
+              console.log(selector, metrics)
+            }
+
+            const chip = page.locator('.chips button.active').first()
+            await chip.waitFor({ state: 'visible' })
+            const chipRims = await chip.evaluate((element) => {
+              const white = getComputedStyle(element, '::before')
+              const dark = getComputedStyle(element, '::after')
+              return {
+                darkZ: Number.parseInt(dark.zIndex, 10),
+                whiteZ: Number.parseInt(white.zIndex, 10),
+                darkRadius: dark.borderRadius,
+                whiteRadius: white.borderRadius,
+                hostRadius: getComputedStyle(element).borderRadius,
+                darkMask: dark.maskImage || dark.webkitMaskImage,
+                whiteMask: white.maskImage || white.webkitMaskImage,
+              }
+            })
+            if (!(chipRims.darkZ > chipRims.whiteZ && chipRims.darkRadius === chipRims.hostRadius && chipRims.whiteRadius === chipRims.hostRadius)) {
+              throw new Error(`active chip rim priority/geometry mismatch: ${JSON.stringify(chipRims)}`)
+            }
+
+            await page.screenshot({ path: 'live-liquid-glass-mobile.png', fullPage: false })
+            await browser.close()
+          })().catch((error) => {
+            console.error(error)
+            process.exit(1)
+          })
+          NODE
+
+      - name: Upload live mobile screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-liquid-glass-mobile
+          path: live-liquid-glass-mobile.png
+          if-no-files-found: ignore
