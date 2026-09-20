@@ -23,7 +23,7 @@ const TARGETS: Array<{ selector: string; preset: LiquidGlassPreset; usesRefracti
   { selector: '.film-results-toolbar, .enhanced-timetable-actions', preset: 'toolbar', usesRefraction: true },
   // Refracting every virtualized card creates dozens of WebKit compositing layers.
   // Content keeps the translucent lens/bevel treatment without a live SVG filter.
-  { selector: '.layout-surface, .notice, .controls, .film-card, .schedule-screening-group, .booking-plan-panel, .timetable-scroll, .timetable-empty, .settings-intro, .settings-card, .settings-reset-card, .curator-hero, .curator-featured, .curator-latest, .curator-method, .curator-card, .curator-article, .pwa-update-toast', preset: 'content', usesRefraction: false },
+  { selector: '.layout-surface, .notice, .controls, .film-card, .schedule-screening-group, .schedule-list-row, .booking-plan-panel, .booking-plan-group, .booking-plan-item, .timetable-scroll, .timetable-empty, .settings-intro, .settings-card, .settings-reset-card, .settings-card-head, .precise-transfer-panel, .travel-matrix-wrap, .curator-hero, .curator-featured, .curator-featured-card, .curator-latest, .curator-method, .curator-card, .curator-article, .curator-film-guide, .curator-stat, .curator-article-footer, .film-detail-grid, .film-search-suggestions, .backup-menu > div, .timetable-more-menu > div, .pwa-update-toast', preset: 'content', usesRefraction: false },
   { selector: '#film-advanced-filters.filter-row.mobile-open', preset: 'sheet', usesRefraction: true },
   { selector: '.film-modal, .booking-conflict-dialog, .booking-apply-dialog, .custom-event-dialog, .custom-event-modal', preset: 'modal', usesRefraction: true },
 ]
