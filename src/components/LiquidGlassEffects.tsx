@@ -38,12 +38,6 @@ const PRESETS = {
 
 const mapCache = new Map<string, GlassMaps>()
 let nextFilterId = 0
-const EDGE_GEOMETRY_PROPERTIES = [
-  '--glass-edge-top-offset',
-  '--glass-edge-right-offset',
-  '--glass-edge-bottom-offset',
-  '--glass-edge-left-offset',
-] as const
 
 function isIOSWebKitRuntime() {
   if (typeof navigator === 'undefined') return false
@@ -146,23 +140,6 @@ export default function LiquidGlassEffects() {
     const transparencyPreference = window.matchMedia('(prefers-reduced-transparency: reduce)')
     let frame = 0
 
-    const syncEdgeGeometry = (surface: FilterSurface) => {
-      const { element } = surface
-      const style = getComputedStyle(element)
-      const borderTop = Number.parseFloat(style.borderTopWidth) || 0
-      const borderRight = Number.parseFloat(style.borderRightWidth) || 0
-      const borderBottom = Number.parseFloat(style.borderBottomWidth) || 0
-      const borderLeft = Number.parseFloat(style.borderLeftWidth) || 0
-
-      // Absolute children are positioned from the padding box. Pull the outer
-      // rim back across any transparent authored border so it follows the
-      // actual painted surface boundary instead of floating one pixel inside.
-      element.style.setProperty('--glass-edge-top-offset', `${-borderTop}px`)
-      element.style.setProperty('--glass-edge-right-offset', `${-borderRight}px`)
-      element.style.setProperty('--glass-edge-bottom-offset', `${-borderBottom}px`)
-      element.style.setProperty('--glass-edge-left-offset', `${-borderLeft}px`)
-    }
-
     const clearSurface = (surface: FilterSurface) => {
       surface.element.classList.remove('liquid-glass-enhanced')
       surface.element.classList.remove('liquid-glass-backdrop-refraction')
@@ -170,7 +147,6 @@ export default function LiquidGlassEffects() {
       surface.element.classList.remove('liquid-glass-positioned')
       surface.element.removeAttribute('data-liquid-glass')
       surface.element.style.removeProperty('--liquid-filter')
-      EDGE_GEOMETRY_PROPERTIES.forEach((property) => surface.element.style.removeProperty(property))
       surface.layer?.remove()
       surface.edgeLayer.remove()
       surface.highlightLayer.remove()
@@ -178,7 +154,6 @@ export default function LiquidGlassEffects() {
 
     const applyEdgeOnly = (surface: FilterSurface) => {
       const { element, edgeLayer, highlightLayer } = surface
-      syncEdgeGeometry(surface)
       if (!edgeLayer.isConnected) element.append(edgeLayer)
       if (!highlightLayer.isConnected) element.append(highlightLayer)
       element.classList.remove('liquid-glass-enhanced')
@@ -215,7 +190,6 @@ export default function LiquidGlassEffects() {
           surface.displacement = maps.displacement
           surface.specular = maps.specular
         }
-        syncEdgeGeometry(surface)
         if (surface.layer && !surface.layer.isConnected) element.append(surface.layer)
         if (!surface.edgeLayer.isConnected) element.append(surface.edgeLayer)
         if (!surface.highlightLayer.isConnected) element.append(surface.highlightLayer)
