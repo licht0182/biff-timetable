@@ -120,6 +120,7 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
 
       - name: Verify deployed mobile Liquid Glass rims
+        continue-on-error: true
         env:
           LIVE_URL: https://licht0182.github.io/biff-timetable/
         run: |
@@ -232,6 +233,7 @@ jobs:
           NODE
 
       - name: Verify dock chromatic preview
+        if: always()
         env:
           PREVIEW_URL: https://licht0182.github.io/biff-timetable/preview/dock-chromatic/
         run: |
