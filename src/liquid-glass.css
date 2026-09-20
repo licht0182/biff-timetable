@@ -392,11 +392,11 @@ select option{background:#f3f4f6;color:#111827}
 
 
 /* Liquid Glass edge rim -----------------------------------------------------
- * Directional rim treatment:
- * - dark outer hairlines live on the left/right edges and only wrap 10% into
- *   the top/bottom edges before fading to transparent;
- * - white inner highlights live on the top/bottom edges and wrap 30% down/up
- *   the left/right edges, leaving the middle 40% of each side transparent.
+ * Two concentric rounded rings keep the optical layers physically separated:
+ * - the dark outer ring follows the real surface boundary, including authored
+ *   transparent borders and partial corner radii;
+ * - the thinner white ring sits 0.9px inside it and follows a correspondingly
+ *   smaller radius, so the two hairlines never occupy the same pixels.
  */
 .liquid-glass-edge-host[data-liquid-glass]{
   --glass-rim-dark:rgba(17,24,39,.28);
@@ -404,6 +404,8 @@ select option{background:#f3f4f6;color:#111827}
   --glass-rim-top-peak:rgba(255,255,255,.68);
   --glass-rim-bottom-mid:rgba(255,255,255,.12);
   --glass-rim-bottom-peak:rgba(255,255,255,.30);
+  --glass-rim-dark-width:.55px;
+  --glass-rim-white-width:.4px;
   border-color:transparent!important;
 }
 .liquid-glass-edge-host[data-liquid-glass="navigation"]{
@@ -431,42 +433,61 @@ select option{background:#f3f4f6;color:#111827}
 .liquid-glass-enhanced.liquid-glass-edge-host[data-liquid-glass]{
   box-shadow:var(--ios-shadow)!important;
 }
-.liquid-glass-edge-layer{
+.liquid-glass-edge-layer,
+.liquid-glass-edge-highlight-layer{
   position:absolute;
-  inset:0;
-  z-index:7;
   display:block;
-  overflow:hidden;
   box-sizing:border-box;
   border:0;
+  pointer-events:none;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite:exclude;
+}
+.liquid-glass-edge-layer{
+  top:var(--glass-edge-top-offset,0);
+  right:var(--glass-edge-right-offset,0);
+  bottom:var(--glass-edge-bottom-offset,0);
+  left:var(--glass-edge-left-offset,0);
+  z-index:8;
+  padding:var(--glass-rim-dark-width);
   border-radius:inherit;
-  pointer-events:none;
-  background:
-    linear-gradient(180deg,var(--glass-rim-dark),var(--glass-rim-dark)) left top/.5px 100% no-repeat,
-    linear-gradient(180deg,var(--glass-rim-dark),var(--glass-rim-dark)) right top/.5px 100% no-repeat,
-    linear-gradient(90deg,var(--glass-rim-dark) 0%,transparent 100%) left top/10% .5px no-repeat,
-    linear-gradient(270deg,var(--glass-rim-dark) 0%,transparent 100%) right top/10% .5px no-repeat,
-    linear-gradient(90deg,var(--glass-rim-dark) 0%,transparent 100%) left bottom/10% .5px no-repeat,
-    linear-gradient(270deg,var(--glass-rim-dark) 0%,transparent 100%) right bottom/10% .5px no-repeat;
+  background:linear-gradient(
+    90deg,
+    var(--glass-rim-dark) 0%,
+    var(--glass-rim-dark) 1.5%,
+    transparent 10%,
+    transparent 90%,
+    var(--glass-rim-dark) 98.5%,
+    var(--glass-rim-dark) 100%
+  );
 }
-.liquid-glass-edge-layer::before,
-.liquid-glass-edge-layer::after{
-  content:"";
-  position:absolute;
-  inset:1px;
-  pointer-events:none;
-}
-.liquid-glass-edge-layer::before{
-  background:
-    linear-gradient(90deg,var(--glass-rim-top-mid) 0%,var(--glass-rim-top-peak) 50%,var(--glass-rim-top-mid) 100%) left top/100% 1px no-repeat,
-    linear-gradient(180deg,var(--glass-rim-top-mid) 0%,transparent 100%) left top/1px 30% no-repeat,
-    linear-gradient(180deg,var(--glass-rim-top-mid) 0%,transparent 100%) right top/1px 30% no-repeat;
-}
-.liquid-glass-edge-layer::after{
-  background:
-    linear-gradient(90deg,var(--glass-rim-bottom-mid) 0%,var(--glass-rim-bottom-peak) 50%,var(--glass-rim-bottom-mid) 100%) left bottom/100% 1px no-repeat,
-    linear-gradient(0deg,var(--glass-rim-bottom-mid) 0%,transparent 100%) left bottom/1px 30% no-repeat,
-    linear-gradient(0deg,var(--glass-rim-bottom-mid) 0%,transparent 100%) right bottom/1px 30% no-repeat;
+.liquid-glass-edge-highlight-layer{
+  top:calc(var(--glass-edge-top-offset,0px) + var(--glass-rim-inner-inset,.9px));
+  right:calc(var(--glass-edge-right-offset,0px) + var(--glass-rim-inner-inset,.9px));
+  bottom:calc(var(--glass-edge-bottom-offset,0px) + var(--glass-rim-inner-inset,.9px));
+  left:calc(var(--glass-edge-left-offset,0px) + var(--glass-rim-inner-inset,.9px));
+  z-index:7;
+  padding:var(--glass-rim-white-width);
+  border-radius:
+    var(--glass-rim-inner-tl,inherit)
+    var(--glass-rim-inner-tr,inherit)
+    var(--glass-rim-inner-br,inherit)
+    var(--glass-rim-inner-bl,inherit);
+  background:linear-gradient(
+    180deg,
+    var(--glass-rim-top-peak) 0%,
+    var(--glass-rim-top-mid) 8%,
+    transparent 30%,
+    transparent 70%,
+    var(--glass-rim-bottom-mid) 92%,
+    var(--glass-rim-bottom-peak) 100%
+  );
 }
 .liquid-glass-edge-host>.liquid-glass-refraction-layer::before{
   border:0;
