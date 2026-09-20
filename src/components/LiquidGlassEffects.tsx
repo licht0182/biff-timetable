@@ -161,6 +161,14 @@ export default function LiquidGlassEffects() {
       if (useAbsoluteBrowserDock && !dockFrame) dockFrame = window.requestAnimationFrame(updateBrowserDock)
     }
 
+    const handleTimetableViewportRelease = () => {
+      if (!useAbsoluteBrowserDock) return
+      const dock = document.querySelector<HTMLElement>('.liquid-tab-bar')
+      dock?.style.removeProperty('--ios-browser-dock-start')
+      dock?.style.removeProperty('--ios-browser-dock-range')
+      scheduleBrowserDock()
+    }
+
     const clearSurface = (surface: FilterSurface) => {
       surface.element.classList.remove('liquid-glass-enhanced')
       surface.element.classList.remove('liquid-glass-backdrop-refraction')
@@ -256,6 +264,7 @@ export default function LiquidGlassEffects() {
     window.addEventListener('resize', scheduleBrowserDock, { passive: true })
     window.addEventListener('scroll', scheduleBrowserDock, { passive: true })
     window.addEventListener('pageshow', scheduleBrowserDock)
+    window.addEventListener('timetable-viewport-released', handleTimetableViewportRelease)
     window.visualViewport?.addEventListener('resize', scheduleBrowserDock, { passive: true })
     window.visualViewport?.addEventListener('scroll', scheduleBrowserDock, { passive: true })
     discover()
@@ -269,6 +278,7 @@ export default function LiquidGlassEffects() {
       window.removeEventListener('resize', scheduleBrowserDock)
       window.removeEventListener('scroll', scheduleBrowserDock)
       window.removeEventListener('pageshow', scheduleBrowserDock)
+      window.removeEventListener('timetable-viewport-released', handleTimetableViewportRelease)
       window.visualViewport?.removeEventListener('resize', scheduleBrowserDock)
       window.visualViewport?.removeEventListener('scroll', scheduleBrowserDock)
       const dock = document.querySelector<HTMLElement>('.liquid-tab-bar')
