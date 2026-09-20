@@ -254,7 +254,7 @@ test('survives the full mobile navigation flow without leaking layout state', as
 
   await page.getByRole('button', { name: '검색·필터' }).click()
   await expect(page.locator('#film-advanced-filters')).toBeVisible()
-  await page.getByRole('button', { name: '상세 필터 닫기' }).click()
+  await page.locator('.filter-sheet-backdrop').click({ position: { x: 8, y: 8 } })
   await expect(page.locator('#film-advanced-filters')).toBeHidden()
 
   await page.getByRole('button', { name: '+ 추가' }).first().click()
