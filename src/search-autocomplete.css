@@ -1,5 +1,5 @@
 .film-search-autocomplete{position:relative;z-index:70;min-width:0}
-.film-search-suggestions{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:80;max-height:420px;overflow-y:auto;background:#fff;border:1px solid #d8d8d8;border-radius:7px;box-shadow:0 12px 30px rgba(0,0,0,.14);padding:4px}
+.film-search-suggestions{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:80;max-height:420px;overflow-y:auto;background:#fff;border:1px solid #d8d8d8;border-radius:7px;box-shadow:0 1px 4px rgba(0,0,0,.1);padding:4px}
 .film-search-suggestion{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;width:100%;min-width:0;border:0;border-bottom:1px solid #f0f0f0;border-radius:4px;background:#fff;color:#333;text-align:left;padding:10px 11px;cursor:pointer}
 .film-search-suggestion:last-child{border-bottom:0}
 .film-search-suggestion:hover,.film-search-suggestion.active{background:var(--accent-soft)}
