@@ -42,6 +42,32 @@ test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 852 })
 })
 
+test('keeps a visible gap between consecutive film cards', async ({ page }) => {
+  await page.goto('./')
+  const cards = page.locator('.film-card')
+  await expect(cards.nth(1)).toBeVisible()
+
+  const mobileGap = await page.evaluate(() => {
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('.film-card')).slice(0, 2)
+    if (cards.length < 2) return -1
+    const first = cards[0].getBoundingClientRect()
+    const second = cards[1].getBoundingClientRect()
+    return second.top - first.bottom
+  })
+  expect(mobileGap).toBeGreaterThanOrEqual(8)
+
+  await page.setViewportSize({ width: 900, height: 900 })
+  await expect(cards.nth(1)).toBeVisible()
+  const desktopGap = await page.evaluate(() => {
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('.film-card')).slice(0, 2)
+    if (cards.length < 2) return -1
+    const first = cards[0].getBoundingClientRect()
+    const second = cards[1].getBoundingClientRect()
+    return second.top - first.bottom
+  })
+  expect(desktopGap).toBeGreaterThanOrEqual(10)
+})
+
 test('anchors the movie filter sheet to the viewport and keeps it interactive', async ({ page, browserName }) => {
   await page.goto('./')
   await expect(page.locator('.film-card').first()).toBeVisible()
