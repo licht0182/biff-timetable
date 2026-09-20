@@ -128,7 +128,8 @@ test('aligns the first content surface across all primary mobile sections', asyn
   await page.goto('./')
   const dock = page.locator('.liquid-tab-bar')
 
-  const filmTop = await page.locator('#film-controls').evaluate((el) => el.getBoundingClientRect().top)
+  const filmSurface = page.locator('.film-data-notice:visible').or(page.locator('#film-controls')).first()
+  const filmTop = await filmSurface.evaluate((el) => el.getBoundingClientRect().top)
 
   await dock.getByRole('button', { name: '내 시간표' }).click()
   const timetableTop = await page.locator('.timetable-empty').evaluate((el) => el.getBoundingClientRect().top)
@@ -165,7 +166,7 @@ test('releases the grid viewport lock before leaving for every other primary sec
   await expect(page.locator('.settings-intro')).toBeVisible()
 })
 
-test('keeps the mobile grid toolbar inside 320px and moves secondary actions into more', async ({ page, request }) => {
+test('keeps the mobile grid toolbar inside 320px while secondary actions remain in more', async ({ page, request }) => {
   await page.setViewportSize({ width: 320, height: 740 })
   await seedOneScreening(page, request)
   await page.goto('./')
@@ -174,14 +175,16 @@ test('keeps the mobile grid toolbar inside 320px and moves secondary actions int
   const actions = page.locator('.timetable-action-buttons')
   await expect(actions).toBeVisible()
   const png = actions.locator('.png-export-trigger')
-  await expect(png).toBeHidden()
+  await expect(png).toBeVisible()
+  const calendar = actions.locator(':scope > .png-export-trigger + button')
+  await expect(calendar).toBeHidden()
 
   const more = actions.locator('.backup-menu.timetable-more-menu')
   const summary = more.locator(':scope > summary')
   await expect(summary).toHaveText('더보기')
   await summary.click()
   await expect(png).toBeVisible()
-  await expect(actions.locator(':scope > .png-export-trigger + button')).toBeVisible()
+  await expect(calendar).toBeVisible()
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
   expect(overflow).toBeLessThanOrEqual(1)
