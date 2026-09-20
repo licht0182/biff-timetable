@@ -90,10 +90,6 @@ function stabilizeTimetableGeometry(scroll: HTMLElement) {
 }
 
 function releaseViewportLock() {
-  const wasLocked = Boolean(activeShell)
-    || document.documentElement.classList.contains('timetable-viewport-locked')
-    || document.body.classList.contains('timetable-viewport-locked')
-
   if (frame) {
     cancelAnimationFrame(frame)
     frame = 0
@@ -106,8 +102,6 @@ function releaseViewportLock() {
   activeShell = null
   document.documentElement.classList.remove('timetable-viewport-locked')
   document.body.classList.remove('timetable-viewport-locked')
-
-  if (wasLocked) window.dispatchEvent(new Event('timetable-viewport-released'))
 }
 
 export function releaseTimetableViewportLock() {
