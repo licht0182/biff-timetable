@@ -1,0 +1,187 @@
+name: Deploy Dock Chromatic Preview
+
+on:
+  push:
+    branches: [experiment/dock-chromatic-glass]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout production main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: prod
+
+      - name: Checkout preview revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: preview
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build production root from main
+        working-directory: prod
+        run: |
+          npm ci
+          npm run validate:data
+          npm run validate:films
+          npm run validate:curator
+          npm run build
+
+      - name: Build isolated preview
+        working-directory: preview
+        env:
+          BIFF_DISABLE_PWA: '1'
+        run: |
+          npm ci
+          npm run validate:data
+          npm run validate:films
+          npm run validate:curator
+          npx tsc -b
+          npx vite build --base=/biff-timetable/preview/dock-chromatic/
+
+      - name: Assemble production and preview site
+        run: |
+          mkdir -p site/preview/dock-chromatic
+          cp -a prod/dist/. site/
+          cp -a preview/dist/. site/preview/dock-chromatic/
+
+          # The production PWA owns /biff-timetable/. Let preview requests pass
+          # straight to the network instead of the production navigation fallback.
+          if [ -f site/sw.js ]; then
+            {
+              printf '%s\n' 'self.addEventListener("fetch",event=>{try{if(new URL(event.request.url).pathname.startsWith("/biff-timetable/preview/"))event.stopImmediatePropagation()}catch{}});'
+              cat site/sw.js
+            } > site/sw.patched.js
+            mv site/sw.patched.js site/sw.js
+          fi
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload combined Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy production root plus preview
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  verify:
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - name: Checkout preview revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install test dependencies
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Verify production root and preview
+        env:
+          ROOT_URL: https://licht0182.github.io/biff-timetable/
+          PREVIEW_URL: https://licht0182.github.io/biff-timetable/preview/dock-chromatic/
+        run: |
+          node <<'NODE'
+          const { chromium } = require('@playwright/test')
+          const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+          ;(async () => {
+            const browser = await chromium.launch()
+            const page = await browser.newPage({ viewport: { width: 393, height: 852 }, deviceScaleFactor: 2 })
+
+            async function openReady(url) {
+              for (let attempt = 0; attempt < 12; attempt += 1) {
+                const response = await page.goto(url + (url.includes('?') ? '&' : '?') + 'verify=' + Date.now(), {
+                  waitUntil: 'networkidle',
+                  timeout: 30000,
+                }).catch(() => null)
+                const ready = Boolean(response?.ok()) && await page.locator('.liquid-tab-bar-surface').isVisible().catch(() => false)
+                if (ready) return
+                await sleep(5000)
+              }
+              throw new Error('Page did not become ready: ' + url)
+            }
+
+            await openReady(process.env.ROOT_URL)
+            const rootDockPreset = await page.locator('.liquid-tab-bar-surface').getAttribute('data-liquid-glass')
+            if (rootDockPreset !== 'navigation') {
+              throw new Error('Production root is not the main build: ' + rootDockPreset)
+            }
+
+            await openReady(process.env.PREVIEW_URL)
+            const previewDock = page.locator('.liquid-tab-bar-surface')
+            if (await previewDock.getAttribute('data-liquid-glass') !== 'dock') {
+              throw new Error('Preview dock preset missing')
+            }
+            if (await previewDock.getAttribute('data-liquid-glass-model') !== 'legacy') {
+              throw new Error('Preview default must remain legacy')
+            }
+            await page.screenshot({ path: 'dock-preview-legacy.png', fullPage: false })
+
+            await openReady(process.env.PREVIEW_URL + '?dockGlass=chromatic')
+            if (await previewDock.getAttribute('data-liquid-glass-model') !== 'chromatic') {
+              throw new Error('Chromatic experiment flag did not activate')
+            }
+
+            const filterId = await previewDock.evaluate((element) => {
+              const value = element.style.getPropertyValue('--liquid-filter')
+              return value.match(/#([^")]+)/)?.[1] ?? ''
+            })
+            if (!filterId) throw new Error('Chromatic dock filter was not attached')
+            const filter = page.locator('#' + filterId)
+            if (await filter.locator('feDisplacementMap').count() !== 3) {
+              throw new Error('Chromatic dock should use three displacement maps')
+            }
+            await page.screenshot({ path: 'dock-preview-chromatic.png', fullPage: false })
+
+            await browser.close()
+          })().catch((error) => {
+            console.error(error)
+            process.exit(1)
+          })
+          NODE
+
+      - name: Upload preview comparison screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dock-chromatic-preview-screenshots
+          path: |
+            dock-preview-legacy.png
+            dock-preview-chromatic.png
+          if-no-files-found: ignore
