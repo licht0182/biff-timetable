@@ -98,6 +98,7 @@ const BOOKING_PLAN_KEY = 'biff-timetable:booking-plan:v1'
 const CUSTOM_EVENTS_KEY = 'biff-timetable:custom-events:v1'
 const USER_SETTINGS_KEY = 'biff-timetable:user-settings:v1'
 const TIMETABLE_VIEW_KEY = 'biff-timetable:view-mode:v1'
+const FIXED_TIMETABLE_HOUR_HEIGHT = 40
 const DEFAULT_USER_SETTINGS: UserTimetableSettings = {
   sameClusterMinutes: 10,
   differentVenueMinutes: 30,
@@ -554,6 +555,14 @@ export default function App() {
     ...selectedItems.map(({ screening }) => timetableDate(screening)),
     ...customEvents.map((event) => customEventTimetableDate(event)),
   ])).sort(), [selectedItems, customEvents])
+  const timetableStartHour = useMemo(() => {
+    const earliestCustomStartMinutes = customEvents.reduce(
+      (earliest, event) => Math.min(earliest, customEventTimetableStartMinutes(event)),
+      START_HOUR * 60,
+    )
+    return Math.min(START_HOUR, Math.floor(earliestCustomStartMinutes / 60))
+  }, [customEvents])
+
   const timetableEndHour = useMemo(() => {
     const screeningEnd = selectedItems.reduce(
       (latest, { film, screening }) => Math.max(latest, timetableEndMinutes(film, screening)),
@@ -572,16 +581,14 @@ export default function App() {
     const contentWidth = Math.max(280, Math.min(1180, viewport.width - shellPadding))
     const axisWidth = isMobile ? 38 : 50
     const headerHeight = isMobile ? 32 : 38
-    const chromeHeight = 245
-    const usableGridHeight = Math.max(180, viewport.height - chromeHeight - headerHeight)
-    const hourHeight = Math.max(9.5, usableGridHeight / (timetableEndHour - START_HOUR))
-    const gridHeight = hourHeight * (timetableEndHour - START_HOUR)
+    const hourHeight = FIXED_TIMETABLE_HOUR_HEIGHT
+    const gridHeight = hourHeight * (timetableEndHour - timetableStartHour)
     const dayWidth = dates.length > 0 ? Math.max(1, (contentWidth - axisWidth) / dates.length) : contentWidth - axisWidth
     const dense = dayWidth < 76
     const ultraDense = dayWidth < 48
 
     return { axisWidth, headerHeight, hourHeight, gridHeight, dayWidth, dense, ultraDense }
-  }, [viewport, dates.length, timetableEndHour])
+  }, [viewport.width, dates.length, timetableEndHour, timetableStartHour])
 
   const conflictingSelections = useCallback((film: Film, screening: Screening) => (
     selectedItems.filter(({ film: otherFilm, screening: other }) => screeningsOverlap(film, screening, otherFilm, other))
@@ -1409,13 +1416,13 @@ export default function App() {
             <div className="timetable" style={timetableStyle}>
               <div className="corner" />
               {dates.map((date) => <div className="date-head" key={date} title={formatDate(date)}>{formatDate(date, timetableMetrics.dense)}</div>)}
-              <div className="time-axis">{Array.from({ length: timetableEndHour - START_HOUR + 1 }, (_, i) => START_HOUR + i).map((hour) => <div key={hour} style={{ top: `${(hour - START_HOUR) * timetableMetrics.hourHeight}px` }}>{`${hour < 24 ? String(hour).padStart(2, '0') : String(hour - 24).padStart(2, '0')}시`}</div>)}</div>
+              <div className="time-axis">{Array.from({ length: timetableEndHour - timetableStartHour + 1 }, (_, i) => timetableStartHour + i).map((hour) => <div key={hour} style={{ top: `${(hour - timetableStartHour) * timetableMetrics.hourHeight}px` }}>{`${hour < 24 ? String(hour).padStart(2, '0') : String(hour - 24).padStart(2, '0')}시`}</div>)}</div>
               {dates.map((date) => <div className="day-column" key={date}>
-                {Array.from({ length: timetableEndHour - START_HOUR + 1 }, (_, i) => <div className="hour-line" key={i} style={{ top: `${i * timetableMetrics.hourHeight}px` }} />)}
+                {Array.from({ length: timetableEndHour - timetableStartHour + 1 }, (_, i) => <div className="hour-line" key={i} style={{ top: `${i * timetableMetrics.hourHeight}px` }} />)}
                 {selectedItems.filter(({ screening }) => timetableDate(screening) === date).map(({ film, screening }) => {
                   const start = timetableStartMinutes(screening)
                   const end = timetableEndMinutes(film, screening)
-                  const top = ((start - START_HOUR * 60) / 60) * timetableMetrics.hourHeight
+                  const top = ((start - timetableStartHour * 60) / 60) * timetableMetrics.hourHeight
                   const height = Math.max(((end - start) / 60) * timetableMetrics.hourHeight, timetableMetrics.ultraDense ? 16 : 22)
                   const travel = transitionWarning(film, screening)
                   const timeConflict = conflictingCustomEventsForScreening(film, screening).length > 0
@@ -1459,7 +1466,7 @@ export default function App() {
                 {customEvents.filter((event) => customEventTimetableDate(event) === date).map((event) => {
                   const start = customEventTimetableStartMinutes(event)
                   const end = customEventTimetableEndMinutes(event)
-                  const top = ((start - START_HOUR * 60) / 60) * timetableMetrics.hourHeight
+                  const top = ((start - timetableStartHour * 60) / 60) * timetableMetrics.hourHeight
                   const height = Math.max(((end - start) / 60) * timetableMetrics.hourHeight, timetableMetrics.ultraDense ? 16 : 22)
                   const conflict = hasCustomEventConflict(event)
                   const isMarkedForDelete = timetableDeleteSelection.includes(event.id)
