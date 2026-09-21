@@ -12,6 +12,11 @@
   --layout-surface-padding:16px;
   --layout-surface-radius:22px;
   --layout-control-height:40px;
+  --layout-control-radius:14px;
+  --layout-compact-control-radius:12px;
+  --layout-segment-radius:12px;
+  --layout-segment-item-radius:9px;
+  --layout-pill-radius:999px;
   --layout-touch-target:44px;
   --layout-dock-clearance:144px;
   --layout-dock-bottom:8px;
@@ -20,7 +25,10 @@
   --mobile-panel-radius:var(--layout-surface-radius);
 }
 
-html,body{min-width:0}
+html{
+  min-width:0;
+}
+body{min-width:0}
 
 .app-shell,
 .app-shell.timetable-mode{
@@ -65,6 +73,87 @@ html,body{min-width:0}
   align-items:center;
   gap:8px;
   min-width:0;
+}
+
+/*
+ * iOS geometry uses a small semantic radius scale instead of inheriting the
+ * legacy 4-10px desktop radii from individual feature stylesheets.
+ */
+:is(
+  .film-search-autocomplete,
+  .film-search-autocomplete input,
+  .mobile-advanced-filter-toggle,
+  .mobile-filter-jump,
+  .filter-row select,
+  .time-range-inputs input,
+  .favorite-button,
+  .detail-button,
+  .screening-row button,
+  .ticket-select,
+  .modal-screenings button,
+  .timetable-empty-actions>button,
+  .timetable-action-buttons>button,
+  .timetable-action-buttons>.backup-menu>summary,
+  .custom-event-add-button,
+  .custom-event-form input,
+  .custom-event-form select,
+  .custom-event-form textarea,
+  .png-export-trigger,
+  .custom-event-form-actions button,
+  .booking-plan-item-actions button,
+  .booking-conflict-actions button,
+  .booking-apply-actions button,
+  .settings-reset-button,
+  .settings-number-control input,
+  .modal-close,
+  .png-ios-actions button,
+  .schedule-list-remove,
+  .schedule-apply-alternative,
+  .curator-top-button,
+  .curator-film-search-button,
+  .data-cache-notice button,
+  .data-load-notice button
+){border-radius:var(--layout-control-radius)!important}
+
+:is(
+  .selection-count,
+  .chips button,
+  .filter-toggle,
+  .filter-reset,
+  .time-range-action,
+  .curator-filter-chips button,
+  .schedule-date-tab,
+  .timetable-empty-backup>summary
+){border-radius:var(--layout-pill-radius)!important}
+
+.timetable-view-switch{
+  border-radius:var(--layout-segment-radius)!important;
+}
+.timetable-view-switch button{
+  border-radius:var(--layout-segment-item-radius)!important;
+}
+
+/* The settings page wrapper owns flow only; its children own visible glass. */
+.app-page--settings.react-settings-panel{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr);
+  gap:var(--layout-surface-gap)!important;
+  overflow:visible;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+.app-page--timetable>.transfer-note{
+  margin:0 2px!important;
+}
+.app-page--settings>.settings-intro{
+  margin:0!important;
+  padding:var(--layout-surface-padding)!important;
+  border-bottom:0!important;
 }
 
 .topbar{
@@ -129,6 +218,34 @@ html,body{min-width:0}
   align-self:stretch;
   margin:0;
   box-sizing:border-box;
+}
+
+/* Desktop sections share one header geometry; the compact timetable shell is mobile-only. */
+@media(min-width:701px){
+  .app-shell.timetable-grid-mode{
+    height:auto;
+    max-height:none;
+    overflow:visible;
+  }
+
+  .timetable-mode .topbar{
+    padding:22px 26px;
+  }
+  .timetable-mode .topbar>div:first-child{
+    padding-left:54px;
+  }
+  .timetable-mode .topbar>div:first-child::before{
+    width:42px;
+    height:42px;
+    border-radius:11px;
+  }
+  .timetable-mode .topbar h1{
+    font-size:24px;
+  }
+  .timetable-mode .eyebrow,
+  .timetable-mode .subtitle{
+    display:block;
+  }
 }
 
 /* Toast geometry is owned here. Never combine a top anchor with the bottom dock anchor. */
@@ -564,4 +681,12 @@ html,body{min-width:0}
 
 @media(max-width:700px) and (display-mode:standalone){
   .liquid-tab-bar{bottom:0;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+}
+
+@media(prefers-color-scheme:dark){
+  .event-block strong,
+  .event-block span{
+    color:inherit!important;
+    text-shadow:none!important;
+  }
 }

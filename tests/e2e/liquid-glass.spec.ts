@@ -360,9 +360,22 @@ test('presents advanced filters as a dismissible bottom sheet', async ({ page })
   await expect(page.locator('body')).not.toHaveClass(/filter-sheet-open/)
 })
 
-test('keeps the light neutral palette in dark appearance and keeps motion optional', async ({ page }) => {
+test('follows the system dark appearance and keeps motion optional', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' })
-  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--ios-bg').trim())).toBe('#e5e7eb')
+  await expect.poll(() => page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement)
+    return {
+      background: root.getPropertyValue('--ios-bg').trim(),
+      label: root.getPropertyValue('--ios-label').trim(),
+      colorScheme: root.colorScheme,
+      bodyBackground: getComputedStyle(document.body).backgroundColor,
+    }
+  })).toEqual({
+    background: '#000',
+    label: '#f5f5f7',
+    colorScheme: 'dark',
+    bodyBackground: 'rgb(0, 0, 0)',
+  })
   await expect.poll(() => page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.film-card')!).transitionDuration))).toBeLessThan(0.001)
 })
 
@@ -375,7 +388,8 @@ test('keeps content, controls, and overlays on translucent glass surfaces', asyn
       return element ? getComputedStyle(element).backgroundColor.match(/\d+(?:\.\d+)?/g)?.map(Number) : null
     }, selector)
     expect(rgba, `${selector} should expose a translucent background`).toBeTruthy()
-    expect(rgba!.at(-1), `${selector} should keep the light-gray canvas visible`).toBeLessThan(0.5)
+    expect(rgba!.at(-1), `${selector} should retain visible translucency`).toBeGreaterThan(0.1)
+    expect(rgba!.at(-1), `${selector} should retain visible translucency`).toBeLessThan(0.95)
   }
 
   await expectGlassSurface('.favorite-button')
@@ -385,7 +399,7 @@ test('keeps content, controls, and overlays on translucent glass surfaces', asyn
 
   const tabBar = page.locator('.liquid-tab-bar')
   await tabBar.getByRole('button', { name: '설정' }).click()
-  await expectGlassSurface('.biff-settings-panel')
+  await expectGlassSurface('.settings-intro')
   await expectGlassSurface('.settings-card-head')
 
   await tabBar.getByRole('button', { name: 'AI 도슨트' }).click()

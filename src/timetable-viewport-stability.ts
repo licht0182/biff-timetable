@@ -130,7 +130,7 @@ function applyStability() {
   const settingsOpen = Boolean(shell?.querySelector('.react-settings-panel'))
   const scroll = shell?.querySelector<HTMLElement>('.timetable-page .timetable-scroll') ?? null
 
-  if (!shell || settingsOpen || !scroll) {
+  if (window.innerWidth > MOBILE_BREAKPOINT || !shell || settingsOpen || !scroll) {
     releaseViewportLock()
     return
   }
