@@ -272,7 +272,7 @@ function applyPngEarlyStart(board: HTMLElement) {
 
 function applyScreenLayout(timetable: HTMLElement) {
   timetable.querySelectorAll<HTMLElement>('.event-block.custom-event').forEach((block) => displayExtendedRange(block, '.event-time'))
-  applyScreenEarlyStart(timetable)
+  clearScreenVerticalLayout(timetable)
   timetable.querySelectorAll<HTMLElement>('.day-column').forEach((column) => applyLanes(column, ':scope > .event-block'))
 }
 

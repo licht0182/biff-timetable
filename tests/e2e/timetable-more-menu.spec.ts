@@ -24,10 +24,11 @@ test('toggles calendar, backup, and clear-all inside the timetable more menu wit
   await page.getByRole('button', { name: '내 시간표' }).click()
   await page.getByRole('button', { name: '시간표', exact: true }).click()
 
-  // The viewport lock is applied after the timetable's first measurement.
-  // Wait for that stable geometry before attributing any size change to the menu.
-  await expect(page.locator('.app-shell')).toHaveClass(/timetable-viewport-stable/)
-  await expect(page.locator('.timetable')).toHaveAttribute('data-stable-viewport', 'true')
+  // The timetable has fixed hour geometry and remains in normal document flow.
+  // Wait for its rendered geometry before attributing any size change to the menu.
+  await expect(page.locator('.timetable')).toBeVisible()
+  await expect(page.locator('.app-shell')).not.toHaveClass(/timetable-viewport-stable/)
+  await expect.poll(() => page.locator('.timetable').evaluate((element) => Number.parseFloat(getComputedStyle(element).getPropertyValue('--hour-height')))).toBe(40)
 
   const actions = page.locator('.timetable-action-buttons')
   const more = actions.locator('.backup-menu.timetable-more-menu')

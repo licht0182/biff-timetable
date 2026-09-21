@@ -3,7 +3,8 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 const SELECTED_KEY = 'biff-timetable:selected-screenings:v1'
 const STATUS_KEY = 'biff-timetable:ticket-status:v1'
 
-type FilmData = { films: Array<{ screenings: Array<{ id: string }> }> }
+type Screening = { id: string; date: string; start: string }
+type FilmData = { films: Array<{ screenings: Screening[] }> }
 
 async function seedOneScreening(page: Page, id: string) {
   await page.addInitScript(({ selectedKey, statusKey, screeningId }) => {
@@ -12,11 +13,13 @@ async function seedOneScreening(page: Page, id: string) {
   }, { selectedKey: SELECTED_KEY, statusKey: STATUS_KEY, screeningId: id })
 }
 
-async function firstScreeningId(request: APIRequestContext) {
+async function ordinaryScreening(request: APIRequestContext) {
   const response = await request.get('./screenings.json')
   expect(response.ok()).toBeTruthy()
   const data = await response.json() as FilmData
-  return data.films.flatMap((film) => film.screenings)[0]?.id as string | undefined
+  return data.films
+    .flatMap((film) => film.screenings)
+    .find((screening) => screening.start >= '08:00')
 }
 
 async function timetableGeometry(page: Page) {
@@ -24,110 +27,78 @@ async function timetableGeometry(page: Page) {
     const shell = document.querySelector<HTMLElement>('.app-shell')!
     const scroll = document.querySelector<HTMLElement>('.timetable-scroll')!
     const timetable = document.querySelector<HTMLElement>('.timetable')!
-    const event = document.querySelector<HTMLElement>('.event-block')!
-    const labels = Array.from(document.querySelectorAll<HTMLElement>('.time-axis>div:not(.runtime-pre-hour)'))
-    const middleLabel = labels[Math.floor(labels.length / 2)]
     const style = getComputedStyle(timetable)
-    const dock = document.querySelector<HTMLElement>('.liquid-tab-bar-surface')!
-    const scrollBox = scroll.getBoundingClientRect()
-    const dockBox = dock.getBoundingClientRect()
     return {
       shellHeight: shell.getBoundingClientRect().height,
-      scrollHeight: scrollBox.height,
       timetableHeight: timetable.getBoundingClientRect().height,
-      dockOverlap: scrollBox.bottom - dockBox.top,
       hourHeight: Number.parseFloat(style.getPropertyValue('--hour-height')),
       gridHeight: Number.parseFloat(style.getPropertyValue('--grid-height')),
-      reactHourHeight: timetable.style.getPropertyValue('--hour-height'),
-      reactGridHeight: timetable.style.getPropertyValue('--grid-height'),
-      eventTop: event.getBoundingClientRect().top - scroll.getBoundingClientRect().top,
-      eventHeight: event.getBoundingClientRect().height,
-      middleLabelTop: middleLabel ? middleLabel.getBoundingClientRect().top - scroll.getBoundingClientRect().top : 0,
-      bodyPosition: getComputedStyle(document.body).position,
-      bodyOverflow: getComputedStyle(document.body).overflow,
-      htmlOverflow: getComputedStyle(document.documentElement).overflow,
+      bodyOverflowY: getComputedStyle(document.body).overflowY,
+      htmlOverflowY: getComputedStyle(document.documentElement).overflowY,
       stableClass: shell.classList.contains('timetable-viewport-stable'),
       stableData: timetable.dataset.stableViewport,
+      scrollOverflowY: getComputedStyle(scroll).overflowY,
     }
   })
 }
 
-test('keeps mobile timetable geometry fixed across Safari-style height-only resize', async ({ page, request }) => {
-  await page.setViewportSize({ width: 390, height: 844 })
-  const id = await firstScreeningId(request)
-  test.skip(!id, '상영 회차 데이터가 없습니다.')
-  await seedOneScreening(page, id!)
+async function addEarlyEvent(page: Page, date: string) {
+  await page.getByRole('button', { name: /일정 추가|\+ 일정/ }).first().click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('일정명 *').fill('아침 일정')
+  await dialog.getByLabel('날짜 *').fill(date)
+  await dialog.getByLabel('시작 *').fill('07:00')
+  await dialog.getByLabel('종료 *').fill('08:00')
+  await dialog.getByRole('button', { name: '추가', exact: true }).click()
+}
+
+test('keeps a fixed 40px-per-hour timetable while allowing normal page scrolling', async ({ page, request }) => {
+  await page.setViewportSize({ width: 390, height: 560 })
+  const screening = await ordinaryScreening(request)
+  test.skip(!screening, '일반 시간대 회차가 없습니다.')
+  await seedOneScreening(page, screening!.id)
+
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
   await page.getByRole('button', { name: '시간표', exact: true }).click()
-  await expect(page.locator('.app-shell')).toHaveClass(/timetable-viewport-stable/)
-  await expect(page.locator('.timetable')).toHaveAttribute('data-stable-viewport', 'true')
 
-  await expect.poll(async () => (await timetableGeometry(page)).timetableHeight).toBeGreaterThan(200)
   const before = await timetableGeometry(page)
+  expect(before.stableClass).toBeFalsy()
+  expect(before.stableData).toBeUndefined()
+  expect(before.bodyOverflowY).not.toBe('hidden')
+  expect(before.htmlOverflowY).not.toBe('hidden')
+  expect(before.scrollOverflowY).not.toBe('hidden')
+  expect(before.hourHeight).toBeCloseTo(40, 5)
+  expect(before.gridHeight).toBeGreaterThanOrEqual(16 * 40)
+  expect(before.shellHeight).toBeGreaterThan(560)
 
-  expect(before.stableClass).toBeTruthy()
-  expect(before.stableData).toBe('true')
-  expect(before.bodyPosition).not.toBe('fixed')
-  expect(before.bodyOverflow).toBe('hidden')
-  expect(before.htmlOverflow).toBe('hidden')
-  expect(before.dockOverlap).toBeGreaterThan(40)
-  expect(Math.abs(before.timetableHeight - before.scrollHeight)).toBeLessThanOrEqual(2)
-  expect(before.hourHeight).toBeGreaterThan(0)
-  expect(before.gridHeight).toBeGreaterThan(0)
-
-  const spoofed = await page.evaluate(() => {
-    const descriptor = Object.getOwnPropertyDescriptor(window, 'innerHeight')
-    try {
-      Object.defineProperty(window, 'innerHeight', {
-        configurable: true,
-        value: Math.max(320, window.innerHeight - 140),
-      })
-      window.dispatchEvent(new Event('resize'))
-      return true
-    } catch {
-      if (descriptor) Object.defineProperty(window, 'innerHeight', descriptor)
-      return false
-    }
-  })
-  test.skip(!spoofed, '이 브라우저에서는 innerHeight 재정의가 지원되지 않습니다.')
-  await page.waitForTimeout(100)
-
+  await page.setViewportSize({ width: 390, height: 780 })
   const after = await timetableGeometry(page)
-  expect(after.reactHourHeight).toBe(before.reactHourHeight)
-  expect(after.reactGridHeight).toBe(before.reactGridHeight)
-  expect(Math.abs(after.hourHeight - before.hourHeight)).toBeLessThanOrEqual(0.05)
-  expect(Math.abs(after.gridHeight - before.gridHeight)).toBeLessThanOrEqual(0.5)
-  expect(Math.abs(after.eventTop - before.eventTop)).toBeLessThanOrEqual(0.5)
-  expect(Math.abs(after.eventHeight - before.eventHeight)).toBeLessThanOrEqual(0.5)
-  expect(Math.abs(after.middleLabelTop - before.middleLabelTop)).toBeLessThanOrEqual(0.5)
-})
+  expect(after.hourHeight).toBeCloseTo(before.hourHeight, 5)
+  expect(after.gridHeight).toBeCloseTo(before.gridHeight, 5)
+  expect(after.timetableHeight).toBeCloseTo(before.timetableHeight, 5)
 
-test('releases the timetable viewport lock for settings', async ({ page, request }) => {
-  await page.setViewportSize({ width: 390, height: 700 })
-  const id = await firstScreeningId(request)
-  test.skip(!id, '상영 회차 데이터가 없습니다.')
-  await seedOneScreening(page, id!)
-  await page.goto('./')
-  await page.getByRole('button', { name: '내 시간표' }).click()
-  await page.getByRole('button', { name: '시간표', exact: true }).click()
-  await expect(page.locator('.app-shell')).toHaveClass(/timetable-viewport-stable/)
-
-  await page.getByRole('button', { name: '설정' }).click()
-  await expect(page.getByRole('heading', { name: '설정', exact: true })).toBeVisible()
-  await expect(page.locator('.app-shell')).not.toHaveClass(/timetable-viewport-stable/)
-
-  const unlocked = await page.evaluate(() => ({
-    bodyClass: document.body.classList.contains('timetable-viewport-locked'),
-    htmlClass: document.documentElement.classList.contains('timetable-viewport-locked'),
-    bodyPosition: getComputedStyle(document.body).position,
-    bodyOverflow: getComputedStyle(document.body).overflow,
-  }))
-  expect(unlocked.bodyClass).toBeFalsy()
-  expect(unlocked.htmlClass).toBeFalsy()
-  expect(unlocked.bodyPosition).not.toBe('fixed')
-  expect(unlocked.bodyOverflow).not.toBe('hidden')
-
+  await page.setViewportSize({ width: 390, height: 560 })
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+})
+
+test('expands the fixed timetable by exactly one hour when the visible range starts at 07:00', async ({ page, request }) => {
+  await page.setViewportSize({ width: 390, height: 700 })
+  const screening = await ordinaryScreening(request)
+  test.skip(!screening, '일반 시간대 회차가 없습니다.')
+  await seedOneScreening(page, screening!.id)
+
+  await page.goto('./')
+  await page.getByRole('button', { name: '내 시간표' }).click()
+  await page.getByRole('button', { name: '시간표', exact: true }).click()
+
+  const before = await timetableGeometry(page)
+  await addEarlyEvent(page, screening!.date)
+  await expect(page.locator('.time-axis')).toContainText('07시')
+
+  const after = await timetableGeometry(page)
+  expect(after.hourHeight).toBeCloseTo(40, 5)
+  expect(after.gridHeight - before.gridHeight).toBeCloseTo(40, 5)
+  expect(after.timetableHeight - before.timetableHeight).toBeCloseTo(40, 5)
 })
