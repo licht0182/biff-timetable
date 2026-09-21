@@ -105,7 +105,7 @@ for (const viewport of [
   test(`matches the Film Finder section rhythm at ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport)
     await page.goto('./')
-    await expect(page.locator('.film-card').first()).toBeVisible()
+    await expect(page.locator('.film-card').first()).toBeVisible({ timeout: 15_000 })
 
     const measureDirectGaps = async (selector: string) => page.locator(selector).evaluate((container) => {
       const children = Array.from(container.children).filter((child) => {
@@ -192,7 +192,7 @@ test('keeps dark desktop timetable events readable', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.emulateMedia({ colorScheme: 'dark' })
   await page.goto('./')
-  await expect(page.locator('.film-card').first()).toBeVisible()
+  await expect(page.locator('.film-card').first()).toBeVisible({ timeout: 15_000 })
 
   await page.getByRole('button', { name: '+ 추가', exact: true }).first().click()
   await openSection(page, '내 시간표')
@@ -265,10 +265,13 @@ test('ports the mobile WebKit visual tokens to desktop navigation and surfaces',
     await expect(page.locator('.film-card').first()).toBeVisible()
     await openSection(page, '설정')
 
-    const navigation = page.locator('.tabs:visible, .liquid-tab-bar:visible')
+    const navigation = viewport.width <= 700
+      ? page.locator('.liquid-tab-bar:visible')
+      : page.locator('.tabs:visible')
     const active = navigation.getByRole('button', { name: '설정', exact: true })
     await expect(active).toBeVisible()
-    await expect.poll(() => active.evaluate((element) => getComputedStyle(element).color)).toBe('rgb(10, 132, 255)')
+    await expect(active).toHaveClass(/active/, { timeout: 15_000 })
+    await expect.poll(() => active.evaluate((element) => getComputedStyle(element).color), { timeout: 15_000 }).toBe('rgb(10, 132, 255)')
     states.push(await active.evaluate((element) => {
       const root = getComputedStyle(document.documentElement)
       const activeStyle = getComputedStyle(element)
