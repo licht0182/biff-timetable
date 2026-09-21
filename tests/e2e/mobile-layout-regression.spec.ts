@@ -28,9 +28,8 @@ async function openGrid(page: Page) {
   const gridButton = page.getByRole('button', { name: '시간표', exact: true }).first()
   if (await gridButton.isVisible()) await gridButton.click()
   await expect(page.locator('.timetable-scroll')).toBeVisible()
-  await expect(page.locator('.app-shell')).toHaveClass(/timetable-viewport-stable/)
-  await expect(page.locator('html')).toHaveClass(/timetable-viewport-locked/)
-  await expect(page.locator('body')).toHaveClass(/timetable-viewport-locked/)
+  await expectViewportLockReleased(page)
+  await expect(page.locator('.app-shell')).not.toHaveClass(/timetable-viewport-stable/)
 }
 
 async function expectViewportLockReleased(page: Page) {
@@ -194,7 +193,7 @@ test('aligns the first content surface across all primary mobile sections', asyn
   expect(Math.max(...gaps) - Math.min(...gaps), `mobile top gaps: ${gaps.join(', ')}`).toBeLessThanOrEqual(4)
 })
 
-test('releases the grid viewport lock before leaving for every other primary section', async ({ page, request }) => {
+test('keeps the grid and every primary-section transition free of viewport locks', async ({ page, request }) => {
   await seedOneScreening(page, request)
   await page.goto('./')
   const dock = page.locator('.liquid-tab-bar')
@@ -322,7 +321,8 @@ test('survives the full mobile navigation flow without leaking layout state', as
   await expect(page.locator('.schedule-list')).toBeVisible()
   await page.getByRole('button', { name: '시간표', exact: true }).click()
   await expect(page.locator('.timetable-scroll')).toBeVisible()
-  await expect(page.locator('.app-shell')).toHaveClass(/timetable-viewport-stable/)
+  await expectViewportLockReleased(page)
+  await expect(page.locator('.app-shell')).not.toHaveClass(/timetable-viewport-stable/)
 
   const more = page.locator('.timetable-action-buttons .backup-menu.timetable-more-menu')
   await more.locator(':scope > summary').click()
@@ -344,7 +344,8 @@ test('survives the full mobile navigation flow without leaking layout state', as
 
   await dock.getByRole('button', { name: '내 시간표' }).click()
   await expect(page.locator('.timetable-scroll')).toBeVisible()
-  await expect(page.locator('.app-shell')).toHaveClass(/timetable-viewport-stable/)
+  await expectViewportLockReleased(page)
+  await expect(page.locator('.app-shell')).not.toHaveClass(/timetable-viewport-stable/)
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
   expect(overflow).toBeLessThanOrEqual(1)
