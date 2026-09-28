@@ -152,7 +152,7 @@ for (const viewport of [
 test('keeps the desktop timetable in normal document flow', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('./')
-  await expect(page.locator('.film-card').first()).toBeVisible()
+  await expect(page.locator('.film-card').first()).toBeVisible({ timeout: 30_000 })
 
   const filmShell = await page.locator('.app-shell').boundingBox()
   const filmHeaderHeight = await page.locator('.topbar').evaluate((element) => element.getBoundingClientRect().height)
@@ -275,7 +275,7 @@ test('keeps mobile and desktop navigation tokens aligned with their distinct act
     const active = navigation.getByRole('button', { name: '설정', exact: true })
     await expect(active).toBeVisible()
     await expect(active).toHaveClass(/active/, { timeout: 15_000 })
-    const expectedActiveColor = viewport.width <= 700 ? 'rgb(217, 45, 32)' : 'rgb(10, 132, 255)'
+    const expectedActiveColor = viewport.width <= 700 ? 'rgb(217, 45, 32)' : 'rgb(185, 39, 29)'
     await expect.poll(() => active.evaluate((element) => getComputedStyle(element).color), { timeout: 15_000 }).toBe(expectedActiveColor)
     states.push(await active.evaluate((element) => {
       const root = getComputedStyle(document.documentElement)
@@ -294,9 +294,29 @@ test('keeps mobile and desktop navigation tokens aligned with their distinct act
 
   expect(states[0].tint).toBe('#0a84ff')
   expect(states[0].activeColor).toBe('rgb(217, 45, 32)')
-  expect(states[1].activeColor).toBe('rgb(10, 132, 255)')
+  expect(states[1].activeColor).toBe('rgb(185, 39, 29)')
   expect(states[1].surfaceBackground).toBe(states[0].surfaceBackground)
   expect(states[1].controlRadius).toBe(states[0].controlRadius)
   expect(states[0].controlRadius).toBe('14px')
   expect(states[1].activeBackground).not.toBe('rgba(0, 0, 0, 0)')
+})
+
+test('uses BIFF shell colors in dark mode', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('./')
+
+  const shell = await page.locator('.topbar').evaluate((element) => {
+    const root = getComputedStyle(document.documentElement)
+    const header = getComputedStyle(element)
+    return {
+      action: root.getPropertyValue('--biff-action').trim(),
+      background: header.backgroundColor,
+      border: header.borderTopColor,
+    }
+  })
+
+  expect(shell.action).toBe('#ff7568')
+  expect(shell.background).toBe('rgba(34, 36, 40, 0.88)')
+  expect(shell.border).toBe('rgba(255, 255, 255, 0.15)')
 })

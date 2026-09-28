@@ -35,6 +35,9 @@ jobs:
       - name: Validate curator section analysis
         run: npm run validate:curator
 
+      - name: Validate curator feature media
+        run: npm run validate:curator-media
+
       - name: Build
         run: npm run build
 

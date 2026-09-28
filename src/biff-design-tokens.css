@@ -1,0 +1,96 @@
+/* BIFF identity for the shared shell. Feature geometry stays in layout-system.css. */
+:root{
+  --biff-brand:#d92d20;
+  --biff-action:#b9271d;
+  --biff-action-hover:#9e2119;
+  --biff-canvas:#f1eee9;
+  --biff-shell-surface:rgba(255,252,248,.86);
+  --biff-shell-border:rgba(111,72,59,.18);
+  --biff-text:#221d1b;
+  --biff-text-muted:#655b57;
+  --biff-type-display:clamp(21px,2vw,26px);
+  --biff-type-label:12px;
+  --biff-space-unit:8px;
+  --biff-focus:rgba(185,39,29,.55);
+  font-family:"Noto Sans KR","Segoe UI",Arial,sans-serif;
+}
+
+body,.app-shell{background-color:var(--biff-canvas)!important}
+
+.topbar,.timetable-mode .topbar,
+.tabs,.timetable-mode .tabs,
+.topbar.liquid-glass-enhanced[data-liquid-glass="navigation"],
+.tabs.liquid-glass-enhanced[data-liquid-glass="navigation"]{
+  border-color:var(--biff-shell-border)!important;
+  background:var(--biff-shell-surface)!important;
+  color:var(--biff-text)!important;
+}
+.topbar,.timetable-mode .topbar{border-bottom:0!important}
+.topbar>div:first-child::before,
+.timetable-mode .topbar>div:first-child::before{
+  background:var(--biff-brand)!important;
+  box-shadow:0 4px 12px rgba(153,38,27,.2)!important;
+}
+.topbar h1,.timetable-mode .topbar h1{
+  color:var(--biff-text);
+  font-size:var(--biff-type-display);
+  font-weight:800;
+  letter-spacing:-.035em;
+  text-shadow:none;
+}
+.topbar .eyebrow{color:var(--biff-brand)!important;font-size:var(--biff-type-label);font-weight:800;letter-spacing:.1em}
+.topbar .subtitle{color:var(--biff-text-muted)!important}
+.selection-count{
+  border-color:color-mix(in srgb,var(--biff-brand) 28%,transparent)!important;
+  background:color-mix(in srgb,var(--biff-brand) 9%,var(--biff-shell-surface))!important;
+  color:var(--biff-action)!important;
+}
+.tabs button{color:var(--biff-text-muted)!important;font-weight:700}
+.tabs button.active,.tabs .settings-tab-trigger.active{
+  background:color-mix(in srgb,var(--biff-brand) 12%,transparent)!important;
+  color:var(--biff-action)!important;
+}
+.tabs button:hover{color:var(--biff-action)!important}
+.tabs button:focus-visible,.topbar button:focus-visible{
+  outline-color:var(--biff-focus);
+}
+
+/* Shared calls to action use the same festival accent without changing their size. */
+.pwa-update-toast button:not(.pwa-update-close),
+.custom-event-add-button{
+  border-color:var(--biff-action)!important;
+  background:var(--biff-action)!important;
+  color:#fff!important;
+}
+@media(hover:hover) and (pointer:fine){
+  .pwa-update-toast button:not(.pwa-update-close):hover,
+  .custom-event-add-button:hover{background:var(--biff-action-hover)!important}
+  .tabs button:hover{transform:none!important;box-shadow:none!important}
+}
+
+@media(max-width:700px){
+  .topbar,.timetable-mode .topbar{border-bottom:1px solid var(--biff-shell-border)!important}
+  .topbar h1,.timetable-mode .topbar h1{font-size:21px}
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --biff-brand:#ff665a;
+    --biff-action:#ff7568;
+    --biff-action-hover:#ff9388;
+    --biff-canvas:#111316;
+    --biff-shell-surface:rgba(34,36,40,.88);
+    --biff-shell-border:rgba(255,255,255,.15);
+    --biff-text:#f7f3f0;
+    --biff-text-muted:#cbc0bb;
+    --biff-focus:rgba(255,117,104,.72);
+  }
+  .topbar,.timetable-mode .topbar,.tabs,.timetable-mode .tabs{box-shadow:var(--ios-shadow)!important}
+  .pwa-update-toast button:not(.pwa-update-close),.custom-event-add-button{color:#21110f!important}
+}
+@media(prefers-reduced-transparency:reduce){
+  :root{--biff-shell-surface:#fffaf5}
+  .topbar,.timetable-mode .topbar,.tabs,.timetable-mode .tabs{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+}
+@media(prefers-color-scheme:dark) and (prefers-reduced-transparency:reduce){
+  :root{--biff-shell-surface:#24262a}
+}

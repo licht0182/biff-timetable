@@ -725,7 +725,7 @@ test('follows the system dark appearance and keeps motion optional', async ({ pa
     background: '#000',
     label: '#f5f5f7',
     colorScheme: 'dark',
-    bodyBackground: 'rgb(0, 0, 0)',
+    bodyBackground: 'rgb(17, 19, 22)',
   })
   await expect.poll(() => page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.film-card')!).transitionDuration))).toBeLessThan(0.001)
 })
@@ -762,7 +762,7 @@ test('keeps content, controls, and overlays on translucent glass surfaces', asyn
   await expectGlassSurface('.custom-event-form-actions button:first-child')
 })
 
-test('uses a solid light-gray canvas with dark readable text', async ({ page }) => {
+test('uses a solid warm canvas with dark readable text', async ({ page }) => {
   const palette = await page.evaluate(() => {
     const bodyBefore = getComputedStyle(document.body, '::before')
     const html = getComputedStyle(document.documentElement)
@@ -782,11 +782,11 @@ test('uses a solid light-gray canvas with dark readable text', async ({ page }) 
       inputColor: input.color,
     }
   })
-  expect(palette.themeColorCount).toBe(0)
+  expect(palette.themeColorCount).toBe(2)
   expect(palette.htmlBackgroundColor).toBe('rgba(0, 0, 0, 0)')
-  expect(palette.bodyBackgroundColor).toBe('rgb(229, 231, 235)')
+  expect(palette.bodyBackgroundColor).toBe('rgb(241, 238, 233)')
   expect(palette.rootBackgroundColor).toBe('rgba(0, 0, 0, 0)')
-  expect(palette.shellBackgroundColor).toBe('rgb(229, 231, 235)')
+  expect(palette.shellBackgroundColor).toBe('rgb(241, 238, 233)')
   expect(palette.bodyBeforeContent).toBe('none')
   expect(palette.headingColor).toBe('rgb(17, 24, 39)')
   expect(palette.inputColor).toBe('rgb(17, 24, 39)')
@@ -803,7 +803,7 @@ test('publishes an installable scoped web app manifest', async ({ page, request 
     start_url: '/biff-timetable/',
     scope: '/biff-timetable/',
     display: 'standalone',
-    background_color: '#e5e7eb',
+    background_color: '#f1eee9',
+    theme_color: '#f1eee9',
   })
-  expect(manifest).not.toHaveProperty('theme_color')
 })

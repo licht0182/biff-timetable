@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useDeferredValue, useEffect, useMemo, useR
 import CustomEventDialog from './components/CustomEventDialog'
 import FilmList from './components/FilmList'
 import FilmSearchAutocomplete from './components/FilmSearchAutocomplete'
+import GlobalSearchOverlay from './components/GlobalSearchOverlay'
 import BookingPlanPanel from './components/BookingPlanPanel'
 import BookingStatusSelect from './components/BookingStatusSelect'
 import BookingConflictDialog from './components/BookingConflictDialog'
@@ -257,6 +258,7 @@ export default function App() {
   const filmScrollPositionRef = useRef(0)
   const filmControlsRef = useRef<HTMLElement>(null)
   const filterSheetRef = useRef<HTMLDivElement>(null)
+  const globalSearchTriggerRef = useRef<HTMLButtonElement>(null)
   const [films, setFilms] = useState<Film[]>([])
   const [dataNote, setDataNote] = useState('')
   const [dataSource, setDataSource] = useState('')
@@ -280,6 +282,7 @@ export default function App() {
   const [gvOnly, setGvOnly] = useState(false)
   const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'films' | 'timetable' | 'curator'>(initialNavigation.tab)
   const [curatorPageKey, setCuratorPageKey] = useState(0)
   const [detailFilm, setDetailFilm] = useState<Film | null>(null)
@@ -1238,6 +1241,22 @@ export default function App() {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [activeTab, filmViewActive])
 
+  const openGlobalFilmSearch = useCallback(() => {
+    setGlobalSearchOpen(false)
+    openFilmsFromMenu()
+  }, [openFilmsFromMenu])
+
+  const openGlobalFilters = useCallback(() => {
+    setGlobalSearchOpen(false)
+    openFilmsFromMenu()
+    if (viewport.width <= 700) setMobileFiltersOpen(true)
+  }, [openFilmsFromMenu, viewport.width])
+
+  const openGlobalDestination = useCallback((open: () => void) => {
+    setGlobalSearchOpen(false)
+    open()
+  }, [])
+
 
   const advancedFilterPanel = <div ref={filterSheetRef} id="film-advanced-filters" className={`filter-row ${mobileFiltersOpen ? 'mobile-open' : ''}`} aria-labelledby="filter-sheet-title" tabIndex={mobileFiltersOpen ? -1 : undefined}>
     <div className="filter-sheet-head"><span aria-hidden="true" /><strong id="filter-sheet-title">상세 필터</strong><button type="button" className="ui-text-chip" onClick={() => setMobileFiltersOpen(false)} aria-label="상세 필터 닫기">완료</button></div>
@@ -1267,7 +1286,7 @@ export default function App() {
     <div className={`app-shell has-liquid-navigation ${activeTab === 'timetable' ? `timetable-mode timetable-${timetableView}-mode` : ''} ${activeTab === 'curator' && !settingsOpen ? 'app-shell--editorial' : ''}`}>
       <header className="topbar">
         <div><p className="eyebrow">BUSAN INTERNATIONAL FILM FESTIVAL</p><h1>BIFF Timetable</h1><p className="subtitle">상영작을 고르고 나만의 영화제 시간표를 만드세요.</p></div>
-        <div className="selection-count">총 {totalTimetableCount}개 선택</div>
+        <div className="global-search-header-actions"><button ref={globalSearchTriggerRef} type="button" className="global-search-trigger" aria-haspopup="dialog" onClick={() => setGlobalSearchOpen(true)}>전체 검색</button><div className="selection-count">총 {totalTimetableCount}개 선택</div></div>
       </header>
 
       <nav className="tabs" aria-label="주요 메뉴">
@@ -1589,6 +1608,17 @@ export default function App() {
       />}
       <LiquidGlassEffects />
       <PwaUpdatePrompt />
+      {globalSearchOpen && <GlobalSearchOverlay
+        initialQuery={query}
+        onClose={() => setGlobalSearchOpen(false)}
+        onRestoreFocus={() => globalSearchTriggerRef.current?.focus()}
+        onSearch={(value) => openGlobalDestination(() => openFilmFromCurator(value))}
+        onOpenFilmSearch={openGlobalFilmSearch}
+        onOpenFilters={openGlobalFilters}
+        onOpenTimetable={() => openGlobalDestination(openTimetable)}
+        onOpenCurator={() => openGlobalDestination(openCurator)}
+        onOpenSettings={() => openGlobalDestination(openSettings)}
+      />}
     </div>
   )
 }

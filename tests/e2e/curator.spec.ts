@@ -1,5 +1,29 @@
 import { expect, test } from '@playwright/test'
 
+test('prioritizes the editorial lead image and defers promotion images', async ({ page }) => {
+  await page.route('**/FILM_PHOTO/**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'image/svg+xml',
+    body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>',
+  }))
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
+
+  const leadImage = page.locator('.curator-cover .curator-feature-image img')
+  await expect(leadImage).toHaveAttribute('loading', 'eager')
+  await expect(leadImage).toHaveAttribute('fetchpriority', 'high')
+  await expect(leadImage).toHaveAttribute('decoding', 'async')
+  await expect(leadImage).toHaveJSProperty('naturalWidth', 1)
+
+  const promotionImages = page.locator('.curator-promotion .curator-feature-image img')
+  await expect(promotionImages).toHaveCount(2)
+  for (const image of await promotionImages.all()) {
+    await expect(image).toHaveAttribute('loading', 'lazy')
+    await expect(image).toHaveAttribute('fetchpriority', 'low')
+    await expect(image).toHaveAttribute('decoding', 'async')
+  }
+})
+
 test('opens the editorial feature and keeps its photo credit when the image fails', async ({ page }) => {
   await page.route('**/FILM_PHOTO/**', (route) => route.abort())
   await page.goto('./')

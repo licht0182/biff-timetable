@@ -16,8 +16,8 @@ export default defineConfig({
         start_url: '/biff-timetable/',
         scope: '/biff-timetable/',
         display: 'standalone',
-        background_color: '#e5e7eb',
-        theme_color: undefined,
+        background_color: '#f1eee9',
+        theme_color: '#f1eee9',
         lang: 'ko',
         orientation: 'portrait-primary',
         icons: [
