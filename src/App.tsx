@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
+import { lazy, Suspense, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import CustomEventDialog from './components/CustomEventDialog'
 import FilmList from './components/FilmList'
 import FilmSearchAutocomplete from './components/FilmSearchAutocomplete'
@@ -297,6 +297,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(initialNavigation.settingsOpen)
   const [userSettings, setUserSettings] = useState<UserTimetableSettings>(() => normalizeUserSettings(readStorageValue(USER_SETTINGS_KEY)))
   const [timetableView, setTimetableView] = useState<TimetableViewMode>(() => normalizeTimetableView(readStorageValue(TIMETABLE_VIEW_KEY)))
+  const [selectedGridDate, setSelectedGridDate] = useState('')
 
   useEffect(() => {
     if (films.length === 0) return
@@ -572,6 +573,23 @@ export default function App() {
     ...selectedItems.map(({ screening }) => timetableDate(screening)),
     ...customEvents.map((event) => customEventTimetableDate(event)),
   ])).sort(), [selectedItems, customEvents])
+  useEffect(() => {
+    if (selectedGridDate && !dates.includes(selectedGridDate)) setSelectedGridDate(dates[0] ?? '')
+  }, [dates, selectedGridDate])
+  const dayFocusedGrid = viewport.width <= 1023
+  const activeGridDate = dates.includes(selectedGridDate) ? selectedGridDate : dates[0] ?? ''
+  const visibleGridDates = dayFocusedGrid ? (activeGridDate ? [activeGridDate] : []) : dates
+  const handleGridDateKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
+    let nextIndex = index
+    if (event.key === 'ArrowRight') nextIndex = Math.min(dates.length - 1, index + 1)
+    else if (event.key === 'ArrowLeft') nextIndex = Math.max(0, index - 1)
+    else if (event.key === 'Home') nextIndex = 0
+    else if (event.key === 'End') nextIndex = dates.length - 1
+    else return
+    event.preventDefault()
+    setSelectedGridDate(dates[nextIndex])
+    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('.timetable-day-button')[nextIndex]?.focus()
+  }
   const timetableStartHour = useMemo(() => {
     const earliestCustomStartMinutes = customEvents.reduce(
       (earliest, event) => Math.min(earliest, customEventTimetableStartMinutes(event)),
@@ -600,12 +618,12 @@ export default function App() {
     const headerHeight = isMobile ? 32 : 38
     const hourHeight = FIXED_TIMETABLE_HOUR_HEIGHT
     const gridHeight = hourHeight * (timetableEndHour - timetableStartHour)
-    const dayWidth = dates.length > 0 ? Math.max(1, (contentWidth - axisWidth) / dates.length) : contentWidth - axisWidth
+    const dayWidth = visibleGridDates.length > 0 ? Math.max(1, (contentWidth - axisWidth) / visibleGridDates.length) : contentWidth - axisWidth
     const dense = dayWidth < 76
     const ultraDense = dayWidth < 48
 
     return { axisWidth, headerHeight, hourHeight, gridHeight, dayWidth, dense, ultraDense }
-  }, [viewport.width, dates.length, timetableEndHour, timetableStartHour])
+  }, [viewport.width, visibleGridDates.length, timetableEndHour, timetableStartHour])
 
   const conflictingSelections = useCallback((film: Film, screening: Screening) => (
     selectedItems.filter(({ film: otherFilm, screening: other }) => screeningsOverlap(film, screening, otherFilm, other))
@@ -1138,7 +1156,7 @@ export default function App() {
     '--header-height': `${timetableMetrics.headerHeight}px`,
     '--hour-height': `${timetableMetrics.hourHeight}px`,
     '--grid-height': `${timetableMetrics.gridHeight}px`,
-    gridTemplateColumns: `${timetableMetrics.axisWidth}px repeat(${dates.length}, minmax(0, 1fr))`,
+    gridTemplateColumns: `${timetableMetrics.axisWidth}px repeat(${visibleGridDates.length}, minmax(0, 1fr))`,
   } as CSSProperties
 
   const bookedCount = selected.filter((id) => ticketStatus[id] === 'booked').length
@@ -1445,20 +1463,32 @@ export default function App() {
               onRemoveAlternative={removeAlternative}
               onApplyAlternative={prepareApplyFallback}
             />
-            <div className={`layout-surface timetable-scroll ${timetableMetrics.dense ? 'dense' : ''} ${timetableMetrics.ultraDense ? 'ultra-dense' : ''} ${timetableSelectionMode ? 'timetable-selection-mode' : ''}`}>
+            {dayFocusedGrid && dates.length > 1 && <div className="timetable-day-selector" role="group" aria-label="시간표 날짜 선택">
+              {dates.map((date, index) => <button
+                type="button"
+                key={date}
+                className={`timetable-day-button ${activeGridDate === date ? 'active' : ''}`}
+                aria-pressed={activeGridDate === date}
+                tabIndex={activeGridDate === date ? 0 : -1}
+                onClick={() => setSelectedGridDate(date)}
+                onKeyDown={(event) => handleGridDateKeyDown(event, index)}
+              >{formatDate(date)}</button>)}
+            </div>}
+            <div className={`layout-surface timetable-scroll ${dayFocusedGrid ? 'day-focused' : ''} ${timetableMetrics.dense ? 'dense' : ''} ${timetableMetrics.ultraDense ? 'ultra-dense' : ''} ${timetableSelectionMode ? 'timetable-selection-mode' : ''}`}>
             <div className="timetable" style={timetableStyle}>
               <div className="corner" />
-              {dates.map((date) => <div className="date-head" key={date} title={formatDate(date)}>{formatDate(date, timetableMetrics.dense)}</div>)}
+              {visibleGridDates.map((date) => <div className="date-head" key={date} title={formatDate(date)}>{formatDate(date, timetableMetrics.dense && !dayFocusedGrid)}</div>)}
               <div className="time-axis">{Array.from({ length: timetableEndHour - timetableStartHour + 1 }, (_, i) => timetableStartHour + i).map((hour) => <div key={hour} style={{ top: `${(hour - timetableStartHour) * timetableMetrics.hourHeight}px` }}>{`${hour < 24 ? String(hour).padStart(2, '0') : String(hour - 24).padStart(2, '0')}시`}</div>)}</div>
-              {dates.map((date) => <div className="day-column" key={date}>
+              {visibleGridDates.map((date) => <div className="day-column" key={date}>
                 {Array.from({ length: timetableEndHour - timetableStartHour + 1 }, (_, i) => <div className="hour-line" key={i} style={{ top: `${i * timetableMetrics.hourHeight}px` }} />)}
                 {selectedItems.filter(({ screening }) => timetableDate(screening) === date).map(({ film, screening }) => {
                   const start = timetableStartMinutes(screening)
                   const end = timetableEndMinutes(film, screening)
                   const top = ((start - timetableStartHour * 60) / 60) * timetableMetrics.hourHeight
                   const height = Math.max(((end - start) / 60) * timetableMetrics.hourHeight, timetableMetrics.ultraDense ? 16 : 22)
-                  const travel = transitionWarning(film, screening)
-                  const timeConflict = conflictingCustomEventsForScreening(film, screening).length > 0
+                   const travel = transitionWarning(film, screening)
+                   const timeConflict = conflictingCustomEventsForScreening(film, screening).length > 0
+                   const screeningConflict = conflictingSelections(film, screening).some(({ screening: other }) => other.id !== screening.id)
                   const status = ticketStatus[screening.id] ?? 'planned'
                   const priority = bookingPlan[screening.id]?.priority
                   const statusPrefix = userSettings.showBookingStatusInTimetable
@@ -1488,7 +1518,7 @@ export default function App() {
                     tabIndex={0}
                     aria-haspopup={timetableSelectionMode ? undefined : 'dialog'}
                     aria-pressed={timetableSelectionMode ? isMarkedForDelete : undefined}
-                    aria-label={timetableSelectionMode ? `${film.title} 삭제 ${isMarkedForDelete ? '선택 해제' : '선택'}` : `${film.title} ${formatDate(screening.date)} ${screening.start} 상세정보 보기`}
+                    aria-label={`${film.title}, ${formatDate(date)}, ${screening.start}부터 ${endLabel(film, screening)}까지, ${screening.venue}, ${status === 'booked' ? '예매 완료' : status === 'failed' ? '예매 실패' : '예매 예정'}${priority ? `, ${priority}순위` : ''}${screeningConflict || timeConflict ? ', 일정 시간 충돌' : ''}${travel ? `, 이동 여유 경고, 여유 ${travel.gap}분, 필요 ${travel.buffer}분` : ''}, ${timetableSelectionMode ? `삭제 ${isMarkedForDelete ? '선택 해제' : '선택'}` : '상세정보 보기'}`}
                   >
                     {timetableSelectionMode && <span className="event-select-indicator" aria-hidden="true">{isMarkedForDelete ? '✓' : ''}</span>}
                     <strong>{statusPrefix}{film.title}</strong>
@@ -1518,7 +1548,7 @@ export default function App() {
                     }}
                     aria-haspopup={timetableSelectionMode ? undefined : 'dialog'}
                     aria-pressed={timetableSelectionMode ? isMarkedForDelete : undefined}
-                    aria-label={timetableSelectionMode ? `${event.title} 삭제 ${isMarkedForDelete ? '선택 해제' : '선택'}` : `${event.title} ${formatDate(event.date)} ${event.start} 사용자 일정 상세정보 보기`}
+                    aria-label={`${event.title}, ${formatDate(date)}, ${event.start}부터 ${event.end}까지, ${customEventCategoryLabel(event.category)}${event.location ? `, ${event.location}` : ''}${conflict ? ', 일정 시간 충돌' : ''}, ${timetableSelectionMode ? `삭제 ${isMarkedForDelete ? '선택 해제' : '선택'}` : '사용자 일정 상세정보 보기'}`}
                   >
                     {timetableSelectionMode && <span className="event-select-indicator" aria-hidden="true">{isMarkedForDelete ? '✓' : ''}</span>}
                     <strong>◆ {event.title}</strong>
