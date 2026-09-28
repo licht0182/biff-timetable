@@ -124,3 +124,59 @@
     color: var(--ios-label, CanvasText);
   }
 }
+
+/* The synopsis stays available while screenings remain near the first viewport. */
+.film-modal .modal-head h2 {
+  font-size: clamp(21px, 2vw, 25px);
+  line-height: 1.25;
+  letter-spacing: -0.035em;
+}
+
+.film-modal .film-synopsis {
+  margin: 16px 0 18px;
+}
+
+.film-modal .film-synopsis h3 {
+  margin: 0 0 7px;
+  color: var(--biff-text, var(--ios-label));
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.film-modal .film-synopsis .synopsis {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.film-modal .film-synopsis .synopsis.is-collapsed {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+
+.film-modal .film-synopsis-toggle {
+  min-height: 38px;
+  margin-top: 6px;
+  padding: 5px 13px;
+  border: 1px solid var(--biff-shell-border, var(--ios-separator));
+  border-radius: 999px;
+  background: var(--biff-shell-surface, var(--ios-surface-soft));
+  color: var(--biff-action, var(--ios-tint));
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.film-modal .film-synopsis-toggle:focus-visible {
+  outline: 3px solid var(--biff-focus, var(--ios-tint));
+  outline-offset: 2px;
+}
+
+.film-modal .modal-screening-actions > button:not(.selected):not(.alternative) {
+  border-color: color-mix(in srgb, var(--biff-action, #b9271d) 45%, transparent) !important;
+  background: color-mix(in srgb, var(--biff-action, #b9271d) 12%, var(--ios-surface-soft, #fff)) !important;
+  color: var(--biff-action, #b9271d) !important;
+}

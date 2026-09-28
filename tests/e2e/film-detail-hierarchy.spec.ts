@@ -1,0 +1,34 @@
+import { expect, test } from '@playwright/test'
+
+test('keeps screening actions visible while a long synopsis can expand', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('./')
+  await page.getByRole('combobox', { name: '영화 검색' }).fill('아버지의 방')
+  const card = page.locator('.film-card').first()
+  await expect(card).toBeVisible()
+  await card.getByRole('button', { name: '상세' }).click()
+
+  const modal = page.getByRole('dialog', { name: '아버지의 방' })
+  const synopsis = modal.locator('.film-synopsis .synopsis')
+  const expand = modal.getByRole('button', { name: '줄거리 더 읽기' })
+  await expect(expand).toHaveAttribute('aria-expanded', 'false')
+  await expect(synopsis).toHaveClass(/is-collapsed/)
+  await expect(modal.locator('.modal-screenings button').first()).toBeInViewport()
+  await page.setViewportSize({ width: 320, height: 640 })
+  await expect(modal.locator('.modal-screenings button').first()).toBeInViewport()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0)
+  await page.setViewportSize({ width: 390, height: 844 })
+
+  await expand.focus()
+  await page.keyboard.press('Enter')
+  await expect(modal.getByRole('button', { name: '줄거리 접기' })).toHaveAttribute('aria-expanded', 'true')
+  await expect(synopsis).not.toHaveClass(/is-collapsed/)
+  await modal.getByRole('button', { name: '줄거리 접기' }).click()
+  await expect(expand).toHaveAttribute('aria-expanded', 'false')
+  await modal.locator('.modal-screenings button').first().click()
+  await expect(modal.locator('.modal-screenings button').first()).toHaveText('선택됨')
+
+  await modal.getByRole('button', { name: '상세보기 닫기' }).click()
+  await card.getByRole('button', { name: '상세' }).click()
+  await expect(modal.getByRole('button', { name: '줄거리 더 읽기' })).toHaveAttribute('aria-expanded', 'false')
+})

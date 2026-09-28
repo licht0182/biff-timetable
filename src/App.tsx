@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useDeferredValue, useEffect, useMemo, useR
 import CustomEventDialog from './components/CustomEventDialog'
 import FilmList from './components/FilmList'
 import FilmSearchAutocomplete from './components/FilmSearchAutocomplete'
+import FilmSynopsis from './components/FilmSynopsis'
 import GlobalSearchOverlay from './components/GlobalSearchOverlay'
 import BookingPlanPanel from './components/BookingPlanPanel'
 import BookingStatusSelect from './components/BookingStatusSelect'
@@ -1562,7 +1563,7 @@ export default function App() {
             {detailFilm.language && <><dt>언어</dt><dd>{detailFilm.language}</dd></>}
             <dt>상영 회차</dt><dd>{detailFilm.screenings.length}회</dd>
           </dl>
-          {detailFilm.synopsis && <p className="synopsis">{programNoteForDisplay(detailFilm.synopsis)}</p>}
+          {detailFilm.synopsis && <FilmSynopsis key={detailFilm.id} text={programNoteForDisplay(detailFilm.synopsis)} />}
           <div className="modal-screenings">{detailFilm.screenings.map((screening) => {
             const isSelected = selected.includes(screening.id)
             const planEntry = bookingPlan[screening.id]
