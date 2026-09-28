@@ -75,9 +75,8 @@ for (const width of [390, 1440]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
     await expect(dialog.getByRole('button', { name: /상세 필터/ })).toBeVisible()
     if (width === 1440) {
-      const filters = dialog.getByRole('button', { name: /상세 필터/ })
-      await filters.focus()
-      await page.keyboard.press('Enter')
+      await dialog.getByRole('button', { name: /상세 필터/ }).click()
+      await expect(dialog).toHaveCount(0)
       await expect(page.locator('#film-advanced-filters select').first()).toBeFocused()
     } else {
       await dialog.getByRole('button', { name: '전체 검색 닫기' }).click()
