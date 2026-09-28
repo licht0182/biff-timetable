@@ -321,3 +321,22 @@ test('uses BIFF shell colors in dark mode', async ({ page }) => {
   expect(shell.background).toBe('rgba(34, 36, 40, 0.88)')
   expect(shell.border).toBe('rgba(255, 255, 255, 0.15)')
 })
+
+test('keeps official-source footer readable above the mobile dock', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('./')
+  await page.getByRole('button', { name: '내 시간표' }).first().click()
+  const footer = page.getByRole('contentinfo', { name: '사이트 정보' })
+  await expect(footer).toBeVisible()
+  await expect(footer.getByRole('link', { name: /공식 상영시간표/ })).toHaveAttribute('href', 'https://www.biff.kr/kor/html/schedule/date.asp')
+  await expect(footer.getByRole('link', { name: /2026 작품 정보/ })).toHaveAttribute('href', 'https://www.biff.kr/kor/html/program/prog_all_list.asp?allYear=2026')
+  await footer.scrollIntoViewIfNeeded()
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  const clearance = await page.evaluate(() => {
+    const footerRect = document.querySelector('.app-footer')!.getBoundingClientRect()
+    const dockRect = document.querySelector('.liquid-tab-bar')!.getBoundingClientRect()
+    return { gap: dockRect.top - footerRect.bottom, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth }
+  })
+  expect(clearance.gap).toBeGreaterThanOrEqual(0)
+  expect(clearance.overflow).toBeLessThanOrEqual(0)
+})

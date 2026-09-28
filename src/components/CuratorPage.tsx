@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { CURATOR_ARTICLES, type CuratorArticle } from '../curator-content'
 import { CURATOR_FEATURE_MEDIA, featureMediaFor, type CuratorFeatureMedia } from '../curator-feature-media'
 import { pushNavigationState, readNavigationState } from '../navigation-history'
+import CuratorGallery from './CuratorGallery'
 
 type Props = {
   onOpenFilms: () => void
@@ -120,6 +121,8 @@ const editorialPromotions: EditorialFeature[] = [
     .slice(0, 2 - illustratedPromotions.length)
     .map((article) => ({ article })),
 ]
+
+const galleryStories = mediaFeatures.slice(3).filter((feature): feature is { article: CuratorArticle; media: CuratorFeatureMedia } => Boolean(feature.media))
 
 function FeatureImage({ media, priority = false }: { media: CuratorFeatureMedia; priority?: boolean }) {
   const [imageFailed, setImageFailed] = useState(false)
@@ -245,6 +248,8 @@ export default function CuratorPage({ onOpenFilms, onOpenFilm }: Props) {
           </div>
         </section>
       )}
+
+      <CuratorGallery stories={galleryStories} onOpenArticle={openArticle} onOpenFilm={onOpenFilm} />
 
       <section className="layout-surface curator-latest" aria-labelledby="curator-latest-title">
         <div className="curator-section-heading">

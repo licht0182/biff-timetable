@@ -1528,6 +1528,23 @@ export default function App() {
         </>}
       </main>)}
 
+      <footer className="app-footer" aria-label="사이트 정보">
+        <div className="app-footer-brand">
+          <strong>BIFF Timetable</strong>
+          <p>2026 부산국제영화제 관람 계획을 돕는 비공식 도구입니다.</p>
+        </div>
+        <div className="app-footer-column">
+          <h2>공식 자료</h2>
+          <a href={dataSource || 'https://www.biff.kr/kor/html/schedule/date.asp'} target="_blank" rel="noopener noreferrer">공식 상영시간표 ↗</a>
+          <a href="https://www.biff.kr/kor/html/program/prog_all_list.asp?allYear=2026" target="_blank" rel="noopener noreferrer">2026 작품 정보 ↗</a>
+        </div>
+        <div className="app-footer-column app-footer-note">
+          <h2>확인 안내</h2>
+          <p>상영·예매 정보는 변경될 수 있습니다. 최종 일정과 예매 가능 여부는 BIFF 공식 안내에서 확인하세요.</p>
+          <p>AI 도슨트 글은 미리 작성·검토한 참고 콘텐츠입니다.</p>
+        </div>
+      </footer>
+
       {detailFilm && <div className={`modal-backdrop ${detailScreeningId ? 'timetable-detail-backdrop' : ''}`} onMouseDown={() => { setDetailFilm(null); setDetailScreeningId(null) }}>
         <section className={`film-modal ${detailScreeningId ? 'timetable-detail-modal' : ''}`} role="dialog" aria-modal="true" aria-labelledby="film-detail-title" onMouseDown={(event) => event.stopPropagation()}>
           <div className="modal-head"><div><span className="section-label">{detailFilm.section ?? '섹션 미정'}</span><h2 id="film-detail-title">{detailFilm.title}</h2>{detailFilm.englishTitle && <p>{detailFilm.englishTitle}</p>}</div><button className="modal-close" onClick={() => { setDetailFilm(null); setDetailScreeningId(null) }} aria-label="상세보기 닫기">×</button></div>
