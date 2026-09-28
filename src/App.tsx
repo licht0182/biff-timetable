@@ -1329,10 +1329,10 @@ export default function App() {
           <div className="precise-transfer-panel">
             <strong>방향별 권장 이동시간</strong>
             <p className="travel-matrix-hint">표를 좌우로 밀어 모든 상영관의 이동시간을 확인할 수 있습니다.</p>
-            <div className="travel-matrix-wrap">
+            <div className="travel-matrix-wrap" tabIndex={0} aria-label="상영관 이동시간 표, 좌우로 스크롤">
               <table className="travel-matrix" aria-label="상영관 방향별 권장 이동시간">
-                <thead><tr><th>출발 ↓ / 도착 →</th>{VENUE_TRANSFER_SITES.map((site) => <th key={site.id} title={site.label}>{site.shortLabel}</th>)}</tr></thead>
-                <tbody>{VENUE_TRANSFER_SITES.map((from) => <tr key={from.id}><th title={from.label}>{from.shortLabel}</th>{VENUE_TRANSFER_SITES.map((to) => {
+                <thead><tr><th scope="col">출발 ↓ / 도착 →</th>{VENUE_TRANSFER_SITES.map((site) => <th scope="col" key={site.id} title={site.label}>{site.shortLabel}</th>)}</tr></thead>
+                <tbody>{VENUE_TRANSFER_SITES.map((from) => <tr key={from.id}><th scope="row" title={from.label}>{from.shortLabel}</th>{VENUE_TRANSFER_SITES.map((to) => {
                   const minutes = getVenueSiteTransferMinutes(from.id, to.id)
                   return <td key={to.id} title={`${from.label} → ${to.label}`}>{minutes == null ? '—' : `${minutes}분`}</td>
                 })}</tr>)}</tbody>
