@@ -46,6 +46,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .tabs button.active::after{display:none!important}
 
 .layout-surface,.notice,.controls,.film-results-toolbar,.timetable-actions,.settings-card,.settings-reset-card,.curator-hero,.curator-featured,.curator-latest,.curator-method{border-color:var(--ios-glass-border);background:var(--ios-bg-elevated);box-shadow:var(--ios-shadow)}
+.curator-loading>.empty{border:1px solid var(--ios-glass-border);border-radius:var(--layout-surface-radius);background:var(--ios-bg-elevated);box-shadow:var(--ios-shadow);color:var(--ios-secondary)}
 .controls{backdrop-filter:blur(20px) saturate(145%);-webkit-backdrop-filter:blur(20px) saturate(145%)}
 .controls input,.controls select,.custom-event-form input,.custom-event-form textarea{border-color:var(--ios-separator);border-radius:14px;background:var(--ios-surface-soft);color:var(--ios-label)}
 .controls input::placeholder{color:var(--ios-secondary)}
@@ -268,24 +269,6 @@ select option{background:#f3f4f6;color:#111827}
 .favorite-button.active{background:rgba(255,159,10,.28)!important;border-color:rgba(180,83,9,.35)!important;color:#7c2d12!important}
 .section-label{background:rgba(217,45,32,.14)!important;color:#991b1b!important;border:1px solid rgba(153,27,27,.16)}
 
-.liquid-tab-icon{
-  width:54px!important;
-  height:54px!important;
-  border:1px solid rgba(255,255,255,.42);
-  border-radius:19px;
-  background:linear-gradient(145deg,rgba(255,255,255,.34),rgba(255,255,255,.08) 52%,rgba(255,255,255,.02));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(17,24,39,.12),0 1px 3px rgba(15,23,42,.12);
-  backdrop-filter:blur(16px) saturate(180%);
-  -webkit-backdrop-filter:blur(16px) saturate(180%);
-  transition:transform .3s ease,background .3s ease,box-shadow .3s ease;
-}
-.liquid-tab-bar button.active .liquid-tab-icon{transform:translateY(-2px);background:linear-gradient(145deg,rgba(255,255,255,.5),rgba(255,255,255,.16) 58%,rgba(255,255,255,.04));box-shadow:0 1px 4px rgba(15,23,42,.14),inset 0 1px 1px rgba(255,255,255,.95),inset 0 -1px 0 rgba(17,24,39,.12)}
-.liquid-tab-bar .liquid-tab-bar-surface{border-color:rgba(255,255,255,.78)!important;background:linear-gradient(155deg,rgba(255,255,255,.26),transparent 38%,rgba(255,255,255,.08)),rgba(255,255,255,.12)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(17,24,39,.08),0 1px 4px rgba(15,23,42,.14)!important;backdrop-filter:blur(24px) saturate(185%) contrast(105%)!important;-webkit-backdrop-filter:blur(24px) saturate(185%)!important}
-.liquid-tab-bar .liquid-tab-bar-surface::after{opacity:.9;background:radial-gradient(circle at 18% 0,rgba(255,255,255,.42),transparent 36%),linear-gradient(135deg,rgba(255,255,255,.24),transparent 46%,rgba(255,255,255,.08));mix-blend-mode:screen}
-.liquid-tab-bar button{color:rgba(17,24,39,.72)!important;text-shadow:0 1px 0 rgba(255,255,255,.82)}
-.liquid-tab-bar button.active{background:transparent!important;color:#111827!important}
-.liquid-tab-icon svg{width:27px!important;height:27px!important;filter:drop-shadow(0 1px 0 rgba(255,255,255,.9))}
-
 .film-card{transition:transform .3s ease,box-shadow .3s ease,background .3s ease}
 .liquid-glass-enhanced{
   --glass-blur:22px;
@@ -335,7 +318,6 @@ select option{background:#f3f4f6;color:#111827}
 }
 .liquid-glass-enhanced[data-liquid-glass="navigation"]{--glass-blur:32px;--glass-saturation:180%;background:linear-gradient(145deg,rgba(255,255,255,.38),rgba(255,255,255,.12) 44%,rgba(255,255,255,.22)),rgba(255,255,255,.52)!important}
 .liquid-glass-enhanced[data-liquid-glass="toolbar"]{--glass-blur:30px;--glass-saturation:180%;background:linear-gradient(145deg,rgba(255,255,255,.36),rgba(255,255,255,.1) 44%,rgba(255,255,255,.2)),rgba(255,255,255,.58)!important}
-.liquid-tab-bar .liquid-tab-bar-surface.liquid-glass-enhanced{background:linear-gradient(145deg,rgba(255,255,255,.4),rgba(255,255,255,.1) 44%,rgba(255,255,255,.2)),rgba(229,231,235,.82)!important;backdrop-filter:blur(12px) saturate(160%)!important;-webkit-backdrop-filter:blur(12px) saturate(160%)!important}
 .film-results-toolbar.liquid-glass-enhanced,.enhanced-timetable-actions.liquid-glass-enhanced{background:linear-gradient(145deg,rgba(255,255,255,.4),rgba(255,255,255,.1) 44%,rgba(255,255,255,.2)),rgba(229,231,235,.97)!important}
 .liquid-glass-enhanced[data-liquid-glass="content"]{--glass-blur:25px;--glass-saturation:180%}
 .liquid-glass-enhanced[data-liquid-glass="sheet"],.liquid-glass-enhanced[data-liquid-glass="modal"]{--glass-blur:30px;--glass-saturation:190%}
@@ -358,28 +340,14 @@ select option{background:#f3f4f6;color:#111827}
   .liquid-tab-icon b{border-color:rgba(17,24,39,.24)!important}
 }
 
-@media(max-width:700px) and (display-mode:browser){
-  /*
-   * Keep Safari's dock viewport-fixed as well. The previous scroll-timeline
-   * emulation depended on document scrollRange and could retain timetable
-   * geometry after a route change, leaving a gray band under the new page.
-   */
-  .ios-webkit .liquid-tab-bar .liquid-tab-bar-surface.liquid-glass-enhanced{
-    isolation:auto!important;
-    filter:none!important;
-    backdrop-filter:blur(12px) saturate(160%)!important;
-    -webkit-backdrop-filter:blur(12px) saturate(160%)!important;
-  }
-  .ios-webkit .liquid-tab-bar .liquid-glass-refraction-layer,
-  .ios-webkit .liquid-tab-bar .liquid-tab-bar-surface::after{display:none!important}
-}
-
-@media(max-width:700px) and (display-mode:standalone){
-  .ios-webkit .liquid-tab-bar .liquid-tab-bar-surface.liquid-glass-enhanced{backdrop-filter:blur(12px) saturate(160%)!important;-webkit-backdrop-filter:blur(12px) saturate(160%)!important}
-}
 
 @media(prefers-reduced-transparency:reduce){
   .topbar,.tabs,.liquid-tab-bar-surface,.notice,.controls,.film-results-toolbar,.timetable-actions,.film-card,.schedule-screening-group,.booking-plan-panel,.timetable-scroll,.timetable-empty,.settings-card,.settings-reset-card,.curator-hero,.curator-featured,.curator-latest,.curator-method,.curator-card,.curator-article,.film-modal,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal,.pwa-update-toast{
+    background:rgba(229,231,235,.96)!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+  .liquid-tab-bar .liquid-tab-bar-surface{
     background:rgba(229,231,235,.96)!important;
     backdrop-filter:none!important;
     -webkit-backdrop-filter:none!important;
@@ -470,16 +438,6 @@ select option{background:#f3f4f6;color:#111827}
   .favorite-button.active{background:rgba(255,159,10,.18)!important;border-color:rgba(255,159,10,.44)!important;color:#ffd60a!important}
   .section-label{background:rgba(255,69,58,.18)!important;border-color:rgba(255,69,58,.32)!important;color:#ff6961!important}
 
-  .liquid-tab-icon{
-    border-color:rgba(255,255,255,.12);
-    background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.035) 58%,rgba(0,0,0,.1));
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -1px 0 rgba(0,0,0,.45),0 1px 3px rgba(0,0,0,.5);
-  }
-  .liquid-tab-bar button{color:var(--ios-secondary)!important;text-shadow:0 1px 0 rgba(0,0,0,.7)}
-  .liquid-tab-bar button.active{color:var(--ios-label)!important}
-  .liquid-tab-bar button.active .liquid-tab-icon{background:linear-gradient(145deg,rgba(255,255,255,.18),rgba(255,255,255,.06) 58%,rgba(0,0,0,.14));box-shadow:0 1px 4px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.18)}
-  .liquid-tab-icon svg{filter:drop-shadow(0 1px 0 rgba(0,0,0,.72))}
-
   .liquid-glass-enhanced,
   .liquid-glass-enhanced[data-liquid-glass="content"]{
     border-color:var(--ios-glass-border)!important;
@@ -488,7 +446,6 @@ select option{background:#f3f4f6;color:#111827}
   }
   .liquid-glass-enhanced[data-liquid-glass="navigation"],
   .liquid-glass-enhanced[data-liquid-glass="toolbar"],
-  .liquid-tab-bar .liquid-tab-bar-surface.liquid-glass-enhanced,
   .film-results-toolbar.liquid-glass-enhanced,
   .enhanced-timetable-actions.liquid-glass-enhanced{
     background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.04) 44%,rgba(0,0,0,.08)),rgba(28,28,30,.82)!important;
@@ -516,6 +473,7 @@ select option{background:#f3f4f6;color:#111827}
 
 @media(prefers-color-scheme:dark) and (prefers-reduced-transparency:reduce){
   .topbar,.tabs,.liquid-tab-bar-surface,.notice,.controls,.film-results-toolbar,.timetable-actions,.film-card,.schedule-screening-group,.booking-plan-panel,.timetable-scroll,.timetable-empty,.settings-card,.settings-reset-card,.curator-hero,.curator-featured,.curator-latest,.curator-method,.curator-card,.curator-article,.film-modal,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal,.pwa-update-toast{background:#1c1c1e!important}
+  .liquid-tab-bar .liquid-tab-bar-surface{background:#1c1c1e!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 }
 
 /* Primary navigation keeps one iOS tint language on phone, tablet and desktop. */
@@ -530,22 +488,151 @@ select option{background:#f3f4f6;color:#111827}
 }
 .tabs button.active::after,
 .settings-tab-trigger.active::after{display:none!important}
-.liquid-tab-bar button.active .liquid-tab-icon{
-  border-color:color-mix(in srgb,var(--ios-tint) 30%,transparent)!important;
-  background:linear-gradient(145deg,color-mix(in srgb,var(--ios-tint) 22%,rgba(255,255,255,.32)),rgba(255,255,255,.08) 58%,rgba(10,132,255,.05))!important;
-}
-
 @media(prefers-color-scheme:dark){
   .tabs button.active,
   .settings-tab-trigger.active{background:color-mix(in srgb,var(--ios-tint) 20%,transparent)!important}
-  .liquid-tab-bar button.active .liquid-tab-icon{
-    border-color:color-mix(in srgb,var(--ios-tint) 46%,transparent)!important;
-    background:linear-gradient(145deg,rgba(10,132,255,.3),rgba(10,132,255,.12) 58%,rgba(0,0,0,.14))!important;
-  }
 }
 
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
   .topbar,.tabs,.liquid-tab-bar-surface,.notice,.controls,.film-results-toolbar,.timetable-actions,.film-card,.schedule-screening-group,.booking-plan-panel,.timetable-scroll,.timetable-empty,.settings-card,.settings-reset-card,.curator-hero,.curator-featured,.curator-latest,.curator-method,.curator-card,.curator-article,.film-modal,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal,.pwa-update-toast{background:rgba(229,231,235,.92)!important}
+  .liquid-tab-bar .liquid-tab-bar-surface{background:rgba(229,231,235,.92)!important}
+  @media(prefers-color-scheme:dark){.liquid-tab-bar .liquid-tab-bar-surface{background:#1c1c1e!important}}
+}
+
+/* Bottom dock: package lenses only ever filter decorative material. The live action
+ * layer stays unfiltered so Safari/WebKit cannot erase its icons and labels. */
+.liquid-tab-bar .liquid-tab-bar-surface{
+  display:block!important;
+  isolation:isolate;
+  overflow:hidden;
+  /* WebKit can paint a filtered child's rectangular backing layer beyond an
+   * overflow-clipped rounded parent; clip the composited dock itself. */
+  -webkit-clip-path:inset(0 round 31px);
+  clip-path:inset(0 round 31px);
+  --dock-track-inline-inset:2px;
+  --dock-lens-x:.125;
+  --dock-lens-y:.5;
+  --dock-lens-width:92px;
+  --dock-lens-height:59px;
+  border:1px solid rgba(255,255,255,.48)!important;
+  background:linear-gradient(145deg,rgba(255,255,255,.12),transparent 46%),rgba(255,255,255,.14)!important;
+  box-shadow:0 2px 4px rgba(15,23,42,.1)!important;
+  backdrop-filter:blur(30px) saturate(180%)!important;
+  -webkit-backdrop-filter:blur(30px) saturate(180%)!important;
+}
+.liquid-tab-bar .liquid-tab-bar-surface::after{
+  opacity:.27;
+  background:linear-gradient(135deg,rgba(255,255,255,.15),transparent 42%,rgba(255,255,255,.03));
+  mix-blend-mode:soft-light;
+}
+.liquid-dock-material-host,
+.liquid-tab-selection-host{
+  position:absolute!important;
+  inset:0;
+  display:block!important;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  border-radius:30px;
+  -webkit-clip-path:inset(0 round 30px);
+  clip-path:inset(0 round 30px);
+}
+.liquid-dock-material-host{z-index:0;pointer-events:none}
+.liquid-tab-selection-host{z-index:1;pointer-events:none}
+.liquid-dock-material-host>div:first-child,
+.liquid-tab-selection-host>div:first-child{
+  position:absolute!important;
+  inset:0;
+  display:block!important;
+  width:100%;
+  height:100%;
+  will-change:filter;
+  border-radius:inherit;
+  -webkit-clip-path:inset(0 round 30px);
+  clip-path:inset(0 round 30px);
+}
+.liquid-dock-material-host:not(.is-ready)>div:first-child,
+.liquid-tab-selection-host:not(.is-ready)>div:first-child{filter:none!important}
+.liquid-dock-material{position:absolute;inset:0;display:block;background:linear-gradient(112deg,rgba(255,255,255,.09),transparent 42%,rgba(118,118,128,.05))}
+/* One near-transparent source keeps the package map valid without painting
+ * four slot-shaped marks behind the live action buttons. */
+.liquid-tab-selection-scene{position:absolute;inset:0;display:block;background:rgba(255,255,255,.003)}
+.liquid-dock-optical-lens{
+  position:absolute;
+  /* The absolute containing block begins inside the 1px surface border.
+   * Reconstruct the outer-surface coordinate used by button measurement. */
+  left:calc((var(--dock-lens-x) * (100% + 2px)) - 1px);
+  top:calc((var(--dock-lens-y) * (100% + 2px)) - 1px);
+  z-index:2;
+  width:var(--dock-lens-width);
+  height:var(--dock-lens-height);
+  box-sizing:border-box;
+  pointer-events:none;
+  transform:translate(-50%,-50%);
+  border:1px solid rgba(255,255,255,.42);
+  border-radius:30px;
+  background:radial-gradient(ellipse at 28% 8%,rgba(255,255,255,.32),transparent 46%),linear-gradient(145deg,rgba(255,255,255,.17),rgba(118,118,128,.1) 72%,rgba(217,45,32,.045));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.46),inset 0 -1px 0 rgba(17,24,39,.08),0 2px 5px rgba(15,23,42,.1);
+  transition:width .12s ease,height .12s ease,border-radius .12s ease;
+}
+.liquid-tab-bar .liquid-tab-actions{
+  position:absolute;
+  inset:1px var(--dock-track-inline-inset);
+  z-index:3;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  pointer-events:auto;
+}
+.liquid-tab-bar .liquid-tab-icon,
+.liquid-tab-bar .liquid-tab-icon svg{
+  width:26px!important;
+  height:26px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  transform:none!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+.liquid-tab-bar .liquid-tab-actions>button{
+  min-height:59px!important;
+  height:59px;
+  gap:1px;
+  border:0;
+  border-radius:30px;
+  background:transparent!important;
+  color:rgba(17,24,39,.72)!important;
+  font-size:11px;
+  font-weight:600;
+  line-height:13px;
+  text-shadow:none!important;
+  transform:none!important;
+}
+.liquid-tab-bar .liquid-tab-actions>button>span:last-child{font-size:11px;line-height:13px;font-weight:600}
+.liquid-tab-bar .liquid-tab-actions>button.active{color:#d92d20!important}
+.liquid-tab-bar .liquid-tab-actions>button.active .liquid-tab-icon{transform:none!important}
+@media(hover:hover) and (pointer:fine){.liquid-tab-bar .liquid-tab-actions>button:hover .liquid-tab-icon{transform:none!important;background:transparent!important;box-shadow:none!important}}
+@media(prefers-reduced-motion:reduce){
+  .liquid-dock-material-host>div:first-child,
+  .liquid-tab-selection-host>div:first-child{will-change:auto}
+  .liquid-dock-optical-lens{transition:none}
+}
+@media(prefers-color-scheme:dark){
+  .liquid-tab-bar .liquid-tab-bar-surface{
+    border-color:rgba(255,255,255,.18)!important;
+    background:linear-gradient(145deg,rgba(255,255,255,.06),transparent 46%),rgba(118,118,128,.17)!important;
+  }
+  .liquid-tab-selection-scene{background:rgba(255,255,255,.002)}
+  .liquid-dock-optical-lens{border-color:rgba(255,255,255,.24);background:radial-gradient(ellipse at 28% 8%,rgba(255,255,255,.2),transparent 46%),linear-gradient(145deg,rgba(255,255,255,.12),rgba(118,118,128,.16) 72%,rgba(255,90,80,.06));box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.24),0 2px 5px rgba(0,0,0,.24)}
+  .liquid-tab-bar .liquid-tab-actions>button{color:rgba(255,255,255,.91)!important}
+  .liquid-tab-bar .liquid-tab-actions>button.active{color:#ff5a50!important}
+}
+@media(prefers-reduced-transparency:reduce),(forced-colors:active){
+  .liquid-tab-bar .liquid-tab-bar-surface{background:Canvas!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+  .liquid-tab-bar button{color:CanvasText!important}
+  .liquid-dock-optical-lens{display:none}
 }
 
 

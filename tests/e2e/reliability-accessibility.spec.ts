@@ -102,6 +102,6 @@ test('keeps mobile navigation and a compact filter entry point available while s
 test('labels AI docent content as prewritten editorial content', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: 'AI 도슨트' }).click()
-  await expect(page.getByText(/미리 작성·검토한 편집 칼럼/)).toBeVisible()
+  await expect(page.getByText(/미리 작성·검토한 BIFF 탐색 가이드/)).toBeVisible()
   await expect(page.getByText(/실시간 AI 대화가 아닌 사전 편집 콘텐츠/)).toBeVisible()
 })

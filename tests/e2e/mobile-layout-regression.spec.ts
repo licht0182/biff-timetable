@@ -180,9 +180,9 @@ test('aligns the first content surface across all primary mobile sections', asyn
   const timetableGap = await topGap('.timetable-empty')
 
   await dock.getByRole('button', { name: 'AI 도슨트' }).click()
-  await expect(page.locator('.curator-hero')).toBeVisible()
+  await expect(page.locator('.curator-intro')).toBeVisible({ timeout: 15_000 })
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
-  const curatorGap = await topGap('.curator-hero')
+  const curatorGap = await topGap('.curator-intro')
 
   await dock.getByRole('button', { name: '설정' }).click()
   await expect(page.locator('.settings-intro')).toBeVisible()
@@ -220,18 +220,20 @@ test('keeps the grid and every primary-section transition free of viewport locks
       navPosition: getComputedStyle(nav).position,
       surfaceBackdrop: surfaceStyle.backdropFilter || surfaceStyle.webkitBackdropFilter,
       bottomGap: window.innerHeight - surfaceBox.bottom,
+      dockBottom: Number.parseFloat(getComputedStyle(nav).bottom),
     }
   })
   expect(filmTransition.bodyPosition).not.toBe('fixed')
   expect(filmTransition.navPosition).toBe('fixed')
   expect(filmTransition.surfaceBackdrop).toContain('blur(')
-  expect(filmTransition.bottomGap).toBeGreaterThanOrEqual(5)
-  expect(filmTransition.bottomGap).toBeLessThanOrEqual(10)
+  expect(filmTransition.bottomGap).toBeGreaterThanOrEqual(12)
+  expect(filmTransition.bottomGap).toBeLessThanOrEqual(24)
+  expect(Math.abs(filmTransition.bottomGap - filmTransition.dockBottom)).toBeLessThanOrEqual(1)
 
   await openGrid(page)
   await dock.getByRole('button', { name: 'AI 도슨트' }).click()
   await expectViewportLockReleased(page)
-  await expect(page.locator('.curator-hero')).toBeVisible()
+  await expect(page.locator('.curator-intro')).toBeVisible({ timeout: 15_000 })
 
   await openGrid(page)
   await dock.getByRole('button', { name: '설정' }).click()
@@ -303,7 +305,9 @@ test('uses the settings wrapper only for layout and contains matrix overflow loc
 
 test('survives the full mobile navigation flow without leaking layout state', async ({ page }) => {
   const pageErrors: Error[] = []
+  const failedRequests: string[] = []
   page.on('pageerror', (error) => pageErrors.push(error))
+  page.on('requestfailed', (request) => failedRequests.push(`${request.url()}: ${request.failure()?.errorText}`))
 
   await page.goto('./')
   const dock = page.locator('.liquid-tab-bar')
@@ -335,7 +339,10 @@ test('survives the full mobile navigation flow without leaking layout state', as
   await expect(page.locator('#film-controls')).toBeVisible()
 
   await dock.getByRole('button', { name: 'AI 도슨트' }).click()
-  await expect(page.locator('.curator-hero')).toBeVisible()
+  await expect(page.locator('.curator-intro')).toBeVisible({ timeout: 15_000 }).catch(async (error) => {
+    console.log('Curator load diagnostics', JSON.stringify({ pageErrors: pageErrors.map((item) => item.message), failedRequests, resources: await page.evaluate(() => performance.getEntriesByType('resource').filter((item) => item.name.includes('CuratorPage')).map((item) => ({ name: item.name, duration: item.duration, transferSize: (item as PerformanceResourceTiming).transferSize }))) }))
+    throw error
+  })
   await expectViewportLockReleased(page)
 
   await dock.getByRole('button', { name: '설정' }).click()

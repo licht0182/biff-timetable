@@ -1,10 +1,27 @@
 import { expect, test } from '@playwright/test'
 
+test('opens the editorial feature and keeps its photo credit when the image fails', async ({ page }) => {
+  await page.route('**/FILM_PHOTO/**', (route) => route.abort())
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
+
+  const cover = page.locator('.curator-cover')
+  await expect(cover).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('.curator-promotion')).toHaveCount(2)
+  await expect(cover.locator('.curator-feature-image-placeholder')).toBeVisible()
+  await expect(cover.locator('figcaption')).toContainText('© Tatsuki Fujimoto/SHUEISHA')
+
+  await cover.getByRole('button', { name: '칼럼 읽기' }).click()
+  await expect(page.locator('.curator-detail-page h2')).toContainText('고레에다 히로카즈')
+  await page.goBack()
+  await expect(cover).toBeVisible()
+})
+
 test('opens the AI docent, groups columns, and keeps article navigation anchored at the top', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: 'AI 도슨트' }).click()
 
-  await expect(page.getByRole('heading', { name: '영화 고르기 전에 읽는 BIFF 분석' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /영화를 고르는 시간도/ })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'AI 도슨트 칼럼' })).toBeVisible()
   const categoryFilters = page.locator('.curator-filter-chips button')
   await expect(categoryFilters.filter({ hasText: '전체' })).toHaveCount(0)

@@ -58,7 +58,7 @@ function ScreeningRow({
           />
         )}
         <button
-          className={isSelected ? 'selected' : isAlternative ? 'alternative' : ''}
+          className={`ui-text-chip ${isSelected ? 'selected' : isAlternative ? 'alternative' : ''}`}
           onClick={() => onToggle(film, screening)}
           aria-label={isAlternative ? `${film.title} ${alternativeLabel} 해제` : undefined}
         >

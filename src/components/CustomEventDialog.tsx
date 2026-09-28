@@ -116,8 +116,8 @@ export default function CustomEventDialog({
           {event.note && <><dt>메모</dt><dd className="custom-event-note-value">{event.note}</dd></>}
         </dl>
         <div className="custom-event-detail-actions">
-          <button type="button" className="custom-event-delete" onClick={() => onDelete(event)}>삭제</button>
-          <button type="button" className="custom-event-edit" onClick={onEdit}>수정</button>
+          <button type="button" className="ui-text-chip custom-event-delete" onClick={() => onDelete(event)}>삭제</button>
+          <button type="button" className="ui-text-chip custom-event-edit" onClick={onEdit}>수정</button>
         </div>
       </> : <form className="custom-event-form" onSubmit={submit}>
         <label><span>일정명 *</span><input autoFocus type="text" value={form.title} onChange={(changeEvent) => update('title', changeEvent.target.value)} maxLength={80} placeholder="예: 점심 식사" /></label>
@@ -156,7 +156,7 @@ export default function CustomEventDialog({
         <label><span>장소</span><input type="text" value={form.location ?? ''} onChange={(changeEvent) => update('location', changeEvent.target.value)} maxLength={100} placeholder="선택 입력" /></label>
         <label><span>메모</span><textarea value={form.note ?? ''} onChange={(changeEvent) => update('note', changeEvent.target.value)} maxLength={300} rows={3} placeholder="선택 입력" /></label>
         {error && <p className="custom-event-form-error" role="alert">{error}</p>}
-        <div className="custom-event-form-actions"><button type="button" onClick={onClose}>취소</button><button type="submit" className="custom-event-save">{mode === 'edit' ? '저장' : '추가'}</button></div>
+        <div className="custom-event-form-actions"><button type="button" className="ui-text-chip" onClick={onClose}>취소</button><button type="submit" className="ui-text-chip custom-event-save">{mode === 'edit' ? '저장' : '추가'}</button></div>
       </form>}
     </section>
   </div>

@@ -133,7 +133,7 @@ export default function ScheduleList({
       {dates.map((date) => {
         const label = formatListDate(date)
         const active = date === selectedDate
-        return <button type="button" className={`schedule-date-tab ${active ? 'active' : ''}`} role="tab" aria-selected={active} aria-controls={`schedule-panel-${date}`} id={`schedule-tab-${date}`} key={date} onClick={() => setRequestedDate(date)}>
+        return <button type="button" className={`ui-text-chip schedule-date-tab ${active ? 'active' : ''}`} role="tab" aria-selected={active} aria-controls={`schedule-panel-${date}`} id={`schedule-tab-${date}`} key={date} onClick={() => setRequestedDate(date)}>
           <strong>{label.date}</strong><span className={`weekday-${label.weekday}`}>{label.weekday}</span><em>{dateCounts.get(date)}개</em>
         </button>
       })}
@@ -152,7 +152,7 @@ export default function ScheduleList({
                   <span className="schedule-list-copy"><strong>{event.title}</strong><span>{customEventCategoryLabel(event.category)}{event.location ? ` · ${event.location}` : ''}</span></span>
                 </button>
                 <div className="schedule-row-actions schedule-custom-actions">
-                  <button type="button" className="schedule-list-remove" onClick={() => selectionMode ? onToggleDeleteSelection(event.id) : onRemoveCustomEvent(event)} aria-label={selectionMode ? `${event.title} 삭제 ${selected ? '선택 해제' : '선택'}` : `${event.title} 일정 삭제`}>{selectionMode ? (selected ? '완료' : '선택') : '삭제'}</button>
+                  <button type="button" className="ui-text-chip schedule-list-remove" onClick={() => selectionMode ? onToggleDeleteSelection(event.id) : onRemoveCustomEvent(event)} aria-label={selectionMode ? `${event.title} 삭제 ${selected ? '선택 해제' : '선택'}` : `${event.title} 일정 삭제`}>{selectionMode ? (selected ? '완료' : '선택') : '삭제'}</button>
                 </div>
               </article>
             }
@@ -178,8 +178,8 @@ export default function ScheduleList({
                     </span>
                   </button>
                   <div className="schedule-row-actions">
-                    {nextFallback && !selectionMode && <button type="button" className="schedule-apply-alternative" onClick={() => onApplyAlternative(screening.id)}>시간표에 적용</button>}
-                    <button type="button" className="schedule-list-remove" onClick={() => selectionMode ? onToggleDeleteSelection(screening.id) : onRemoveScreening(screening.id)} aria-label={selectionMode ? `${film.title} 삭제 ${selected ? '선택 해제' : '선택'}` : `${film.title} 시간표에서 삭제`}>{selectionMode ? (selected ? '완료' : '선택') : '삭제'}</button>
+                    {nextFallback && !selectionMode && <button type="button" className="ui-text-chip schedule-apply-alternative" onClick={() => onApplyAlternative(screening.id)}>시간표에 적용</button>}
+                    <button type="button" className="ui-text-chip schedule-list-remove" onClick={() => selectionMode ? onToggleDeleteSelection(screening.id) : onRemoveScreening(screening.id)} aria-label={selectionMode ? `${film.title} 삭제 ${selected ? '선택 해제' : '선택'}` : `${film.title} 시간표에서 삭제`}>{selectionMode ? (selected ? '완료' : '선택') : '삭제'}</button>
                   </div>
                 </article>
               })}

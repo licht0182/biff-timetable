@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test'
 
+const dockNaNErrors = new WeakMap<object, string[]>()
+
 test.beforeEach(async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (message) => {
+    if (message.type() === 'error' && /NaN/i.test(message.text())) errors.push(message.text())
+  })
+  dockNaNErrors.set(page, errors)
   await page.setViewportSize({ width: 393, height: 852 })
   await page.goto('./')
   await expect(page.locator('.film-card').first()).toBeVisible()
@@ -20,7 +27,7 @@ test('uses an accessible floating tab bar for primary mobile navigation', async 
   await expect(page.locator('.settings-intro').getByRole('heading', { name: '설정' })).toBeVisible()
 })
 
-test('keeps the browser dock outside Safari toolbar tint sampling', async ({ page, browserName }) => {
+test('keeps the fixed dock material outside Safari toolbar tint sampling', async ({ page, browserName }) => {
   const viewport = await page.locator('meta[name="viewport"]').getAttribute('content')
   expect(viewport).toContain('viewport-fit=cover')
 
@@ -37,6 +44,10 @@ test('keeps the browser dock outside Safari toolbar tint sampling', async ({ pag
     const surfaceHighlight = getComputedStyle(surface, '::after')
     const dockScrim = getComputedStyle(nav, '::before')
     const iconStyle = getComputedStyle(icon)
+    const activeButton = surface.querySelector<HTMLButtonElement>('button[aria-current="page"]')!
+    const inactiveButton = surface.querySelectorAll<HTMLButtonElement>('button')[1]!
+    const label = activeButton.lastElementChild as HTMLElement
+    const buttonRect = activeButton.getBoundingClientRect()
     return {
       bottomGap: window.innerHeight - surface.getBoundingClientRect().bottom,
       navPosition: navStyle.position,
@@ -44,6 +55,8 @@ test('keeps the browser dock outside Safari toolbar tint sampling', async ({ pag
       navPaddingBottom: Number.parseFloat(navStyle.paddingBottom),
       shellPaddingBottom: Number.parseFloat(getComputedStyle(shell).paddingBottom),
       surfaceHeight: surface.getBoundingClientRect().height,
+      surfaceWidth: surface.getBoundingClientRect().width,
+      surfaceRadius: surfaceStyle.borderRadius,
       surfaceBackground: surfaceStyle.backgroundImage,
       surfaceBackgroundColor: surfaceStyle.backgroundColor,
       surfaceBackdrop: dockBackdrop,
@@ -53,29 +66,49 @@ test('keeps the browser dock outside Safari toolbar tint sampling', async ({ pag
       dockScrimContent: dockScrim.content,
       iconWidth: icon.getBoundingClientRect().width,
       iconRadius: iconStyle.borderRadius,
+      buttonWidth: buttonRect.width,
+      buttonHeight: buttonRect.height,
+      activeColor: getComputedStyle(activeButton).color,
+      inactiveColor: getComputedStyle(inactiveButton).color,
+      labelFontSize: getComputedStyle(label).fontSize,
+      labelFontWeight: getComputedStyle(label).fontWeight,
     }
   })
 
-  expect(metrics.bottomGap).toBeGreaterThanOrEqual(7)
-  expect(metrics.bottomGap).toBeLessThanOrEqual(9)
+  expect(metrics.bottomGap).toBeGreaterThanOrEqual(18)
+  expect(metrics.bottomGap).toBeLessThanOrEqual(20)
   expect(metrics.navPaddingBottom).toBe(0)
   expect(metrics.shellPaddingBottom).toBeGreaterThanOrEqual(metrics.surfaceHeight + 24)
   expect(metrics.surfaceBackground).not.toBe('none')
   const dockAlpha = Number(metrics.surfaceBackgroundColor.match(/[\d.]+(?=\)$)/)?.[0])
-  expect(dockAlpha).toBeGreaterThan(0.2)
-  expect(dockAlpha).toBeLessThan(0.95)
+  expect(dockAlpha).toBeGreaterThan(0.1)
+  expect(dockAlpha).toBeLessThan(0.2)
+  expect(metrics.surfaceHeight).toBeGreaterThanOrEqual(62)
+  expect(metrics.surfaceHeight).toBeLessThanOrEqual(64)
+  expect(metrics.surfaceWidth).toBeGreaterThanOrEqual(351)
+  expect(metrics.surfaceWidth).toBeLessThanOrEqual(352)
+  expect(metrics.surfaceRadius).toBe('31px')
   expect(metrics.navPosition).toBe('fixed')
   expect(metrics.surfaceBackdrop).toContain('blur(')
-  expect(metrics.surfaceBackdrop).toContain('12px')
+  expect(metrics.surfaceBackdrop).toContain('30px')
   if (browserName === 'webkit') {
     expect(metrics.navTimeline).not.toContain('scroll(root)')
     expect(metrics.surfaceFilter).toBe('none')
     expect(metrics.refractionDisplay).toBeUndefined()
-    expect(metrics.surfaceHighlightDisplay).toBe('none')
+    expect(metrics.surfaceHighlightDisplay).not.toBe('none')
   }
   expect(metrics.dockScrimContent).toBe('none')
-  expect(metrics.iconWidth).toBeGreaterThanOrEqual(54)
-  expect(metrics.iconRadius).toBe('19px')
+  expect(metrics.iconWidth).toBeGreaterThanOrEqual(25)
+  expect(metrics.iconWidth).toBeLessThanOrEqual(27)
+  expect(metrics.iconRadius).toBe('0px')
+  expect(metrics.buttonWidth).toBeGreaterThanOrEqual(86)
+  expect(metrics.buttonWidth).toBeLessThanOrEqual(87)
+  expect(metrics.buttonHeight).toBeGreaterThanOrEqual(58)
+  expect(metrics.buttonHeight).toBeLessThanOrEqual(60)
+  expect(metrics.activeColor).toBe('rgb(217, 45, 32)')
+  expect(metrics.inactiveColor).toBe('rgba(17, 24, 39, 0.72)')
+  expect(metrics.labelFontSize).toBe('11px')
+  expect(metrics.labelFontWeight).toBe('600')
 
   if (browserName === 'webkit') {
     await page.setViewportSize({ width: 588, height: 1194 })
@@ -89,17 +122,255 @@ test('keeps the browser dock outside Safari toolbar tint sampling', async ({ pag
         gap: Math.round(window.innerHeight - rect.bottom),
         visible: rect.top < window.innerHeight && rect.bottom > 0,
       }
-    })).toEqual({ position: 'fixed', gap: 8, visible: true })
+    })).toEqual({ position: 'fixed', gap: 19, visible: true })
+  }
+})
+
+test('uses two package lenses for the tab dock in Chromium and iPhone WebKit', async ({ page, browserName }) => {
+  dockNaNErrors.get(page)?.splice(0)
+  await page.setViewportSize({ width: 390, height: 852 })
+  await page.reload()
+  await expect(page.locator('.film-card').first()).toBeVisible()
+
+  const tabBar = page.locator('.liquid-tab-bar')
+  const material = tabBar.locator('[data-dock-material-host="true"]')
+  const selection = tabBar.locator('[data-tab-lens-host="true"]')
+  const actions = tabBar.locator(':scope .liquid-tab-bar-surface > .liquid-tab-actions')
+
+  await expect(material).toHaveCount(1)
+  await expect(selection).toHaveCount(1)
+  await expect(material).toHaveAttribute('data-liquid-glass', 'dock-material')
+  await expect(selection).toHaveAttribute('data-liquid-glass', 'tab-selection')
+  await expect.poll(() => tabBar.getAttribute('data-liquid-ready')).toBe('true')
+  expect(dockNaNErrors.get(page) ?? []).toEqual([])
+  await expect(material.locator('svg filter')).toHaveCount(1)
+  await expect(selection.locator('svg filter')).toHaveCount(1)
+  const invalidFilterGeometry = await selection.locator('feImage, feDisplacementMap').evaluateAll((filters) => (
+    filters.flatMap((filter) => ['x', 'y'].flatMap((attribute) => {
+      const value = filter.getAttribute(attribute)
+      return value !== null && !Number.isFinite(Number.parseFloat(value))
+        ? [`${filter.tagName}.${attribute}=${value}`]
+        : []
+    }))
+  ))
+  expect(invalidFilterGeometry).toEqual([])
+  await expect(selection.locator('button')).toHaveCount(0)
+  await expect(selection.locator(':scope > div > .liquid-tab-selection-scene[aria-hidden="true"]')).toHaveCount(1)
+  await expect(actions).toHaveCount(1)
+  await expect(tabBar.getByRole('button')).toHaveCount(4)
+
+  const iconFilters = await tabBar.locator('.liquid-tab-icon').evaluateAll((icons) => icons.map((icon) => {
+    const style = getComputedStyle(icon)
+    return { filter: style.filter, backdrop: style.backdropFilter || style.webkitBackdropFilter }
+  }))
+  expect(iconFilters).toEqual(Array.from({ length: 4 }, () => ({ filter: 'none', backdrop: 'none' })))
+  await expect(tabBar.locator('.liquid-tab-lens-clip, .liquid-tab-lens-paint, .liquid-tab-lens-rim')).toHaveCount(0)
+
+  if (browserName === 'webkit') {
+    const visibleActions = await actions.getByRole('button').evaluateAll((buttons) => buttons.map((button) => {
+      const icon = button.querySelector<HTMLElement>('.liquid-tab-icon')!
+      const label = button.lastElementChild as HTMLElement
+      const buttonRect = button.getBoundingClientRect()
+      const iconRect = icon.getBoundingClientRect()
+      const labelRect = label.getBoundingClientRect()
+      const iconStyle = getComputedStyle(icon)
+      const labelStyle = getComputedStyle(label)
+      return {
+        button: buttonRect.width > 0 && buttonRect.height > 0,
+        icon: iconRect.width > 0 && iconRect.height > 0 && iconStyle.visibility === 'visible' && Number.parseFloat(iconStyle.opacity) > .9,
+        label: labelRect.width > 0 && labelRect.height > 0 && labelStyle.visibility === 'visible' && Number.parseFloat(labelStyle.opacity) > .9,
+      }
+    }))
+    expect(visibleActions).toEqual(Array.from({ length: 4 }, () => ({ button: true, icon: true, label: true })))
+  }
+
+  await tabBar.getByRole('button', { name: 'AI 도슨트' }).click()
+  await expect(tabBar.getByRole('button', { name: 'AI 도슨트' })).toHaveAttribute('aria-current', 'page')
+})
+
+test('keeps the four-slot dock track aligned without painted inactive lenses', async ({ page }) => {
+  const tabBar = page.locator('.liquid-tab-bar')
+  const surface = tabBar.locator('.liquid-tab-bar-surface')
+  const scene = tabBar.locator('.liquid-tab-selection-scene')
+  const opticalLens = tabBar.locator('.liquid-dock-optical-lens')
+  const tabNames = ['영화 찾기', '내 시간표', 'AI 도슨트', '설정'] as const
+
+  await expect(tabBar.getByRole('button')).toHaveCount(4)
+  await expect(scene.locator('span')).toHaveCount(0)
+  const scenePaint = await scene.evaluate((element) => {
+    const style = getComputedStyle(element)
+    const alpha = Number(style.backgroundColor.match(/[\d.]+(?=\)$)/)?.[0] ?? '1')
+    return { alpha, image: style.backgroundImage, opacity: Number(style.opacity) }
+  })
+  expect(scenePaint.alpha).toBeLessThanOrEqual(.01)
+  expect(scenePaint.image).toBe('none')
+  expect(scenePaint.opacity).toBe(1)
+
+  const initialCenters = await tabBar.getByRole('button').evaluateAll((buttons) => buttons.map((button) => {
+    const rect = button.getBoundingClientRect()
+    return rect.left + rect.width / 2
+  }))
+  const gaps = initialCenters.slice(1).map((center, index) => center - initialCenters[index])
+  expect(Math.max(...gaps) - Math.min(...gaps)).toBeLessThanOrEqual(.01)
+
+  const measureAlignment = () => surface.evaluate((element) => {
+    const surfaceRect = element.getBoundingClientRect()
+    const active = element.querySelector<HTMLButtonElement>('button[aria-current="page"]')!
+    const buttonRect = active.getBoundingClientRect()
+    const lens = element.querySelector<HTMLElement>('.liquid-dock-optical-lens')!
+    const lensRect = lens.getBoundingClientRect()
+    const lensX = Number.parseFloat(getComputedStyle(element).getPropertyValue('--dock-lens-x'))
+    const packageHost = element.querySelector<HTMLElement>('[data-tab-lens-host="true"]')!
+    const packageHostRect = packageHost.getBoundingClientRect()
+    const packageFilter = packageHost.querySelector<SVGFilterElement>('svg filter')!
+    const packageLens = packageFilter.querySelector<SVGElement>('[data-lens]')
+    const packageX = Number.parseFloat(packageLens?.getAttribute('x') ?? 'NaN')
+    const packageWidth = Number.parseFloat(packageLens?.getAttribute('width') ?? 'NaN')
+    const packageUsesPixels = packageFilter.getAttribute('filterUnits') === 'userSpaceOnUse'
+    const packageCenter = packageUsesPixels
+      ? packageHostRect.left + packageX + packageWidth / 2
+      : packageHostRect.left + (packageX + packageWidth / 2) * packageHostRect.width
+    return {
+      coordinateError: Math.abs(surfaceRect.left + lensX * surfaceRect.width - (buttonRect.left + buttonRect.width / 2)),
+      opticalError: Math.abs(lensRect.left + lensRect.width / 2 - (buttonRect.left + buttonRect.width / 2)),
+      packageError: Number.isFinite(packageCenter)
+        ? Math.abs(packageCenter - (buttonRect.left + buttonRect.width / 2))
+        : Number.NaN,
+      leftInset: lensRect.left - surfaceRect.left,
+      rightInset: surfaceRect.right - lensRect.right,
+    }
+  })
+
+  let firstBounds: { leftInset: number; rightInset: number } | undefined
+  let lastBounds: { leftInset: number; rightInset: number } | undefined
+  for (const [index, name] of tabNames.entries()) {
+    await tabBar.getByRole('button', { name }).click()
+    await expect(tabBar.getByRole('button', { name })).toHaveAttribute('aria-current', 'page')
+    await expect.poll(async () => (await measureAlignment()).coordinateError).toBeLessThanOrEqual(.5)
+    await expect.poll(async () => (await measureAlignment()).opticalError).toBeLessThanOrEqual(.5)
+    await expect.poll(async () => (await measureAlignment()).packageError).toBeLessThanOrEqual(.5)
+    const bounds = await measureAlignment()
+    if (index === 0) firstBounds = bounds
+    if (index === tabNames.length - 1) lastBounds = bounds
+  }
+
+  expect(firstBounds).toBeDefined()
+  expect(lastBounds).toBeDefined()
+  expect(firstBounds!.leftInset).toBeGreaterThanOrEqual(0)
+  expect(lastBounds!.rightInset).toBeGreaterThanOrEqual(0)
+  expect(Math.abs(firstBounds!.leftInset - lastBounds!.rightInset)).toBeLessThanOrEqual(.5)
+  expect(Math.abs(firstBounds!.rightInset - lastBounds!.leftInset)).toBeLessThanOrEqual(.5)
+
+  await page.emulateMedia({ colorScheme: 'light' })
+  const lightAlpha = await surface.evaluate((element) => Number(getComputedStyle(element).backgroundColor.match(/[\d.]+(?=\)$)/)?.[0] ?? '1'))
+  expect(lightAlpha).toBeGreaterThanOrEqual(.12)
+  expect(lightAlpha).toBeLessThanOrEqual(.15)
+  await page.emulateMedia({ colorScheme: 'dark' })
+  const darkAlpha = await surface.evaluate((element) => Number(getComputedStyle(element).backgroundColor.match(/[\d.]+(?=\)$)/)?.[0] ?? '1'))
+  expect(darkAlpha).toBeGreaterThanOrEqual(.15)
+  expect(darkAlpha).toBeLessThanOrEqual(.18)
+})
+
+test('fits first and last dock lenses at 320px in normal and pressed states', async ({ page }) => {
+  dockNaNErrors.get(page)?.splice(0)
+  await page.setViewportSize({ width: 320, height: 852 })
+  await page.reload()
+  await expect(page.locator('.film-card').first()).toBeVisible()
+
+  const tabBar = page.locator('.liquid-tab-bar')
+  const surface = tabBar.locator('.liquid-tab-bar-surface')
+  await expect.poll(() => tabBar.getAttribute('data-liquid-ready')).toBe('true')
+  expect(dockNaNErrors.get(page) ?? []).toEqual([])
+
+  const measure = () => surface.evaluate((element) => {
+    const surfaceRect = element.getBoundingClientRect()
+    const button = element.querySelector<HTMLButtonElement>('button[aria-current="page"]')!
+    const buttonRect = button.getBoundingClientRect()
+    const opticalRect = element.querySelector<HTMLElement>('.liquid-dock-optical-lens')!.getBoundingClientRect()
+    const host = element.querySelector<HTMLElement>('[data-tab-lens-host="true"]')!
+    const hostRect = host.getBoundingClientRect()
+    const filter = host.querySelector<SVGFilterElement>('svg filter')!
+    const lens = filter.querySelector<SVGElement>('[data-lens]')!
+    const packageX = Number.parseFloat(lens.getAttribute('x') ?? 'NaN')
+    const packageWidth = Number.parseFloat(lens.getAttribute('width') ?? 'NaN')
+    const usesPixels = filter.getAttribute('filterUnits') === 'userSpaceOnUse'
+    const packageLeft = usesPixels ? hostRect.left + packageX : hostRect.left + packageX * hostRect.width
+    const renderedPackageWidth = usesPixels ? packageWidth : packageWidth * hostRect.width
+    const round = (value: number) => Math.round(value * 100) / 100
+    return {
+      buttonWidth: buttonRect.width,
+      opticalWidth: opticalRect.width,
+      opticalLeftInset: round(opticalRect.left - surfaceRect.left),
+      opticalRightInset: round(surfaceRect.right - opticalRect.right),
+      opticalCenterError: Math.abs(opticalRect.left + opticalRect.width / 2 - (buttonRect.left + buttonRect.width / 2)),
+      packageWidth: renderedPackageWidth,
+      packageLeftInset: round(packageLeft - surfaceRect.left),
+      packageRightInset: round(surfaceRect.right - (packageLeft + renderedPackageWidth)),
+      packageCenterError: Math.abs(packageLeft + renderedPackageWidth / 2 - (buttonRect.left + buttonRect.width / 2)),
+    }
+  })
+
+  const normalBounds: Awaited<ReturnType<typeof measure>>[] = []
+  const pressedBounds: Awaited<ReturnType<typeof measure>>[] = []
+  for (const { name, id } of [
+    { name: '영화 찾기', id: 'films' },
+    { name: '설정', id: 'settings' },
+  ]) {
+    const button = tabBar.getByRole('button', { name })
+    await button.click()
+    await expect(button).toHaveAttribute('aria-current', 'page')
+    await expect.poll(async () => {
+      const bounds = await measure()
+      return Math.max(bounds.opticalCenterError, bounds.packageCenterError)
+    }).toBeLessThanOrEqual(.5)
+
+    const normal = await measure()
+    const expectedNormalWidth = Math.min(92, normal.buttonWidth + 5.5)
+    await expect.poll(async () => Math.abs((await measure()).opticalWidth - expectedNormalWidth)).toBeLessThanOrEqual(.1)
+    expect(Number.isFinite(normal.packageWidth)).toBe(true)
+    expect(normal.packageWidth).toBeGreaterThan(0)
+    expect(normal.opticalLeftInset).toBeGreaterThanOrEqual(0)
+    expect(normal.opticalRightInset).toBeGreaterThanOrEqual(0)
+    expect(normal.packageLeftInset).toBeGreaterThanOrEqual(0)
+    expect(normal.packageRightInset).toBeGreaterThanOrEqual(0)
+    normalBounds.push(normal)
+
+    await button.hover({ position: { x: normal.buttonWidth / 2, y: 28 } })
+    await page.mouse.down()
+    await expect(tabBar).toHaveAttribute('data-lens-pressed', id)
+    const expectedPressedWidth = Math.min(88, normal.buttonWidth + 1.5)
+    await expect.poll(async () => Math.abs((await measure()).opticalWidth - expectedPressedWidth)).toBeLessThanOrEqual(.1)
+    await expect.poll(async () => {
+      const bounds = await measure()
+      return Math.max(bounds.opticalCenterError, bounds.packageCenterError)
+    }).toBeLessThanOrEqual(.5)
+    const pressed = await measure()
+    expect(Number.isFinite(pressed.packageWidth)).toBe(true)
+    expect(pressed.packageWidth).toBeGreaterThan(0)
+    expect(pressed.opticalLeftInset).toBeGreaterThanOrEqual(0)
+    expect(pressed.opticalRightInset).toBeGreaterThanOrEqual(0)
+    expect(pressed.packageLeftInset).toBeGreaterThanOrEqual(0)
+    expect(pressed.packageRightInset).toBeGreaterThanOrEqual(0)
+    pressedBounds.push(pressed)
+
+    await page.mouse.up()
+    await expect(tabBar).not.toHaveAttribute('data-lens-pressed')
+  }
+
+  for (const bounds of [normalBounds, pressedBounds]) {
+    const [first, last] = bounds
+    expect(Math.abs(first.opticalLeftInset - last.opticalRightInset)).toBeLessThanOrEqual(.5)
+    expect(Math.abs(first.opticalRightInset - last.opticalLeftInset)).toBeLessThanOrEqual(.5)
+    expect(Math.abs(first.packageLeftInset - last.packageRightInset)).toBeLessThanOrEqual(.5)
+    expect(Math.abs(first.packageRightInset - last.packageLeftInset)).toBeLessThanOrEqual(.5)
   }
 })
 
 test('keeps SVG refraction on stable glass while content avoids ghost-prone filter layers', async ({ page, browserName }) => {
   const topbar = page.locator('.topbar')
-  const tabBarSurface = page.locator('.liquid-tab-bar-surface')
   const firstFilmCard = page.locator('.film-card').first()
 
   await expect(topbar).toHaveAttribute('data-liquid-glass', 'navigation')
-  await expect(tabBarSurface).toHaveAttribute('data-liquid-glass', 'navigation')
   await expect(firstFilmCard).toHaveAttribute('data-liquid-glass', 'content')
   await expect(firstFilmCard.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(0)
   await expect(firstFilmCard).not.toHaveClass(/liquid-glass-backdrop-refraction/)
@@ -107,12 +378,10 @@ test('keeps SVG refraction on stable glass while content avoids ghost-prone filt
   if (browserName === 'webkit') {
     await expect.poll(() => page.locator('.liquid-glass-filter-defs filter').count()).toBe(0)
     await expect(topbar.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(0)
-    await expect(tabBarSurface.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(0)
     await expect.poll(() => topbar.evaluate((element) => getComputedStyle(element).backdropFilter || getComputedStyle(element).webkitBackdropFilter)).toContain('blur(')
   } else {
-    await expect.poll(() => page.locator('.liquid-glass-filter-defs filter').count()).toBeGreaterThanOrEqual(3)
+    await expect.poll(() => page.locator('.liquid-glass-filter-defs filter').count()).toBeGreaterThanOrEqual(2)
     await expect(topbar.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(1)
-    await expect(tabBarSurface.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(1)
 
     const layerCompositing = await topbar.locator(':scope > .liquid-glass-refraction-layer').evaluate((element) => {
       const style = getComputedStyle(element)
@@ -128,6 +397,88 @@ test('keeps SVG refraction on stable glass while content avoids ghost-prone filt
   const modal = page.locator('.film-modal')
   await expect(modal).toHaveAttribute('data-liquid-glass', 'modal')
   await expect(modal.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(browserName === 'webkit' ? 0 : 1)
+})
+
+test('moves the selection lens with active navigation', async ({ page }) => {
+  const tabBar = page.locator('.liquid-tab-bar')
+  const selection = tabBar.locator('[data-tab-lens-host="true"]')
+  const readPosition = () => selection.evaluate((element) => {
+    const filter = element.querySelector('svg filter')!
+    return filter.querySelector('[data-lens]')?.getAttribute('x')
+  })
+  const readOpticalPosition = () => tabBar.locator('.liquid-tab-bar-surface').evaluate((element) => (
+    getComputedStyle(element).getPropertyValue('--dock-lens-x').trim()
+  ))
+
+  const initialPosition = (await readPosition()) ?? ''
+  const initialX = Number.parseFloat(initialPosition || '0')
+  const initialOpticalPosition = await readOpticalPosition()
+  await tabBar.getByRole('button', { name: '내 시간표' }).click()
+  await expect(tabBar.getByRole('button', { name: '내 시간표' })).toHaveAttribute('aria-current', 'page')
+  await expect.poll(async () => Number.parseFloat((await readPosition()) ?? '0')).toBeGreaterThan(initialX)
+  const timetablePositionAttribute = (await readPosition()) ?? ''
+  const timetablePosition = Number.parseFloat(timetablePositionAttribute || '0')
+  await expect.poll(async () => Number.parseFloat(await readOpticalPosition())).toBeGreaterThan(Number.parseFloat(initialOpticalPosition))
+  const timetableOpticalPosition = await readOpticalPosition()
+
+  await tabBar.getByRole('button', { name: '영화 찾기' }).click()
+  await expect(tabBar.getByRole('button', { name: '영화 찾기' })).toHaveAttribute('aria-current', 'page')
+  await expect.poll(async () => Number.parseFloat((await readPosition()) ?? '0')).toBeLessThan(timetablePosition)
+  await expect.poll(async () => Number.parseFloat(await readOpticalPosition())).toBeLessThan(Number.parseFloat(timetableOpticalPosition))
+})
+
+test('deforms the selection lens on press without duplicating actions', async ({ page }) => {
+  dockNaNErrors.get(page)?.splice(0)
+  await page.setViewportSize({ width: 390, height: 852 })
+  await page.reload()
+  await expect(page.locator('.film-card').first()).toBeVisible()
+
+  const tabBar = page.locator('.liquid-tab-bar')
+  const button = tabBar.getByRole('button', { name: 'AI 도슨트' })
+
+  await button.hover({ position: { x: 16, y: 24 } })
+  await page.mouse.down()
+  await expect(tabBar).toHaveAttribute('data-lens-pressed', 'curator')
+  await expect(button).toHaveAttribute('data-pressed', 'true')
+  await expect(tabBar.getByRole('button')).toHaveCount(4)
+  await expect(tabBar.locator('.liquid-tab-bar-surface')).toHaveCSS('--dock-lens-width', '88px')
+  await expect(tabBar.locator('.liquid-tab-bar-surface')).toHaveCSS('--dock-lens-height', '56px')
+  await page.mouse.up()
+  await expect(tabBar).not.toHaveAttribute('data-lens-pressed')
+  await expect(tabBar.locator('.liquid-tab-bar-surface')).toHaveCSS('--dock-lens-width', '92px')
+  await expect(tabBar.locator('.liquid-tab-bar-surface')).toHaveCSS('--dock-lens-height', '59px')
+})
+
+test('uses the plain tab surface when transparency is reduced', async ({ page, browserName }) => {
+  if (browserName === 'chromium') {
+    const session = await page.context().newCDPSession(page)
+    await session.send('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-reduced-transparency', value: 'reduce' }],
+    })
+  } else {
+    await page.addInitScript(() => {
+      const nativeMatchMedia = window.matchMedia.bind(window)
+      window.matchMedia = (query: string) => query.includes('prefers-reduced-transparency')
+        ? { matches: true, media: query, onchange: null, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false }
+        : nativeMatchMedia(query)
+    })
+  }
+  await page.goto('./')
+
+  const tabBar = page.locator('.liquid-tab-bar')
+  await expect(tabBar.locator('[data-tab-lens-host="true"]')).toHaveCount(0)
+  await expect(tabBar.locator('.liquid-tab-bar-surface svg filter')).toHaveCount(0)
+  if (browserName === 'chromium') {
+    const material = await tabBar.locator('.liquid-tab-bar-surface').evaluate((element) => {
+      const style = getComputedStyle(element)
+      return { backgroundColor: style.backgroundColor, backdropFilter: style.backdropFilter }
+    })
+    const alpha = Number(material.backgroundColor.match(/[\d.]+(?=\))/)?.[0] ?? '1')
+    expect(alpha).toBeGreaterThanOrEqual(.9)
+    expect(material.backdropFilter).toBe('none')
+  }
+  await tabBar.getByRole('button', { name: '내 시간표' }).click()
+  await expect(tabBar.getByRole('button', { name: '내 시간표' })).toHaveAttribute('aria-current', 'page')
 })
 
 test('renders one rounded rim geometry with black above white everywhere', async ({ page }) => {
@@ -268,7 +619,7 @@ test('renders one rounded rim geometry with black above white everywhere', async
     expect(metrics.boxShadow).not.toContain('inset')
   }
 
-  for (const selector of ['.topbar', '.liquid-tab-bar-surface', '.controls', '.film-results-toolbar', '.film-card']) {
+  for (const selector of ['.topbar', '.controls', '.film-results-toolbar', '.film-card']) {
     await expectAlignedRim(selector)
   }
   const filmCard = await expectAlignedRim('.film-card')
@@ -288,7 +639,7 @@ test('renders one rounded rim geometry with black above white everywhere', async
   await expectControlRim('.settings-reset-button')
 
   await tabBar.getByRole('button', { name: 'AI 도슨트' }).click()
-  await expectAlignedRim('.curator-hero')
+  await expectAlignedRim('.curator-latest')
   await expectAlignedRim('.curator-card')
   await expectControlRim('.curator-filter-chips button')
 

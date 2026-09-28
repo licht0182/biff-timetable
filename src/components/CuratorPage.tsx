@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CURATOR_ARTICLES, type CuratorArticle } from '../curator-content'
+import { CURATOR_FEATURE_MEDIA, featureMediaFor, type CuratorFeatureMedia } from '../curator-feature-media'
 import { pushNavigationState, readNavigationState } from '../navigation-history'
 
 type Props = {
@@ -15,7 +16,7 @@ function ArticleDetail({ article, onBack, onOpenFilms, onOpenFilm }: { article: 
   return (
     <main className="app-page app-page--curator curator-page curator-detail-page">
       <div className="curator-reading-shell">
-        <button type="button" className="curator-back" onClick={onBack}>← 목록으로</button>
+        <button type="button" className="ui-text-chip curator-back" onClick={onBack}>← 목록으로</button>
         <article className="layout-surface curator-article">
           <header className="curator-article-header">
             <span className="curator-category">{article.category}</span>
@@ -63,7 +64,7 @@ function ArticleDetail({ article, onBack, onOpenFilms, onOpenFilm }: { article: 
                             {film.tags.map((tag) => <span key={tag}>#{tag}</span>)}
                           </div>
                         )}
-                        <button type="button" className="curator-film-search-button" onClick={() => onOpenFilm(film.title)}>영화 찾기에서 보기</button>
+                        <button type="button" className="ui-text-chip curator-film-search-button" onClick={() => onOpenFilm(film.title)}>영화 찾기에서 보기</button>
                       </article>
                     ))}
                   </div>
@@ -78,13 +79,13 @@ function ArticleDetail({ article, onBack, onOpenFilms, onOpenFilm }: { article: 
                 <strong>이제 실제 회차에 적용해 보세요.</strong>
                 <p>후보작을 영화 찾기에서 확인하고, 겹침과 이동시간까지 포함해 내 시간표에서 검증할 수 있습니다.</p>
               </div>
-              <button type="button" onClick={onOpenFilms}>영화 찾기로 이동</button>
+              <button type="button" className="ui-text-chip" onClick={onOpenFilms}>영화 찾기로 이동</button>
             </footer>
           )}
         </article>
         <p className="curator-disclaimer">AI 도슨트의 글은 미리 작성·검토한 편집 분석이며 실시간 AI 답변이나 BIFF 공식 안내가 아닙니다. 작품·상영 정보는 BIFF 공식 정보를 우선 확인해 주세요.</p>
         <div className="curator-detail-actions">
-          <button type="button" className="curator-top-button" onClick={() => scrollPageTop('smooth')}>↑ 맨 위로</button>
+          <button type="button" className="ui-text-chip curator-top-button" onClick={() => scrollPageTop('smooth')}>↑ 맨 위로</button>
         </div>
       </div>
     </main>
@@ -99,6 +100,39 @@ const CATEGORY_ORDER = [
   '관람 경험',
   '시간표 설계',
 ]
+
+type EditorialFeature = { article: CuratorArticle; media?: CuratorFeatureMedia }
+
+const mediaFeatures: EditorialFeature[] = CURATOR_FEATURE_MEDIA.flatMap((media) => {
+  const article = CURATOR_ARTICLES.find((candidate) => candidate.slug === media.slug)
+  return article ? [{ article, media: featureMediaFor(article.slug) }] : []
+})
+
+const leadFeature: EditorialFeature | undefined = mediaFeatures[0]
+  ?? (CURATOR_ARTICLES[0] ? { article: CURATOR_ARTICLES[0] } : undefined)
+
+const illustratedPromotions = mediaFeatures.slice(1, 3)
+
+const editorialPromotions: EditorialFeature[] = [
+  ...illustratedPromotions,
+  ...CURATOR_ARTICLES
+    .filter((article) => article.slug !== leadFeature?.article.slug && !mediaFeatures.some((feature) => feature.article.slug === article.slug))
+    .slice(0, 2 - illustratedPromotions.length)
+    .map((article) => ({ article })),
+]
+
+function FeatureImage({ media }: { media: CuratorFeatureMedia }) {
+  const [imageFailed, setImageFailed] = useState(false)
+
+  return (
+    <figure className={`curator-feature-image ${imageFailed ? 'curator-feature-image--fallback' : ''}`}>
+      {imageFailed
+        ? <div className="curator-feature-image-placeholder" role="img" aria-label={`${media.filmTitle} 사진을 불러올 수 없습니다`}>{media.filmTitle}</div>
+        : <img src={media.imageSrc} alt={media.imageAlt} loading="lazy" onError={() => setImageFailed(true)} />}
+      <figcaption>{media.filmTitle} · {media.credit}</figcaption>
+    </figure>
+  )
+}
 
 export default function CuratorPage({ onOpenFilms, onOpenFilm }: Props) {
   const [activeCategory, setActiveCategory] = useState(CATEGORY_ORDER[0])
@@ -155,14 +189,55 @@ export default function CuratorPage({ onOpenFilms, onOpenFilm }: Props) {
 
   return (
     <main className="app-page app-page--curator curator-page">
-      <section className="layout-surface curator-hero">
-        <div>
-          <p className="curator-kicker">AI DOCENT · BIFF EDITORIAL</p>
-          <h2>영화 고르기 전에 읽는 BIFF 분석</h2>
-          <p>공식 2026 작품 데이터와 상영시간표를 바탕으로 미리 작성·검토한 편집 칼럼입니다. 섹션의 흐름뿐 아니라 체류 날짜별 희소 회차, GV, 충돌과 대체 가능성까지 읽습니다.</p>
-        </div>
-        <span className="curator-edition">2026</span>
+      <section className="curator-intro" aria-labelledby="curator-intro-title">
+        <p className="curator-kicker">BIFF 2026 · AI DOCENT</p>
+        <h2 id="curator-intro-title">영화를 고르는 시간도<br />영화제의 일부입니다.</h2>
+        <p>공식 작품 정보와 상영시간표를 바탕으로 미리 작성·검토한 BIFF 탐색 가이드. 작품의 흐름부터 GV와 회차 선택까지, 관람 전의 질문을 함께 살펴봅니다.</p>
       </section>
+
+      {leadFeature && (
+        <section className="curator-editorial" aria-labelledby="curator-editorial-title">
+          <div className="curator-editorial-heading">
+            <p>FEATURED STORY</p>
+            <h2 id="curator-editorial-title">지금 읽을 칼럼</h2>
+          </div>
+          <article className={`curator-cover ${leadFeature.media ? 'curator-cover--with-image' : 'curator-cover--without-image'}`}>
+            <div className="curator-cover-copy">
+              <span className="curator-category">{leadFeature.article.category}</span>
+              <h3 id={`curator-feature-${leadFeature.article.slug}`}>{leadFeature.article.title}</h3>
+              <p>{leadFeature.article.deck}</p>
+              <button type="button" className="curator-editorial-link" onClick={() => openArticle(leadFeature.article.slug)} aria-describedby={`curator-feature-${leadFeature.article.slug}`}>
+                칼럼 읽기 <span aria-hidden="true">↗</span>
+              </button>
+            </div>
+            {leadFeature.media && <FeatureImage media={leadFeature.media} />}
+          </article>
+        </section>
+      )}
+
+      {editorialPromotions.length > 0 && (
+        <section className="curator-promotions" aria-labelledby="curator-promotions-title">
+          <div className="curator-editorial-heading">
+            <p>MORE TO EXPLORE</p>
+            <h2 id="curator-promotions-title">다음 이야기를 골라보세요</h2>
+          </div>
+          <div className="curator-promotion-grid">
+            {editorialPromotions.map(({ article, media }) => (
+              <article className={`curator-promotion ${media ? 'curator-promotion--with-image' : 'curator-promotion--without-image'}`} key={article.slug}>
+                {media && <FeatureImage media={media} />}
+                <div className="curator-promotion-copy">
+                  <span className="curator-category">{article.category}</span>
+                  <h3 id={`curator-feature-${article.slug}`}>{article.title}</h3>
+                  <p>{article.deck}</p>
+                  <button type="button" className="curator-editorial-link" onClick={() => openArticle(article.slug)} aria-describedby={`curator-feature-${article.slug}`}>
+                    칼럼 읽기 <span aria-hidden="true">↗</span>
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="layout-surface curator-latest" aria-labelledby="curator-latest-title">
         <div className="curator-section-heading">
@@ -175,7 +250,7 @@ export default function CuratorPage({ onOpenFilms, onOpenFilm }: Props) {
             <button
               type="button"
               key={category}
-              className={activeCategory === category ? 'active' : ''}
+              className={`ui-text-chip ${activeCategory === category ? 'active' : ''}`}
               aria-pressed={activeCategory === category}
               onClick={() => setActiveCategory(category)}
             >

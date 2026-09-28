@@ -27,7 +27,7 @@ export default function TimetableOverflowMenu({ label, className = '', children 
       onToggle={(event) => setOpen(event.currentTarget.open)}
       onClick={closeAfterAction}
     >
-      <summary aria-label={open ? `${label} 메뉴 닫기` : `${label} 메뉴 열기`}>{label}</summary>
+      <summary className="ui-text-chip" aria-label={open ? `${label} 메뉴 닫기` : `${label} 메뉴 열기`}>{label}</summary>
       <div>{children}</div>
     </details>
   )

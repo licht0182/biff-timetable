@@ -53,7 +53,7 @@ function FilmCard({
           >
             {isFavorite ? '★' : '☆'}
           </button>
-          <button className="detail-button" onClick={() => onDetail(film)}>상세</button>
+          <button className="ui-text-chip detail-button" onClick={() => onDetail(film)}>상세</button>
           {film.url && <a className="detail-link" href={film.url} target="_blank" rel="noreferrer">공식정보 ↗</a>}
         </div>
       </div>

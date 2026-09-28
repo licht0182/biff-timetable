@@ -1,0 +1,126 @@
+/* Film finder only: clear hierarchy, compact cards, and BIFF red for the main action. */
+.film-page {
+  color: var(--ios-label, CanvasText);
+}
+
+.film-page .enhanced-controls {
+  gap: 10px;
+}
+
+.film-page .film-search-autocomplete {
+  min-width: 0;
+}
+
+.film-page .film-search-autocomplete > input {
+  min-height: 46px;
+  font-size: 16px;
+  color: var(--ios-label, CanvasText);
+}
+
+.film-page .film-search-autocomplete:focus-within > input {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(198, 41, 23, 0.2) !important;
+}
+
+.film-page .film-search-suggestions {
+  border-color: var(--ios-separator, var(--line));
+  box-shadow: var(--ios-shadow);
+}
+
+.film-page :is(button, a, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.film-page .film-card {
+  padding: 15px 16px;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.film-page .film-card:hover {
+  transform: none !important;
+  background: var(--ios-surface, Canvas) !important;
+  box-shadow: var(--ios-shadow) !important;
+}
+
+.film-page .film-card h2 {
+  margin: 8px 0 3px;
+  color: var(--ios-label, CanvasText);
+  font-size: clamp(1.05rem, 1rem + 0.3vw, 1.2rem);
+  line-height: 1.3;
+}
+
+.film-page .english-title,
+.film-page .meta,
+.film-page .genre-meta {
+  color: var(--ios-secondary, #626267);
+  line-height: 1.45;
+}
+
+.film-page .section-label {
+  padding-inline: 8px;
+  letter-spacing: 0.01em;
+}
+
+.film-page .film-actions {
+  align-items: center;
+  gap: 8px;
+}
+
+.film-page .film-actions .detail-button {
+  color: var(--ios-secondary, #626267);
+}
+
+.film-page .screenings {
+  margin-top: 14px;
+}
+
+.film-page .screening-row > .screening-actions > button:not(.selected):not(.alternative) {
+  border-color: var(--accent) !important;
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+}
+
+.film-page :is(.chips button, .filter-toggle, .filter-reset, .film-actions button, .screening-row button):hover {
+  transform: none !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .film-page .screening-row > .screening-actions > button:not(.selected):not(.alternative) {
+    border-color: #ff6b63 !important;
+    color: #ff6b63 !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .film-page .enhanced-controls {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .film-page .film-card {
+    padding: 14px 12px;
+  }
+
+  .film-page .film-card h2 {
+    font-size: 17px;
+  }
+
+  .film-page .screenings {
+    margin-top: 11px;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .film-page .film-card,
+  .film-page .film-card:hover,
+  .film-page .film-search-suggestions {
+    background: var(--ios-surface, Canvas) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .film-page .film-search-suggestions {
+    color: var(--ios-label, CanvasText);
+  }
+}

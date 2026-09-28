@@ -19,7 +19,7 @@ type FilterSurface = {
 type GlassMaps = Pick<FilterSurface, 'displacement' | 'specular'>
 
 const TARGETS: Array<{ selector: string; preset: LiquidGlassPreset; usesRefraction: boolean }> = [
-  { selector: '.topbar, .tabs, .liquid-tab-bar-surface', preset: 'navigation', usesRefraction: true },
+  { selector: '.topbar, .tabs', preset: 'navigation', usesRefraction: true },
   { selector: '.film-results-toolbar, .enhanced-timetable-actions', preset: 'toolbar', usesRefraction: true },
   // Refracting every virtualized card creates dozens of WebKit compositing layers.
   // Content keeps the translucent lens/bevel treatment without a live SVG filter.

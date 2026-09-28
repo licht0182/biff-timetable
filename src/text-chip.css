@@ -1,0 +1,89 @@
+/* Opt-in pill geometry for ordinary text actions. Keep each control's own
+ * background, foreground, active state, width, and layout display. */
+:root body :is(button, summary).ui-text-chip {
+  --control-rim-dark: rgba(0, 0, 0, .28);
+  --control-rim-white-mid: rgba(255, 255, 255, .28);
+  --control-rim-white-peak: rgba(255, 255, 255, .68);
+  --control-rim-width: 1px;
+  position: relative;
+  box-sizing: border-box;
+  height: auto !important;
+  min-height: 3.6em !important;
+  padding-block: .7em !important;
+  padding-inline: 1.4em !important;
+  border-radius: 999em !important;
+  border-color: transparent !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+:root body :is(button, summary).ui-text-chip::before,
+:root body :is(button, summary).ui-text-chip::after {
+  content: "";
+  display: block !important;
+  position: absolute;
+  inset: 0;
+  width: auto !important;
+  height: auto !important;
+  box-sizing: border-box;
+  padding: var(--control-rim-width);
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+:root body :is(button, summary).ui-text-chip::before {
+  z-index: 8;
+  background: linear-gradient(180deg,
+    var(--control-rim-white-peak) 0%,
+    var(--control-rim-white-mid) 8%,
+    transparent 30%, transparent 70%,
+    var(--control-rim-white-mid) 92%,
+    var(--control-rim-white-peak) 100%);
+}
+
+:root body :is(button, summary).ui-text-chip::after {
+  z-index: 10;
+  background: linear-gradient(90deg,
+    var(--control-rim-dark) 0%,
+    var(--control-rim-dark) 1.5%,
+    transparent 10%, transparent 90%,
+    var(--control-rim-dark) 98.5%,
+    var(--control-rim-dark) 100%);
+}
+
+:root body summary.ui-text-chip:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--ios-tint) 54%, transparent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root body :is(button, summary).ui-text-chip {
+    --control-rim-white-mid: rgba(255, 255, 255, .22);
+    --control-rim-white-peak: rgba(255, 255, 255, .56);
+  }
+}
+
+@supports not ((-webkit-mask-composite: xor) or (mask-composite: exclude)) {
+  :root body :is(button, summary).ui-text-chip {
+    border: 1px solid var(--ios-separator, currentColor) !important;
+  }
+  :root body :is(button, summary).ui-text-chip::before,
+  :root body :is(button, summary).ui-text-chip::after {
+    display: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :root body :is(button, summary).ui-text-chip {
+    border: 1px solid ButtonText !important;
+  }
+  :root body :is(button, summary).ui-text-chip::before,
+  :root body :is(button, summary).ui-text-chip::after {
+    display: none !important;
+  }
+}

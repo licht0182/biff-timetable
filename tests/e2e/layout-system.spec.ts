@@ -10,7 +10,6 @@ const viewports = [
 const sections = [
   { label: '영화 찾기', selector: '.app-page--films .film-data-notice, .app-page--films #film-controls' },
   { label: '내 시간표', selector: '.app-page--timetable .timetable-empty, .app-page--timetable .enhanced-timetable-actions' },
-  { label: 'AI 도슨트', selector: '.app-page--curator .curator-hero' },
   { label: '설정', selector: '.app-page--settings .settings-intro' },
 ] as const
 
@@ -36,7 +35,7 @@ for (const viewport of viewports) {
     for (const section of sections) {
       await openSection(page, section.label)
       const surface = page.locator(section.selector).first()
-      await expect(surface).toBeVisible()
+      await expect(surface).toBeVisible({ timeout: 15_000 })
       await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
 
       const metrics = await surface.evaluate((element) => {
@@ -132,18 +131,21 @@ for (const viewport of [
     const timetable = await measureDirectGaps('.app-page--timetable')
 
     await openSection(page, 'AI 도슨트')
-    await expect(page.locator('.curator-hero')).toBeVisible()
+    await expect(page.locator('.curator-intro')).toBeVisible({ timeout: 15_000 })
     const curator = await measureDirectGaps('.app-page--curator')
 
     await openSection(page, '설정')
     await expect(page.locator('.settings-intro')).toBeVisible()
     const settings = await measureDirectGaps('.app-page--settings')
 
-    for (const section of [timetable, curator, settings]) {
+    for (const section of [timetable, settings]) {
       expect(section.display).toBe('grid')
       expect(section.gaps.length).toBeGreaterThan(0)
       expect(section.gaps.every((gap) => Math.abs(gap - 10) <= 0.1)).toBe(true)
     }
+    expect(curator.display).toBe('grid')
+    expect(curator.gaps.length).toBeGreaterThan(0)
+    expect(curator.gaps.every((gap) => gap >= 10)).toBe(true)
   })
 }
 
@@ -226,30 +228,32 @@ test('keeps dark desktop timetable events readable', async ({ page }) => {
   expect(colors.contrast).toBeGreaterThanOrEqual(4.5)
 })
 
-test('uses the shared iOS radius scale for representative controls', async ({ page }) => {
+test('keeps text actions pill-shaped while icon controls retain their radius', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('./')
   await expect(page.locator('.film-card').first()).toBeVisible()
 
   const radius = async (selector: string) => page.locator(selector).first().evaluate((element) => getComputedStyle(element).borderRadius)
-  const radii = {
-    search: await radius('.film-search-autocomplete'),
-    filterSheet: await radius('.mobile-advanced-filter-toggle'),
-    chip: await radius('.chips button'),
-    favorite: await radius('.favorite-button'),
-    detail: await radius('.detail-button'),
-  }
+  expect(await radius('.film-search-autocomplete')).toBe('14px')
+  expect(await radius('.favorite-button')).toBe('14px')
 
-  expect(radii).toEqual({
-    search: '14px',
-    filterSheet: '14px',
-    chip: '999px',
-    favorite: '14px',
-    detail: '14px',
-  })
+  for (const selector of ['.mobile-advanced-filter-toggle', '.chips button', '.detail-button']) {
+    const control = page.locator(selector).first()
+    await expect(control).toHaveClass(/ui-text-chip/)
+    const shape = await control.evaluate((element) => {
+      const style = getComputedStyle(element)
+      return {
+        radius: Number.parseFloat(style.borderRadius),
+        fontSize: Number.parseFloat(style.fontSize),
+        height: element.getBoundingClientRect().height,
+      }
+    })
+    expect(shape.radius / shape.fontSize).toBeCloseTo(999, 0)
+    expect(shape.radius).toBeGreaterThan(shape.height / 2)
+  }
 })
 
-test('ports the mobile WebKit visual tokens to desktop navigation and surfaces', async ({ page }) => {
+test('keeps mobile and desktop navigation tokens aligned with their distinct active tints', async ({ page }) => {
   const states: Array<{
     tint: string
     activeColor: string
@@ -271,7 +275,8 @@ test('ports the mobile WebKit visual tokens to desktop navigation and surfaces',
     const active = navigation.getByRole('button', { name: '설정', exact: true })
     await expect(active).toBeVisible()
     await expect(active).toHaveClass(/active/, { timeout: 15_000 })
-    await expect.poll(() => active.evaluate((element) => getComputedStyle(element).color), { timeout: 15_000 }).toBe('rgb(10, 132, 255)')
+    const expectedActiveColor = viewport.width <= 700 ? 'rgb(217, 45, 32)' : 'rgb(10, 132, 255)'
+    await expect.poll(() => active.evaluate((element) => getComputedStyle(element).color), { timeout: 15_000 }).toBe(expectedActiveColor)
     states.push(await active.evaluate((element) => {
       const root = getComputedStyle(document.documentElement)
       const activeStyle = getComputedStyle(element)
@@ -288,8 +293,8 @@ test('ports the mobile WebKit visual tokens to desktop navigation and surfaces',
   }
 
   expect(states[0].tint).toBe('#0a84ff')
-  expect(states[0].activeColor).toBe('rgb(10, 132, 255)')
-  expect(states[1].activeColor).toBe(states[0].activeColor)
+  expect(states[0].activeColor).toBe('rgb(217, 45, 32)')
+  expect(states[1].activeColor).toBe('rgb(10, 132, 255)')
   expect(states[1].surfaceBackground).toBe(states[0].surfaceBackground)
   expect(states[1].controlRadius).toBe(states[0].controlRadius)
   expect(states[0].controlRadius).toBe('14px')

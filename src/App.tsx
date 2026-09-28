@@ -24,7 +24,8 @@ import { bookingPrioritySymbol, detachBookingPlanEntry, failedFallbackPredecesso
 import { loadFilmData } from './film-data'
 import { releaseTimetableViewportLock } from './timetable-viewport-stability'
 
-const CuratorPage = lazy(() => import('./components/CuratorPage'))
+const loadCuratorPage = () => import('./components/CuratorPage')
+const CuratorPage = lazy(loadCuratorPage)
 
 type BackupData = {
   version: 3
@@ -292,6 +293,13 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(initialNavigation.settingsOpen)
   const [userSettings, setUserSettings] = useState<UserTimetableSettings>(() => normalizeUserSettings(readStorageValue(USER_SETTINGS_KEY)))
   const [timetableView, setTimetableView] = useState<TimetableViewMode>(() => normalizeTimetableView(readStorageValue(TIMETABLE_VIEW_KEY)))
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadCuratorPage().catch(() => undefined)
+    }, 600)
+    return () => window.clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     if (activeTab !== 'timetable' || settingsOpen || timetableView !== 'grid') {
@@ -1232,7 +1240,7 @@ export default function App() {
 
 
   const advancedFilterPanel = <div ref={filterSheetRef} id="film-advanced-filters" className={`filter-row ${mobileFiltersOpen ? 'mobile-open' : ''}`} aria-labelledby="filter-sheet-title" tabIndex={mobileFiltersOpen ? -1 : undefined}>
-    <div className="filter-sheet-head"><span aria-hidden="true" /><strong id="filter-sheet-title">상세 필터</strong><button type="button" onClick={() => setMobileFiltersOpen(false)} aria-label="상세 필터 닫기">완료</button></div>
+    <div className="filter-sheet-head"><span aria-hidden="true" /><strong id="filter-sheet-title">상세 필터</strong><button type="button" className="ui-text-chip" onClick={() => setMobileFiltersOpen(false)} aria-label="상세 필터 닫기">완료</button></div>
     <label><span>날짜</span><select value={dateFilter} onChange={(event) => setDateFilter(event.target.value)}><option value="전체">전체 날짜</option>{allDates.map((date) => <option key={date} value={date}>{formatDate(date)}</option>)}</select></label>
     <label><span>상영관</span><select value={venueFilter} onChange={(event) => setVenueFilter(event.target.value)}><option value="전체">전체 상영관</option>{allVenues.map((venue) => <option key={venue} value={venue}>{venue}</option>)}</select></label>
     <div className="time-range-filter">
@@ -1246,27 +1254,27 @@ export default function App() {
           <span className="time-range-separator" aria-hidden="true">~</span>
           <input type="time" step="300" value={draftEndTime} onChange={(event) => setDraftEndTime(event.target.value)} aria-label="회차 시작 시간까지" />
         </div>
-        <button type="button" className="time-range-action apply" onClick={applyTimeRangeFilter} disabled={!timeRangeDraftChanged} aria-label="시간대 적용">적용</button>
-        <button type="button" className="time-range-action clear" onClick={clearTimeRangeFilter} disabled={!timeRangeActive && !timeRangeHasDraft} aria-label="시간대 해제">해제</button>
+        <button type="button" className="ui-text-chip time-range-action apply" onClick={applyTimeRangeFilter} disabled={!timeRangeDraftChanged} aria-label="시간대 적용">적용</button>
+        <button type="button" className="ui-text-chip time-range-action clear" onClick={clearTimeRangeFilter} disabled={!timeRangeActive && !timeRangeHasDraft} aria-label="시간대 해제">해제</button>
       </div>
     </div>
-    <button className={`filter-toggle ${gvOnly ? 'active' : ''}`} onClick={() => setGvOnly((value) => !value)} aria-pressed={gvOnly}>GV만</button>
-    <button className={`filter-toggle ${favoritesOnly ? 'active' : ''}`} onClick={() => setFavoritesOnly((value) => !value)} aria-pressed={favoritesOnly}>★ 관심작</button>
-    <button className="filter-reset" onClick={resetFilters}>초기화</button>
+    <button className={`ui-text-chip filter-toggle ${gvOnly ? 'active' : ''}`} onClick={() => setGvOnly((value) => !value)} aria-pressed={gvOnly}>GV만</button>
+    <button className={`ui-text-chip filter-toggle ${favoritesOnly ? 'active' : ''}`} onClick={() => setFavoritesOnly((value) => !value)} aria-pressed={favoritesOnly}>★ 관심작</button>
+    <button className="ui-text-chip filter-reset" onClick={resetFilters}>초기화</button>
   </div>
 
   return (
-    <div className={`app-shell has-liquid-navigation ${activeTab === 'timetable' ? `timetable-mode timetable-${timetableView}-mode` : ''}`}>
+    <div className={`app-shell has-liquid-navigation ${activeTab === 'timetable' ? `timetable-mode timetable-${timetableView}-mode` : ''} ${activeTab === 'curator' && !settingsOpen ? 'app-shell--editorial' : ''}`}>
       <header className="topbar">
         <div><p className="eyebrow">BUSAN INTERNATIONAL FILM FESTIVAL</p><h1>BIFF Timetable</h1><p className="subtitle">상영작을 고르고 나만의 영화제 시간표를 만드세요.</p></div>
         <div className="selection-count">총 {totalTimetableCount}개 선택</div>
       </header>
 
       <nav className="tabs" aria-label="주요 메뉴">
-        <button type="button" className={activeTab === 'films' && !settingsOpen ? 'active' : ''} aria-current={activeTab === 'films' && !settingsOpen ? 'page' : undefined} onClick={openFilmsFromMenu}>영화 찾기</button>
-        <button type="button" className={activeTab === 'timetable' && !settingsOpen ? 'active' : ''} aria-current={activeTab === 'timetable' && !settingsOpen ? 'page' : undefined} onClick={openTimetable}>내 시간표</button>
-        <button type="button" className={activeTab === 'curator' && !settingsOpen ? 'active' : ''} aria-current={activeTab === 'curator' && !settingsOpen ? 'page' : undefined} onClick={openCurator}>AI 도슨트</button>
-        <button type="button" className={`settings-tab-trigger ${settingsOpen ? 'active' : ''}`} aria-current={settingsOpen ? 'page' : undefined} onClick={openSettings}>설정</button>
+        <button type="button" className={`ui-text-chip ${activeTab === 'films' && !settingsOpen ? 'active' : ''}`} aria-current={activeTab === 'films' && !settingsOpen ? 'page' : undefined} onClick={openFilmsFromMenu}>영화 찾기</button>
+        <button type="button" className={`ui-text-chip ${activeTab === 'timetable' && !settingsOpen ? 'active' : ''}`} aria-current={activeTab === 'timetable' && !settingsOpen ? 'page' : undefined} onClick={openTimetable}>내 시간표</button>
+        <button type="button" className={`ui-text-chip ${activeTab === 'curator' && !settingsOpen ? 'active' : ''}`} aria-current={activeTab === 'curator' && !settingsOpen ? 'page' : undefined} onClick={openCurator}>AI 도슨트</button>
+        <button type="button" className={`ui-text-chip settings-tab-trigger ${settingsOpen ? 'active' : ''}`} aria-current={settingsOpen ? 'page' : undefined} onClick={openSettings}>설정</button>
       </nav>
 
       {toast && <div className="toast" role="status">{toast}</div>}
@@ -1302,13 +1310,13 @@ export default function App() {
             <label className="settings-toggle-row"><span><strong>예매 상태·순위 기호 표시</strong><small>1~10순위와 예매 완료/실패 기호를 영화 제목 앞에 표시합니다.</small></span><span className="settings-switch"><input type="checkbox" checked={userSettings.showBookingStatusInTimetable} onChange={(event) => setUserSettings((current) => ({ ...current, showBookingStatusInTimetable: event.target.checked }))} /><i /></span></label>
           </div>
         </section>
-        <section className="layout-surface settings-card settings-reset-card"><div><h3>기본 설정</h3><p>이동 시간과 표시 설정을 처음 값으로 되돌립니다.</p></div><button type="button" className="settings-reset-button" onClick={() => setUserSettings({ ...DEFAULT_USER_SETTINGS })}>기본값으로 초기화</button></section>
+        <section className="layout-surface settings-card settings-reset-card"><div><h3>기본 설정</h3><p>이동 시간과 표시 설정을 처음 값으로 되돌립니다.</p></div><button type="button" className="ui-text-chip settings-reset-button" onClick={() => setUserSettings({ ...DEFAULT_USER_SETTINGS })}>기본값으로 초기화</button></section>
       </main>}
 
       {!settingsOpen && (activeTab === 'films' ? <main className="app-page app-page--films film-page" aria-busy={dataStatus === 'loading'}>
         {dataNote && <div className="layout-surface notice film-data-notice">{dataNote}{dataSource && <> <a href={dataSource} target="_blank" rel="noreferrer">공식 시간표 ↗</a></>}</div>}
-        {dataStatus === 'cached' && <div className="layout-surface notice data-cache-notice" role="status"><span>네트워크에 연결할 수 없어 {cachedAtLabel}에 저장한 상영시간표를 표시합니다.</span><button type="button" onClick={retryFilmData}>최신 데이터 다시 확인</button></div>}
-        {loadError && <div className="layout-surface notice error data-load-notice" role="alert"><span>{loadError}</span><button type="button" onClick={retryFilmData}>다시 시도</button></div>}
+        {dataStatus === 'cached' && <div className="layout-surface notice data-cache-notice" role="status"><span>네트워크에 연결할 수 없어 {cachedAtLabel}에 저장한 상영시간표를 표시합니다.</span><button type="button" className="ui-text-chip" onClick={retryFilmData}>최신 데이터 다시 확인</button></div>}
+        {loadError && <div className="layout-surface notice error data-load-notice" role="alert"><span>{loadError}</span><button type="button" className="ui-text-chip" onClick={retryFilmData}>다시 시도</button></div>}
         <section ref={filmControlsRef} id="film-controls" className="layout-surface controls enhanced-controls">
           <FilmSearchAutocomplete
             query={query}
@@ -1319,7 +1327,7 @@ export default function App() {
           />
           <button
             type="button"
-            className="mobile-advanced-filter-toggle"
+            className="ui-text-chip mobile-advanced-filter-toggle"
             aria-expanded={mobileFiltersOpen}
             aria-controls="film-advanced-filters"
             onClick={() => setMobileFiltersOpen((open) => !open)}
@@ -1328,7 +1336,7 @@ export default function App() {
             <strong>{activeFilterCount > 0 ? `${activeFilterCount}개 적용` : mobileFiltersOpen ? '접기' : '상세 필터'}</strong>
           </button>
           {viewport.width > 700 && advancedFilterPanel}
-          <div className="chips" aria-label="상영작 섹션">{sections.map((item) => <button type="button" key={item} className={section === item ? 'active' : ''} aria-pressed={section === item} onClick={() => setSection(item)}>{item}</button>)}</div>
+          <div className="chips" aria-label="상영작 섹션">{sections.map((item) => <button type="button" key={item} className={`ui-text-chip ${section === item ? 'active' : ''}`} aria-pressed={section === item} onClick={() => setSection(item)}>{item}</button>)}</div>
         </section>
         {viewport.width <= 700 && <>
           {mobileFiltersOpen && <button type="button" className="filter-sheet-backdrop" aria-label="상세 필터 닫기" onClick={() => setMobileFiltersOpen(false)} />}
@@ -1337,7 +1345,7 @@ export default function App() {
 
         <div className="layout-surface layout-toolbar film-results-toolbar">
           <span role="status" aria-live="polite">검색 결과 {filteredFilms.length}편</span>
-          <button type="button" className="mobile-filter-jump" onClick={focusFilmFilters}>검색·필터</button>
+          <button type="button" className="ui-text-chip mobile-filter-jump" onClick={focusFilmFilters}>검색·필터</button>
         </div>
 
         {dataStatus === 'loading' && films.length === 0 ? <div className="empty" role="status">상영 데이터를 불러오는 중입니다.</div> : filteredFilms.length > 0 ? (
@@ -1360,29 +1368,29 @@ export default function App() {
         ) : !loadError && <div className="empty">조건에 맞는 상영작이 없습니다.</div>}
       </main> : activeTab === 'curator' ? <Suspense fallback={<main className="app-page app-page--curator curator-page curator-loading" aria-busy="true"><div className="empty">AI 도슨트 칼럼을 불러오는 중입니다.</div></main>}><CuratorPage key={curatorPageKey} onOpenFilms={openFilms} onOpenFilm={openFilmFromCurator} /></Suspense> : <main className="app-page app-page--timetable timetable-page">
         <input ref={importInputRef} type="file" accept="application/json,.json" className="visually-hidden" onChange={importBackup} />
-        {selectedItems.length === 0 && customEvents.length === 0 ? <div className="layout-surface empty timetable-empty"><strong>아직 시간표에 일정이 없습니다.</strong><span>영화 회차를 고르거나 직접 일정을 추가해 주세요.</span><div className="layout-actions timetable-empty-actions"><div className="timetable-view-switch" role="group" aria-label="시간표 보기 방식"><button type="button" className={timetableView === 'list' ? 'active' : ''} aria-pressed={timetableView === 'list'} onClick={() => setTimetableView('list')}>목록</button><button type="button" className={timetableView === 'grid' ? 'active' : ''} aria-pressed={timetableView === 'grid'} onClick={() => setTimetableView('grid')}>시간표</button></div><button onClick={openFilms}>영화 찾기</button><button type="button" className="custom-event-add-button" onClick={openCreateCustomEvent}>일정 추가</button><TimetableOverflowMenu label="더보기" className="timetable-empty-backup"><button onClick={exportBackup}>JSON 저장</button><button onClick={() => importInputRef.current?.click()}>JSON 가져오기</button></TimetableOverflowMenu></div></div> : <>
+        {selectedItems.length === 0 && customEvents.length === 0 ? <div className="layout-surface empty timetable-empty"><strong>아직 시간표에 일정이 없습니다.</strong><span>영화 회차를 고르거나 직접 일정을 추가해 주세요.</span><div className="layout-actions timetable-empty-actions"><div className="timetable-view-switch" role="group" aria-label="시간표 보기 방식"><button type="button" className={`ui-text-chip ${timetableView === 'list' ? 'active' : ''}`} aria-pressed={timetableView === 'list'} onClick={() => setTimetableView('list')}>목록</button><button type="button" className={`ui-text-chip ${timetableView === 'grid' ? 'active' : ''}`} aria-pressed={timetableView === 'grid'} onClick={() => setTimetableView('grid')}>시간표</button></div><button className="ui-text-chip" onClick={openFilms}>영화 찾기</button><button type="button" className="ui-text-chip custom-event-add-button" onClick={openCreateCustomEvent}>일정 추가</button><TimetableOverflowMenu label="더보기" className="timetable-empty-backup"><button className="ui-text-chip" onClick={exportBackup}>JSON 저장</button><button className="ui-text-chip" onClick={() => importInputRef.current?.click()}>JSON 가져오기</button></TimetableOverflowMenu></div></div> : <>
           <div className="layout-surface layout-toolbar timetable-actions enhanced-timetable-actions">
             <div><span className="booking-summary">{timetableSelectionMode ? `삭제할 일정 ${timetableDeleteSelection.length}개 선택` : timetableView === 'list' ? listSummaryText : bookingSummaryText}</span></div>
             <div className="layout-actions timetable-action-buttons">
               <div className="timetable-view-switch" role="group" aria-label="시간표 보기 방식">
-                <button type="button" className={timetableView === 'list' ? 'active' : ''} aria-pressed={timetableView === 'list'} onClick={() => setTimetableView('list')}>목록</button>
-                <button type="button" className={timetableView === 'grid' ? 'active' : ''} aria-pressed={timetableView === 'grid'} onClick={() => setTimetableView('grid')}>시간표</button>
+                <button type="button" className={`ui-text-chip ${timetableView === 'list' ? 'active' : ''}`} aria-pressed={timetableView === 'list'} onClick={() => setTimetableView('list')}>목록</button>
+                <button type="button" className={`ui-text-chip ${timetableView === 'grid' ? 'active' : ''}`} aria-pressed={timetableView === 'grid'} onClick={() => setTimetableView('grid')}>시간표</button>
               </div>
-              <button type="button" className="custom-event-add-button" onClick={openCreateCustomEvent}>일정 추가</button>
+              <button type="button" className="ui-text-chip custom-event-add-button" onClick={openCreateCustomEvent}>일정 추가</button>
               <button
                 type="button"
-                className="png-export-trigger"
+                className="ui-text-chip png-export-trigger"
                 title="데스크탑은 기존 넓은 레이아웃, 모바일은 기본 3:4 고해상도 레이아웃으로 저장하며 늦은 일정은 세로로 확장합니다."
                 onClick={() => void savePng()}
                 disabled={pngExportState === 'working'}
               >{pngExportState === 'working' ? 'PNG 생성 중…' : pngExportState === 'ready' ? 'PNG 준비 완료' : pngExportState === 'done' ? '저장 완료' : pngExportState === 'error' ? '저장 실패' : 'PNG 저장'}</button>
-              <button type="button" className={`timetable-selection-button ${timetableSelectionMode ? 'active' : ''}`} onClick={toggleTimetableSelectionMode}>{timetableSelectionMode ? '선택 취소' : '선택'}</button>
-              {timetableSelectionMode && <button type="button" className="timetable-delete-button" onClick={deleteTimetableSelection} disabled={timetableDeleteSelection.length === 0}>삭제 {timetableDeleteSelection.length}</button>}
+              <button type="button" className={`ui-text-chip timetable-selection-button ${timetableSelectionMode ? 'active' : ''}`} onClick={toggleTimetableSelectionMode}>{timetableSelectionMode ? '선택 취소' : '선택'}</button>
+              {timetableSelectionMode && <button type="button" className="ui-text-chip timetable-delete-button" onClick={deleteTimetableSelection} disabled={timetableDeleteSelection.length === 0}>삭제 {timetableDeleteSelection.length}</button>}
               <TimetableOverflowMenu label="더보기">
-                <button onClick={exportIcs}>캘린더</button>
-                <button onClick={exportBackup}>JSON 저장</button>
-                <button onClick={() => importInputRef.current?.click()}>JSON 가져오기</button>
-                <button className="timetable-clear-button" onClick={clearSelected}>전체 비우기</button>
+                <button className="ui-text-chip" onClick={exportIcs}>캘린더</button>
+                <button className="ui-text-chip" onClick={exportBackup}>JSON 저장</button>
+                <button className="ui-text-chip" onClick={() => importInputRef.current?.click()}>JSON 가져오기</button>
+                <button className="ui-text-chip timetable-clear-button" onClick={clearSelected}>전체 비우기</button>
               </TimetableOverflowMenu>
             </div>
           </div>
@@ -1532,9 +1540,9 @@ export default function App() {
               hasConflict ? 'conflict' : '',
               travel ? 'travel-warning' : '',
             ].filter(Boolean).join(' ')
-            return <div className={rowClassName} key={screening.id}><div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}{isCurrentScreening && <em className="current-screening-badge">현재 회차</em>}</strong><span>{screening.venue} · {screening.start}–{endLabel(detailFilm, screening)}{screening.gv ? ' · GV' : ''}</span>{rowNote && <small className={`modal-screening-note ${travel ? 'travel-text' : ''}`} title={rowNoteTitle}>{rowNote}</small>}</div><div className="modal-screening-actions">{isSelected && <BookingStatusSelect status={ticketStatus[screening.id] ?? 'planned'} priority={planEntry?.priority} ariaLabel={`${detailFilm.title} ${formatDate(screening.date)} ${screening.start} 예매 상태와 우선순위`} onChange={(status, priority) => setScreeningBookingState(screening.id, status, priority)} />}<button className={isSelected ? 'selected' : isAlternative ? 'alternative' : ''} onClick={() => toggle(detailFilm, screening)}>{isSelected ? '선택됨' : isAlternative ? `${bookingPrioritySymbol(planEntry?.priority)} 대안` : '+ 추가'}</button></div></div>
+            return <div className={rowClassName} key={screening.id}><div><strong>{screening.code ? `[${screening.code}] ` : ''}{formatDate(screening.date)} {screening.start}{isCurrentScreening && <em className="current-screening-badge">현재 회차</em>}</strong><span>{screening.venue} · {screening.start}–{endLabel(detailFilm, screening)}{screening.gv ? ' · GV' : ''}</span>{rowNote && <small className={`modal-screening-note ${travel ? 'travel-text' : ''}`} title={rowNoteTitle}>{rowNote}</small>}</div><div className="modal-screening-actions">{isSelected && <BookingStatusSelect status={ticketStatus[screening.id] ?? 'planned'} priority={planEntry?.priority} ariaLabel={`${detailFilm.title} ${formatDate(screening.date)} ${screening.start} 예매 상태와 우선순위`} onChange={(status, priority) => setScreeningBookingState(screening.id, status, priority)} />}<button className={`ui-text-chip ${isSelected ? 'selected' : isAlternative ? 'alternative' : ''}`} onClick={() => toggle(detailFilm, screening)}>{isSelected ? '선택됨' : isAlternative ? `${bookingPrioritySymbol(planEntry?.priority)} 대안` : '+ 추가'}</button></div></div>
           })}</div>
-          <div className="modal-footer"><button className={`favorite-button wide ${favorites.includes(detailFilm.id) ? 'active' : ''}`} onClick={() => toggleFavorite(detailFilm.id)}>{favorites.includes(detailFilm.id) ? '★ 관심작 해제' : '☆ 관심작 추가'}</button>{detailFilm.url && <a href={detailFilm.url} target="_blank" rel="noreferrer">BIFF 공식 작품정보 ↗</a>}</div>
+          <div className="modal-footer"><button className={`ui-text-chip favorite-button wide ${favorites.includes(detailFilm.id) ? 'active' : ''}`} onClick={() => toggleFavorite(detailFilm.id)}>{favorites.includes(detailFilm.id) ? '★ 관심작 해제' : '☆ 관심작 추가'}</button>{detailFilm.url && <a href={detailFilm.url} target="_blank" rel="noreferrer">BIFF 공식 작품정보 ↗</a>}</div>
         </section>
       </div>}
 

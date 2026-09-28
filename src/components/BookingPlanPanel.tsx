@@ -73,7 +73,7 @@ export default function BookingPlanPanel({
                         {isNextFallback && (
                           <button
                             type="button"
-                            className="booking-plan-apply"
+                            className="ui-text-chip booking-plan-apply"
                             onClick={() => onApplyAlternative(screening.id)}
                             aria-label={`${film.title} 시간표에 적용`}
                           >
@@ -82,7 +82,7 @@ export default function BookingPlanPanel({
                         )}
                         <button
                           type="button"
-                          className="booking-plan-remove"
+                          className="ui-text-chip booking-plan-remove"
                           onClick={() => onRemoveAlternative(screening.id)}
                           aria-label={`${film.title} 대안 해제`}
                         >

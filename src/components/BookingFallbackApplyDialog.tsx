@@ -97,8 +97,8 @@ export default function BookingFallbackApplyDialog({
         )}
 
         <div className="booking-apply-actions">
-          <button type="button" className="secondary" onClick={onClose}>취소</button>
-          <button type="button" className="primary" disabled={blocked} onClick={onApply}>
+          <button type="button" className="ui-text-chip secondary" onClick={onClose}>취소</button>
+          <button type="button" className="ui-text-chip primary" disabled={blocked} onClick={onApply}>
             {blocked ? '적용 불가' : '시간표에 적용'}
           </button>
         </div>

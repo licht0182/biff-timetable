@@ -90,8 +90,8 @@ export default function BookingConflictDialog({
         )}
 
         <div className="booking-conflict-actions">
-          <button type="button" className="secondary" onClick={onClose}>취소</button>
-          <button type="button" className="primary" disabled={!canSave} onClick={() => canSave && onSaveAlternative(priority)}>
+          <button type="button" className="ui-text-chip secondary" onClick={onClose}>취소</button>
+          <button type="button" className="ui-text-chip primary" disabled={!canSave} onClick={() => canSave && onSaveAlternative(priority)}>
             {canSave ? `${priority}순위 대안으로 저장` : '대안 저장 불가'}
           </button>
         </div>

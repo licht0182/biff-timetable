@@ -17,6 +17,107 @@ async function seedTimetable(page: Page, request: any) {
   }, { selectedKey: SELECTED_KEY, statusKey: STATUS_KEY, screeningId: id })
 }
 
+test('empty timetable controls share font-relative chip geometry and dark material', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.goto('./')
+  await page.getByRole('button', { name: '내 시간표' }).click()
+
+  const actions = page.locator('.timetable-empty-actions')
+  await expect(actions).toBeVisible()
+  const styles = await actions.evaluate((container) => {
+    const switcher = container.querySelector('.timetable-view-switch')!
+    const add = container.querySelector('.custom-event-add-button')!
+    const more = container.querySelector('.timetable-more-menu > summary')!
+    const controls = [
+      ...switcher.querySelectorAll('button'),
+      ...container.querySelectorAll(':scope > button:not(.custom-event-add-button)'),
+      more,
+    ]
+    const styleOf = (element: Element) => {
+      const style = getComputedStyle(element)
+      return {
+        height: element.getBoundingClientRect().height,
+        fontSize: Number.parseFloat(style.fontSize),
+        paddingBlock: Number.parseFloat(style.paddingTop),
+        paddingInline: Number.parseFloat(style.paddingLeft),
+        radius: Number.parseFloat(style.borderRadius),
+        border: style.borderColor,
+        rim: getComputedStyle(element, '::before').backgroundImage,
+        background: style.backgroundColor,
+        color: style.color,
+      }
+    }
+    return { switcher: styleOf(switcher), add: styleOf(add), controls: controls.map(styleOf) }
+  })
+
+  expect(styles.switcher.background).not.toBe('rgb(247, 247, 247)')
+  expect(styles.switcher.background).not.toBe('rgb(255, 255, 255)')
+  expect(styles.switcher.height).toBeCloseTo(styles.add.height, 0)
+  for (const control of styles.controls) {
+    expect(control.height).toBeGreaterThanOrEqual(control.fontSize * 3.6 - 1)
+    expect(control.paddingBlock / control.fontSize).toBeCloseTo(styles.add.paddingBlock / styles.add.fontSize, 2)
+    expect(control.paddingInline / control.fontSize).toBeCloseTo(styles.add.paddingInline / styles.add.fontSize, 2)
+    expect(control.radius).toBeGreaterThan(control.height / 2)
+    expect(control.border).toBe(styles.add.border)
+    expect(control.rim).toBe(styles.add.rim)
+  }
+  const moreStyle = styles.controls[styles.controls.length - 1]
+  expect(moreStyle.background).toBe(styles.add.background)
+  expect(moreStyle.color).toBe(styles.add.color)
+
+  const more = actions.locator('.timetable-more-menu')
+  await more.locator(':scope > summary').click()
+  await expect(more).toHaveAttribute('open', '')
+  const menuBackground = await more.locator(':scope > div').evaluate((element) => getComputedStyle(element).backgroundColor)
+  expect(menuBackground).not.toBe('rgb(255, 255, 255)')
+})
+
+test('populated timetable controls keep the shared dark chip geometry', async ({ page, request }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await seedTimetable(page, request)
+  await page.goto('./')
+  await page.getByRole('button', { name: '내 시간표' }).click()
+
+  const actions = page.locator('.timetable-action-buttons')
+  await expect(actions).toBeVisible()
+  const styles = await actions.evaluate((container) => {
+    const switcher = container.querySelector('.timetable-view-switch')!
+    const add = container.querySelector('.custom-event-add-button')!
+    const more = container.querySelector('.timetable-more-menu > summary')!
+    const styleOf = (element: Element) => {
+      const style = getComputedStyle(element)
+      return {
+        height: element.getBoundingClientRect().height,
+        fontSize: Number.parseFloat(style.fontSize),
+        paddingBlock: Number.parseFloat(style.paddingTop),
+        paddingInline: Number.parseFloat(style.paddingLeft),
+        radius: Number.parseFloat(style.borderRadius),
+        border: style.borderColor,
+        rim: getComputedStyle(element, '::before').backgroundImage,
+        background: style.backgroundColor,
+        color: style.color,
+      }
+    }
+    return { switcher: styleOf(switcher), add: styleOf(add), controls: [...switcher.querySelectorAll('button'), more].map(styleOf) }
+  })
+
+  expect(styles.switcher.background).not.toBe('rgb(247, 247, 247)')
+  expect(styles.switcher.height).toBeCloseTo(styles.add.height, 0)
+  for (const control of styles.controls) {
+    expect(control.height).toBeGreaterThanOrEqual(control.fontSize * 3.6 - 1)
+    expect(control.paddingBlock / control.fontSize).toBeCloseTo(styles.add.paddingBlock / styles.add.fontSize, 2)
+    expect(control.paddingInline / control.fontSize).toBeCloseTo(styles.add.paddingInline / styles.add.fontSize, 2)
+    expect(control.radius).toBeGreaterThan(control.height / 2)
+    expect(control.border).toBe(styles.add.border)
+    expect(control.rim).toBe(styles.add.rim)
+  }
+  const moreStyle = styles.controls[styles.controls.length - 1]
+  expect(moreStyle.background).toBe(styles.add.background)
+  expect(moreStyle.color).toBe(styles.add.color)
+})
+
 test('toggles calendar, backup, and clear-all inside the timetable more menu without resizing the timetable', async ({ page, request }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await seedTimetable(page, request)
