@@ -657,7 +657,7 @@ body{min-width:0}
   .timetable-scroll.ultra-dense .event-block strong{font-size:7.2px}
   .timetable-scroll.ultra-dense .event-block span{display:none}
   .transfer-note,
-  .timetable-page:has(.timetable-scroll)::after{font-size:8.5px}
+  .timetable-page:has(.timetable-scroll)::after{font-size:11px}
 
   .travel-matrix-hint{
     display:block;

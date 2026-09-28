@@ -8,6 +8,7 @@
   --biff-shell-border:rgba(111,72,59,.18);
   --biff-text:#221d1b;
   --biff-text-muted:#655b57;
+  --biff-on-action:#fff;
   --biff-type-display:clamp(21px,2vw,26px);
   --biff-type-label:12px;
   --biff-space-unit:8px;
@@ -82,6 +83,7 @@ body,.app-shell{background-color:var(--biff-canvas)!important}
     --biff-shell-border:rgba(255,255,255,.15);
     --biff-text:#f7f3f0;
     --biff-text-muted:#cbc0bb;
+    --biff-on-action:#21110f;
     --biff-focus:rgba(255,117,104,.72);
   }
   .topbar,.timetable-mode .topbar,.tabs,.timetable-mode .tabs{box-shadow:var(--ios-shadow)!important}
