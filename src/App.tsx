@@ -298,11 +298,16 @@ export default function App() {
   const [timetableView, setTimetableView] = useState<TimetableViewMode>(() => normalizeTimetableView(readStorageValue(TIMETABLE_VIEW_KEY)))
 
   useEffect(() => {
+    if (films.length === 0) return
+    const connection = (navigator as Navigator & {
+      connection?: { effectiveType?: string; saveData?: boolean }
+    }).connection
+    if (connection?.saveData || /^(slow-2g|2g|3g)$/.test(connection?.effectiveType ?? '')) return
     const timer = window.setTimeout(() => {
       void loadCuratorPage().catch(() => undefined)
     }, 600)
     return () => window.clearTimeout(timer)
-  }, [])
+  }, [films.length])
 
   useEffect(() => {
     if (activeTab !== 'timetable' || settingsOpen || timetableView !== 'grid') {
