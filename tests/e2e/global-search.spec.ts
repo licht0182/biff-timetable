@@ -63,8 +63,8 @@ test('quick links preserve film search, filters, and four destinations', async (
   await expect(page.locator('.liquid-tab-bar button')).toHaveCount(4)
 })
 
-test('fits desktop and mobile without horizontal overflow', async ({ page }) => {
-  for (const width of [390, 1440]) {
+for (const width of [390, 1440]) {
+  test(`fits the ${width}px viewport without horizontal overflow`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 })
     await page.goto('./')
     const trigger = page.getByRole('button', { name: '전체 검색' })
@@ -80,5 +80,5 @@ test('fits desktop and mobile without horizontal overflow', async ({ page }) => 
       await page.getByRole('dialog').getByRole('button', { name: /상세 필터/ }).click()
       await expect(page.locator('#film-advanced-filters select').first()).toBeFocused()
     }
-  }
-})
+  })
+}

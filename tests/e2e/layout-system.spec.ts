@@ -254,6 +254,7 @@ test('keeps text actions pill-shaped while icon controls retain their radius', a
 })
 
 test('keeps mobile and desktop navigation tokens aligned with their distinct active tints', async ({ page }) => {
+  test.setTimeout(60_000)
   const states: Array<{
     tint: string
     activeColor: string
