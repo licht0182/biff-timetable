@@ -13,6 +13,7 @@ import LiquidTabBar from './components/LiquidTabBar'
 import LiquidGlassEffects from './components/LiquidGlassEffects'
 import PwaUpdatePrompt from './components/PwaUpdatePrompt'
 import TimetableOverflowMenu from './components/TimetableOverflowMenu'
+import OfficialUpdateRibbon from './components/OfficialUpdateRibbon'
 import { BOOKING_PRIORITIES, MAX_BOOKING_PRIORITY, type BookingPlanMap, type BookingPriority, type Film, type Screening, type TicketStatus, type TicketStatusMap } from './components/film-types'
 import { createCustomEventId, customEventAbsoluteWindow, customEventCategoryLabel, customEventPaletteIndex, customEventTimetableDate, customEventTimetableEndMinutes, customEventTimetableStartMinutes, normalizeCustomEvents, windowsOverlap, type CustomEvent, type CustomEventDraft } from './custom-events'
 import { REST_BREAK_MINUTES, VENUE_TRANSFER_SITES, getVenueSiteTransferMinutes } from './venue-travel'
@@ -25,6 +26,7 @@ import { filmMatchesQuery, rankFilmSearchMatches } from './film-search'
 import { bookingPrioritySymbol, detachBookingPlanEntry, failedFallbackPredecessorIds, fallbackMinimumPriority, filterBookingPlan, nextFallbackIds, normalizeBookingPlan, recalculateFallbackPriorities, removeBookingPlanEntries } from './booking-plan'
 import { loadFilmData } from './film-data'
 import { releaseTimetableViewportLock } from './timetable-viewport-stability'
+import { assignTimetableLanes } from './timetable-layout'
 import { useNativeDialog } from './components/useNativeDialog'
 
 const loadCuratorPage = () => import('./components/CuratorPage')
@@ -298,6 +300,7 @@ export default function App() {
   const [userSettings, setUserSettings] = useState<UserTimetableSettings>(() => normalizeUserSettings(readStorageValue(USER_SETTINGS_KEY)))
   const [timetableView, setTimetableView] = useState<TimetableViewMode>(() => normalizeTimetableView(readStorageValue(TIMETABLE_VIEW_KEY)))
   const [selectedGridDate, setSelectedGridDate] = useState('')
+  const [desktopGridDateMode, setDesktopGridDateMode] = useState<'focus' | 'overview' | null>(null)
   const mobileFilterActive = mobileFiltersOpen && viewport.width <= 700 && activeTab === 'films' && !settingsOpen
   const filterSheetRef = useNativeDialog(mobileFilterActive)
   const filmModalRef = useNativeDialog(Boolean(detailFilm))
@@ -530,10 +533,43 @@ export default function App() {
     ...customEvents.map((event) => customEventTimetableDate(event)),
   ])).sort(), [selectedItems, customEvents])
   useEffect(() => {
-    if (selectedGridDate && !dates.includes(selectedGridDate)) setSelectedGridDate(dates[0] ?? '')
+    if (selectedGridDate && !dates.includes(selectedGridDate)) setSelectedGridDate('')
   }, [dates, selectedGridDate])
-  const dayFocusedGrid = viewport.width <= 1023
-  const activeGridDate = dates.includes(selectedGridDate) ? selectedGridDate : dates[0] ?? ''
+  const desktopDenseGridDate = useMemo(() => {
+    if (viewport.width <= 1023 || dates.length < 2) return ''
+    // Match the shell and grid widths in layout-system.css. Each card is at least
+    // 22px tall, so short adjacent events can require separate visible lanes.
+    const gridWidth = Math.min(viewport.width, 1180) - 48
+    const dayWidth = (gridWidth - 50) / dates.length
+    const intervalsByDate = new Map(dates.map((date) => [date, [] as Array<{ value: string; start: number; end: number }>]))
+    const addInterval = (date: string, id: string, startMinutes: number, endMinutes: number) => {
+      const intervals = intervalsByDate.get(date)
+      if (!intervals) return
+      const start = startMinutes * FIXED_TIMETABLE_HOUR_HEIGHT / 60
+      intervals.push({ value: id, start, end: start + Math.max((endMinutes - startMinutes) * FIXED_TIMETABLE_HOUR_HEIGHT / 60, 22) })
+    }
+    selectedItems.forEach(({ film, screening }) => addInterval(
+      timetableDate(screening), screening.id, timetableStartMinutes(screening), timetableEndMinutes(film, screening),
+    ))
+    customEvents.forEach((event) => addInterval(
+      customEventTimetableDate(event), event.id, customEventTimetableStartMinutes(event), customEventTimetableEndMinutes(event),
+    ))
+    let narrowestLaneWidth = 88
+    let focusDate = ''
+    for (const [date, intervals] of intervalsByDate) {
+      const laneCount = Math.max(1, ...assignTimetableLanes(intervals).map(({ laneCount }) => laneCount))
+      const laneGap = dayWidth < 48 ? .5 : dayWidth < 76 ? 1 : 2
+      const laneWidth = dayWidth / laneCount - laneGap * 2
+      if (laneCount > 1 && laneWidth < narrowestLaneWidth) {
+        narrowestLaneWidth = laneWidth
+        focusDate = date
+      }
+    }
+    return focusDate
+  }, [viewport.width, dates, selectedItems, customEvents])
+  const desktopGridNeedsFocus = Boolean(desktopDenseGridDate)
+  const dayFocusedGrid = viewport.width <= 1023 || dates.length > 1 && (desktopGridDateMode === 'focus' || desktopGridDateMode === null && desktopGridNeedsFocus)
+  const activeGridDate = dates.includes(selectedGridDate) ? selectedGridDate : desktopDenseGridDate || dates[0] || ''
   const visibleGridDates = dayFocusedGrid ? (activeGridDate ? [activeGridDate] : []) : dates
   const handleGridDateKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
     let nextIndex = index
@@ -569,7 +605,7 @@ export default function App() {
   const timetableMetrics = useMemo(() => {
     const isMobile = viewport.width <= 700
     const shellPadding = isMobile ? 32 : 48
-    const contentWidth = Math.max(280, Math.min(1180, viewport.width - shellPadding))
+    const contentWidth = Math.max(280, Math.min(1180, viewport.width) - shellPadding)
     const axisWidth = isMobile ? 38 : 50
     const headerHeight = isMobile ? 32 : 38
     const hourHeight = FIXED_TIMETABLE_HOUR_HEIGHT
@@ -1338,6 +1374,7 @@ export default function App() {
           <div className="chips" aria-label="상영작 섹션">{sections.map((item) => <button type="button" key={item} className={`ui-text-chip ${section === item ? 'active' : ''}`} aria-pressed={section === item} onClick={() => setSection(item)}>{item}</button>)}</div>
         </section>
         {viewport.width <= 700 && <dialog ref={filterSheetRef} id="film-advanced-filters" className={`filter-row ${mobileFiltersOpen ? 'mobile-open' : ''}`} aria-labelledby="filter-sheet-title" tabIndex={-1} onCancel={(event) => { event.preventDefault(); setMobileFiltersOpen(false) }} onMouseDown={(event) => { if (event.target === event.currentTarget) setMobileFiltersOpen(false) }}>{advancedFilterControls}</dialog>}
+        <OfficialUpdateRibbon />
 
         <div className="layout-surface layout-toolbar film-results-toolbar">
           <span role="status" aria-live="polite">검색 결과 {filteredFilms.length}편</span>
@@ -1416,6 +1453,10 @@ export default function App() {
               onRemoveAlternative={removeAlternative}
               onApplyAlternative={prepareApplyFallback}
             />
+            {viewport.width > 1023 && dates.length > 1 && <div className="timetable-grid-view-controls" role="group" aria-label="시간표 날짜 표시">
+              <button type="button" className={`timetable-grid-view-button ${dayFocusedGrid ? 'active' : ''}`} aria-pressed={dayFocusedGrid} onClick={() => setDesktopGridDateMode('focus')}>하루 자세히</button>
+              <button type="button" className={`timetable-grid-view-button ${dayFocusedGrid ? '' : 'active'}`} aria-pressed={!dayFocusedGrid} onClick={() => setDesktopGridDateMode('overview')}>전체 날짜</button>
+            </div>}
             {dayFocusedGrid && dates.length > 1 && <div className="timetable-day-selector" role="group" aria-label="시간표 날짜 선택">
               {dates.map((date, index) => <button
                 type="button"
@@ -1438,7 +1479,7 @@ export default function App() {
                   const start = timetableStartMinutes(screening)
                   const end = timetableEndMinutes(film, screening)
                   const top = ((start - timetableStartHour * 60) / 60) * timetableMetrics.hourHeight
-                  const height = Math.max(((end - start) / 60) * timetableMetrics.hourHeight, timetableMetrics.ultraDense ? 16 : 22)
+                  const height = Math.max(((end - start) / 60) * timetableMetrics.hourHeight, 22)
                    const travel = transitionWarning(film, screening)
                    const timeConflict = conflictingCustomEventsForScreening(film, screening).length > 0
                    const screeningConflict = conflictingSelections(film, screening).some(({ screening: other }) => other.id !== screening.id)
@@ -1483,7 +1524,7 @@ export default function App() {
                   const start = customEventTimetableStartMinutes(event)
                   const end = customEventTimetableEndMinutes(event)
                   const top = ((start - timetableStartHour * 60) / 60) * timetableMetrics.hourHeight
-                  const height = Math.max(((end - start) / 60) * timetableMetrics.hourHeight, timetableMetrics.ultraDense ? 16 : 22)
+                  const height = Math.max(((end - start) / 60) * timetableMetrics.hourHeight, 22)
                   const conflict = hasCustomEventConflict(event)
                   const isMarkedForDelete = timetableDeleteSelection.includes(event.id)
                   return <button

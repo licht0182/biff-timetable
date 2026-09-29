@@ -48,6 +48,31 @@
 .event-block{margin-top:8px}
 
 /* On small screens each date gets the full grid width. The date strip scrolls by itself. */
+.timetable-grid-view-controls{
+  display:flex;
+  gap:6px;
+  margin:0 0 4px;
+}
+.timetable-grid-view-button{
+  min-height:40px;
+  padding:6px 12px;
+  border:1px solid var(--ios-separator, #d6d6d6);
+  border-radius:10px;
+  background:var(--ios-surface, #fff);
+  color:var(--biff-text, #292929);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+.timetable-grid-view-button.active{
+  border-color:var(--biff-action, #b9271d);
+  background:var(--biff-action, #b9271d);
+  color:var(--biff-on-action, #fff);
+}
+.timetable-grid-view-button:focus-visible{
+  outline:3px solid var(--biff-focus, rgba(185,39,29,.55));
+  outline-offset:2px;
+}
 .timetable-day-selector{
   display:flex;
   gap:6px;

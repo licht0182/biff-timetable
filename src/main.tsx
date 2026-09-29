@@ -29,6 +29,7 @@ import './film-editorial.css'
 import './biff-design-tokens.css'
 import './settings-editorial.css'
 import './app-footer.css'
+import './official-update-ribbon.css'
 import './native-dialog.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
