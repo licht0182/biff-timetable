@@ -31,7 +31,7 @@ test('empty timetable controls share font-relative chip geometry and dark materi
     const more = container.querySelector('.timetable-more-menu > summary')!
     const controls = [
       ...switcher.querySelectorAll('button'),
-      ...container.querySelectorAll(':scope > button:not(.custom-event-add-button)'),
+      ...container.querySelectorAll(':scope > button:not(.custom-event-add-button):not(.timetable-empty-find-button)'),
       more,
     ]
     const styleOf = (element: Element) => {
@@ -172,4 +172,49 @@ test('toggles calendar, backup, and clear-all inside the timetable more menu wit
 
   const afterCloseHeight = (await timetable.boundingBox())?.height ?? 0
   expect(Math.abs(afterCloseHeight - beforeHeight)).toBeLessThanOrEqual(1)
+})
+
+test('empty timetable keeps its primary action and touch controls readable on small screens', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: '내 시간표' }).click()
+  const actions = page.locator('.timetable-empty-actions')
+  await expect(actions).toBeVisible()
+
+  for (const width of [320, 390, 700, 1440]) {
+    await page.setViewportSize({ width, height: 844 })
+    await expect(actions).toHaveCSS('display', width <= 700 ? 'grid' : 'flex')
+    if (width <= 700) {
+      for (const selector of ['.timetable-view-switch button', '.timetable-empty-find-button', '.custom-event-add-button', '.timetable-empty-backup > summary']) {
+        await expect(actions.locator(selector).first()).toHaveCSS('min-height', '44px')
+      }
+    }
+    const geometry = await actions.evaluate((container) => {
+      const rect = (selector: string) => {
+        const box = container.querySelector(selector)!.getBoundingClientRect()
+        return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, height: box.height }
+      }
+      return {
+        pageWidth: document.documentElement.scrollWidth,
+        switcher: rect('.timetable-view-switch'),
+        find: rect('.timetable-empty-find-button'),
+        add: rect('.custom-event-add-button'),
+        more: rect('.timetable-empty-backup > summary'),
+        findBackground: getComputedStyle(container.querySelector('.timetable-empty-find-button')!).backgroundColor,
+        addBackground: getComputedStyle(container.querySelector('.custom-event-add-button')!).backgroundColor,
+      }
+    })
+    expect(geometry.pageWidth).toBeLessThanOrEqual(width)
+    expect(geometry.findBackground).not.toBe(geometry.addBackground)
+    if (width <= 700) {
+      for (const control of [geometry.find, geometry.add, geometry.more]) expect(control.height).toBeGreaterThanOrEqual(44)
+      expect(geometry.switcher.height).toBeGreaterThanOrEqual(44)
+      expect(geometry.switcher.bottom).toBeLessThan(geometry.find.top)
+      expect(geometry.find.top).toBe(geometry.add.top)
+      expect(geometry.find.right).toBeLessThan(geometry.add.left)
+      expect(geometry.more.top).toBeGreaterThan(geometry.find.bottom)
+    }
+  }
+
+  await actions.getByRole('button', { name: '영화 찾기' }).click()
+  await expect(page.getByRole('combobox', { name: '영화 검색' })).toBeVisible()
 })

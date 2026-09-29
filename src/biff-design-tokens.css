@@ -63,9 +63,17 @@ body,.app-shell{background-color:var(--biff-canvas)!important}
   background:var(--biff-action)!important;
   color:#fff!important;
 }
+:root body .timetable-empty .timetable-empty-actions>.timetable-empty-find-button{
+  border-color:var(--biff-action)!important;
+  background:var(--biff-action)!important;
+  color:var(--biff-on-action)!important;
+  font-weight:800;
+}
+:root body .timetable-empty .timetable-empty-find-button:focus-visible{outline:3px solid var(--biff-focus);outline-offset:2px}
 @media(hover:hover) and (pointer:fine){
   .pwa-update-toast button:not(.pwa-update-close):hover,
   .custom-event-add-button:hover{background:var(--biff-action-hover)!important}
+  :root body .timetable-empty .timetable-empty-actions>.timetable-empty-find-button:hover{background:var(--biff-action-hover)!important}
   .tabs button:hover{transform:none!important;box-shadow:none!important}
 }
 

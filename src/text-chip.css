@@ -8,7 +8,7 @@
   position: relative;
   box-sizing: border-box;
   height: auto !important;
-  min-height: 3.6em !important;
+  min-height: var(--text-chip-min-height, 3.6em) !important;
   padding-block: .7em !important;
   padding-inline: 1.4em !important;
   border-radius: 999em !important;
