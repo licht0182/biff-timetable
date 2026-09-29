@@ -48,10 +48,11 @@ test('supports keyboard selection in film search autocomplete', async ({ page, r
   await page.goto('./')
   const input = page.getByRole('combobox', { name: '영화 검색' })
   await input.fill(candidate!.title)
-  await expect(page.getByRole('listbox', { name: '검색 추천 영화' })).toBeVisible()
+  const listbox = page.getByRole('listbox', { name: '검색 추천 영화' })
+  await expect(listbox.getByRole('option').first()).toBeVisible()
 
   await input.press('ArrowDown')
-  await expect(page.getByRole('option').first()).toHaveAttribute('aria-selected', 'true')
+  await expect(listbox.getByRole('option').first()).toHaveAttribute('aria-selected', 'true')
   await input.press('Enter')
 
   await expect(input).toHaveValue(candidate!.title)
@@ -73,6 +74,7 @@ test('respects the active date filter and stays inside a 320px viewport', async 
   await page.goto('./')
   await page.getByRole('button', { name: /상세 필터/ }).click()
   await page.getByLabel('날짜').selectOption(pair!.excludedDate!)
+  await page.getByRole('button', { name: '상세 필터 닫기' }).click()
   await page.getByLabel('영화 검색').fill(pair!.film.title)
 
   await expect(page.getByRole('listbox', { name: '검색 추천 영화' })).toBeVisible()
