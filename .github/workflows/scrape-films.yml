@@ -8,10 +8,21 @@ on:
       - scripts/scrape-biff-films.py
       - scripts/scrape-biff-screenings.py
       - scripts/requirements-biff-scrape.txt
+      - public/films-2026.json
+      - public/films-2026.meta.json
+      - public/screenings.json
       - .github/workflows/scrape-films.yml
   pull_request:
     branches:
       - main
+    paths:
+      - scripts/scrape-biff-films.py
+      - scripts/scrape-biff-screenings.py
+      - scripts/requirements-biff-scrape.txt
+      - public/films-2026.json
+      - public/films-2026.meta.json
+      - public/screenings.json
+      - .github/workflows/scrape-films.yml
   workflow_dispatch:
 
 permissions:
