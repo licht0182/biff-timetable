@@ -24,7 +24,7 @@ import { hasNavigationState, pushNavigationState, readNavigationState, replaceNa
 import { programNoteForDisplay } from './program-note'
 import { filmMatchesQuery, rankFilmSearchMatches } from './film-search'
 import { bookingPrioritySymbol, detachBookingPlanEntry, failedFallbackPredecessorIds, fallbackMinimumPriority, filterBookingPlan, nextFallbackIds, normalizeBookingPlan, recalculateFallbackPriorities, removeBookingPlanEntries } from './booking-plan'
-import { loadFilmData } from './film-data'
+import { loadFilmData, type FilmDataLoadResult } from './film-data'
 import { releaseTimetableViewportLock } from './timetable-viewport-stability'
 import { assignTimetableLanes } from './timetable-layout'
 import { useNativeDialog } from './components/useNativeDialog'
@@ -265,7 +265,7 @@ export default function App() {
   const [films, setFilms] = useState<Film[]>([])
   const [dataNote, setDataNote] = useState('')
   const [dataSource, setDataSource] = useState('')
-  const [dataStatus, setDataStatus] = useState<'loading' | 'ready' | 'cached' | 'error'>('loading')
+  const [dataStatus, setDataStatus] = useState<'loading' | 'refreshing' | 'ready' | 'cached' | 'error'>('loading')
   const [dataCachedAt, setDataCachedAt] = useState('')
   const [dataReloadKey, setDataReloadKey] = useState(0)
   const [selected, setSelected] = useState<string[]>(() => normalizeStringArray(readStorageValue(STORAGE_KEY)))
@@ -369,25 +369,38 @@ export default function App() {
     setLoadError('')
     setDataStatus('loading')
 
-    loadFilmData(controller.signal)
+    let showedCachedData = false
+    const applyFilmData = (result: FilmDataLoadResult, refreshing = false) => {
+      if (controller.signal.aborted) return
+      const data = result.data
+      const validFilmIds = new Set(data.films.map((film) => film.id))
+      const validScreeningIds = new Set(data.films.flatMap((film) => film.screenings.map((screening) => screening.id)))
+
+      setSelected((current) => current.filter((id) => validScreeningIds.has(id)))
+      setFavorites((current) => current.filter((id) => validFilmIds.has(id)))
+      setTicketStatus((current) => Object.fromEntries(
+        Object.entries(current).filter(([id]) => validScreeningIds.has(id)),
+      ) as TicketStatusMap)
+      setBookingPlan((current) => filterBookingPlan(current, validScreeningIds))
+      setTimetableDeleteSelection((current) => current.filter((id) => validScreeningIds.has(id) || id.startsWith('custom-')))
+
+      setFilms(data.films)
+      setDataNote(data.note ?? '')
+      setDataSource(data.source ?? '')
+      setDataStatus(result.source === 'cache' ? (refreshing ? 'refreshing' : 'cached') : 'ready')
+      setDataCachedAt(result.source === 'cache' ? result.savedAt : '')
+    }
+
+    loadFilmData(controller.signal, (cached) => {
+      showedCachedData = true
+      applyFilmData(cached, true)
+    })
       .then((result) => {
-        const data = result.data
-        const validFilmIds = new Set(data.films.map((film) => film.id))
-        const validScreeningIds = new Set(data.films.flatMap((film) => film.screenings.map((screening) => screening.id)))
-
-        setSelected((current) => current.filter((id) => validScreeningIds.has(id)))
-        setFavorites((current) => current.filter((id) => validFilmIds.has(id)))
-        setTicketStatus((current) => Object.fromEntries(
-          Object.entries(current).filter(([id]) => validScreeningIds.has(id)),
-        ) as TicketStatusMap)
-        setBookingPlan((current) => filterBookingPlan(current, validScreeningIds))
-        setTimetableDeleteSelection((current) => current.filter((id) => validScreeningIds.has(id) || id.startsWith('custom-')))
-
-        setFilms(data.films)
-        setDataNote(data.note ?? '')
-        setDataSource(data.source ?? '')
-        setDataStatus(result.source === 'cache' ? 'cached' : 'ready')
-        setDataCachedAt(result.source === 'cache' ? result.savedAt : '')
+        if (result.source === 'cache' && showedCachedData) {
+          if (!controller.signal.aborted) setDataStatus('cached')
+          return
+        }
+        applyFilmData(result)
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return
@@ -1174,6 +1187,10 @@ export default function App() {
     : ''
 
   const retryFilmData = useCallback(() => setDataReloadKey((current) => current + 1), [])
+  const filmDataFeedback = <>
+    {(dataStatus === 'refreshing' || dataStatus === 'cached') && <div className="layout-surface notice data-cache-notice" role="status"><span>{dataStatus === 'refreshing' ? `${cachedAtLabel}에 저장한 상영시간표를 먼저 표시합니다. 최신 데이터를 확인하는 중입니다.` : `최신 상영 데이터를 불러오지 못해 ${cachedAtLabel}에 저장한 상영시간표를 표시합니다.`}</span>{dataStatus === 'cached' && <button type="button" className="ui-text-chip" onClick={retryFilmData}>최신 데이터 다시 확인</button>}</div>}
+    {loadError && <div className="layout-surface notice error data-load-notice" role="alert"><span>{loadError}</span><button type="button" className="ui-text-chip" onClick={retryFilmData}>다시 시도</button></div>}
+  </>
   const focusFilmFilters = useCallback(() => {
     setMobileFiltersOpen(true)
   }, [])
@@ -1350,8 +1367,7 @@ export default function App() {
 
       {!settingsOpen && (activeTab === 'films' ? <main className="app-page app-page--films film-page" aria-busy={dataStatus === 'loading'}>
         {dataNote && <div className="layout-surface notice film-data-notice">{dataNote}{dataSource && <> <a href={dataSource} target="_blank" rel="noreferrer">공식 시간표 ↗</a></>}</div>}
-        {dataStatus === 'cached' && <div className="layout-surface notice data-cache-notice" role="status"><span>네트워크에 연결할 수 없어 {cachedAtLabel}에 저장한 상영시간표를 표시합니다.</span><button type="button" className="ui-text-chip" onClick={retryFilmData}>최신 데이터 다시 확인</button></div>}
-        {loadError && <div className="layout-surface notice error data-load-notice" role="alert"><span>{loadError}</span><button type="button" className="ui-text-chip" onClick={retryFilmData}>다시 시도</button></div>}
+        {filmDataFeedback}
         <section ref={filmControlsRef} id="film-controls" className="layout-surface controls enhanced-controls">
           <FilmSearchAutocomplete
             query={query}
@@ -1401,6 +1417,7 @@ export default function App() {
         ) : !loadError && <div className="empty">조건에 맞는 상영작이 없습니다.</div>}
       </main> : activeTab === 'curator' ? <Suspense fallback={<main className="app-page app-page--curator curator-page curator-loading" aria-busy="true"><div className="empty">AI 도슨트 칼럼을 불러오는 중입니다.</div></main>}><CuratorPage key={curatorPageKey} onOpenFilms={openFilms} onOpenFilm={openFilmFromCurator} /></Suspense> : <main className="app-page app-page--timetable timetable-page">
         <input ref={importInputRef} type="file" accept="application/json,.json" className="visually-hidden" onChange={importBackup} />
+        {filmDataFeedback}
         {selectedItems.length === 0 && customEvents.length === 0 ? <div className="layout-surface empty timetable-empty"><strong>아직 시간표에 일정이 없습니다.</strong><span>영화 회차를 고르거나 직접 일정을 추가해 주세요.</span><div className="layout-actions timetable-empty-actions"><div className="timetable-view-switch" role="group" aria-label="시간표 보기 방식"><button type="button" className={`ui-text-chip ${timetableView === 'list' ? 'active' : ''}`} aria-pressed={timetableView === 'list'} onClick={() => setTimetableView('list')}>목록</button><button type="button" className={`ui-text-chip ${timetableView === 'grid' ? 'active' : ''}`} aria-pressed={timetableView === 'grid'} onClick={() => setTimetableView('grid')}>시간표</button></div><button className="ui-text-chip timetable-empty-find-button" onClick={openFilms}>영화 찾기</button><button type="button" className="ui-text-chip custom-event-add-button" onClick={openCreateCustomEvent}>일정 추가</button><TimetableOverflowMenu label="더보기" className="timetable-empty-backup"><button className="ui-text-chip" onClick={exportBackup}>JSON 저장</button><button className="ui-text-chip" onClick={() => importInputRef.current?.click()}>JSON 가져오기</button></TimetableOverflowMenu></div></div> : <>
           <div className="layout-surface layout-toolbar timetable-actions enhanced-timetable-actions">
             <div><span className="booking-summary">{timetableSelectionMode ? `삭제할 일정 ${timetableDeleteSelection.length}개 선택` : timetableView === 'list' ? listSummaryText : bookingSummaryText}</span></div>

@@ -1,8 +1,18 @@
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const filmDataHash = createHash('sha256')
+  .update(readFileSync(new URL('./public/screenings.json', import.meta.url)))
+  .digest('hex')
+  .slice(0, 12)
+
 export default defineConfig({
+  define: {
+    __FILM_DATA_VERSION__: JSON.stringify(`2026-official-${filmDataHash}`),
+  },
   plugins: [
     react(),
     VitePWA({

@@ -105,6 +105,12 @@ BIFF의 [공식 상영·행사 변경 안내](https://www.biff.kr/kor/artyboard/
 
 `npm run build`와 시간표 메뉴·레이아웃·모바일 회귀 검사 Chromium·iPhone WebKit **52건**이 통과했다. 실제 브라우저에서 320·390·700·1440px 가로 넘침이 없고, 390px 밝은·어두운 화면의 버튼과 하단 도크가 겹치지 않음을 확인했다. 화면 증거: [320px](playwright/apple-biff-empty-timetable-320.png), [390px 밝은 화면](playwright/apple-biff-empty-timetable-390.png), [390px 어두운 화면](playwright/apple-biff-empty-timetable-dark-390.png), [1440px](playwright/apple-biff-empty-timetable-1440.png).
 
+## 12차 구현: 느린 네트워크의 저장 데이터 우선 표시와 자동 캐시 버전
+
+기존 앱은 같은 빌드의 유효한 상영 데이터가 브라우저에 저장돼 있어도 `screenings.json` 응답이 끝날 때까지 영화 목록을 보여 주지 않았다. 이제 저장 데이터를 즉시 표시하고 최신 응답을 뒤에서 확인한다. 확인 중에는 저장 시각과 갱신 상태를 알리며, 응답이 오면 최신 데이터로 교체한다. 요청이 실패하면 저장 데이터와 다시 확인 버튼을 유지한다. 상태 안내는 영화 찾기와 내 시간표 양쪽에서 보인다.
+
+상영 데이터 버전 문자열도 수동 날짜 대신 빌드 시 `public/screenings.json` 내용의 SHA-256 해시에서 생성한다. 데이터가 바뀐 빌드는 이전 캐시를 사용하지 않으며 요청 URL도 새 버전을 사용한다. `npm run build`와 Chromium·iPhone WebKit의 데이터 신뢰성·접근성 E2E **18건**, Chromium 설치형 PWA 오프라인 E2E **1건**이 통과했다. 병렬 첫 실행에서는 기존 PWA 검사의 서비스 워커 제어 대기가 한 번 시간 초과됐으나, 단독 재실행은 통과했다. 실제 iPhone 설치형 PWA 검증은 여전히 남아 있다.
+
 ## 이어서 구현·확인할 범위
 
 - 공식 변경 공지로 가는 정적 리본은 추가했다. 공지의 변경 내용을 앱 일정에 자동 동기화하거나 개별 행사 카드로 제공하지는 않는다. 데이터 수정 전 공식 일정과 대조해야 한다.

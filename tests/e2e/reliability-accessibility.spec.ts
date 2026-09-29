@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test'
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 
 const FILM_DATA_CACHE_KEY = 'biff-timetable:film-data-cache:v1'
 const DATA_VERSION_KEY = 'biff-timetable:data-version:v1'
@@ -15,7 +17,8 @@ test('requests one versioned screenings resource', async ({ page }) => {
   expect(screeningRequests).toHaveLength(1)
   const requestUrl = new URL(screeningRequests[0])
   expect(requestUrl.searchParams.getAll('v')).toHaveLength(1)
-  expect(requestUrl.searchParams.get('v')).toMatch(/^2026-official-/)
+  const expectedHash = createHash('sha256').update(readFileSync('public/screenings.json')).digest('hex').slice(0, 12)
+  expect(requestUrl.searchParams.get('v')).toBe(`2026-official-${expectedHash}`)
 })
 
 test('recovers from a screenings request failure with an explicit retry', async ({ page }) => {
@@ -39,15 +42,55 @@ test('recovers from a screenings request failure with an explicit retry', async 
 })
 
 test('uses a validated same-version cache and labels it when the network fails', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('./')
   await expect(page.locator('.film-card').first()).toBeVisible()
   await expect.poll(() => page.evaluate((key) => Boolean(localStorage.getItem(key)), FILM_DATA_CACHE_KEY)).toBe(true)
+  await page.evaluate((key) => {
+    const cached = JSON.parse(localStorage.getItem(key) ?? 'null')
+    const screeningId = cached.data.films.flatMap((film: { screenings: Array<{ id: string }> }) => film.screenings)[0].id
+    localStorage.setItem('biff-timetable:selected-screenings:v1', JSON.stringify([screeningId]))
+    localStorage.setItem('biff-timetable:view-mode:v1', JSON.stringify('grid'))
+  }, FILM_DATA_CACHE_KEY)
 
   await page.route('**/screenings.json*', (route) => route.fulfill({ status: 503, contentType: 'application/json', body: '{}' }))
   await page.reload()
 
   await expect(page.getByRole('status').filter({ hasText: '저장한 상영시간표' })).toBeVisible()
   await expect(page.getByRole('button', { name: '최신 데이터 다시 확인' })).toBeVisible()
+  await expect(page.locator('.film-card').first()).toBeVisible()
+  await page.getByRole('button', { name: '내 시간표' }).click()
+  await expect(page.locator('.timetable-page .data-cache-notice')).toBeVisible()
+  await expect(page.locator('.day-column')).toHaveCount(1)
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+  expect(overflow).toBeLessThanOrEqual(0)
+})
+
+test('shows cached films while a slow screenings request is still pending', async ({ page }) => {
+  await page.goto('./')
+  await expect(page.locator('.film-card').first()).toBeVisible()
+  await expect.poll(() => page.evaluate((key) => Boolean(localStorage.getItem(key)), FILM_DATA_CACHE_KEY)).toBe(true)
+
+  let releaseRequest!: () => void
+  const requestHeld = new Promise<void>((resolve) => { releaseRequest = resolve })
+  await page.route('**/screenings.json*', async (route) => {
+    await requestHeld
+    const response = await route.fetch()
+    const data = await response.json()
+    await route.fulfill({ response, json: { ...data, note: '최신 데이터 갱신 확인' } })
+  })
+
+  try {
+    await page.reload()
+    await expect(page.locator('.film-card').first()).toBeVisible()
+    await expect(page.locator('.data-cache-notice')).toContainText('최신 데이터를 확인하는 중입니다.')
+    await expect(page.getByRole('button', { name: '최신 데이터 다시 확인' })).toHaveCount(0)
+  } finally {
+    releaseRequest()
+  }
+
+  await expect(page.locator('.data-cache-notice')).toHaveCount(0)
+  await expect(page.getByText('최신 데이터 갱신 확인')).toBeVisible()
   await expect(page.locator('.film-card').first()).toBeVisible()
 })
 
@@ -62,6 +105,22 @@ test('rejects a malformed cached payload', async ({ page }) => {
       data: { films: 'not-an-array' },
     }))
   }, { cacheKey: FILM_DATA_CACHE_KEY, versionKey: DATA_VERSION_KEY })
+
+  await page.route('**/screenings.json*', (route) => route.fulfill({ status: 503, contentType: 'application/json', body: '{}' }))
+  await page.reload()
+
+  await expect(page.getByRole('alert')).toContainText('상영 데이터를 불러오지 못했습니다.')
+  await expect(page.getByText('저장한 상영시간표')).toHaveCount(0)
+})
+
+test('does not reuse a cache from an older screenings revision', async ({ page }) => {
+  await page.goto('./')
+  await expect(page.locator('.film-card').first()).toBeVisible()
+  await page.evaluate((key) => {
+    const cached = JSON.parse(localStorage.getItem(key) ?? 'null')
+    cached.version = '2026-official-previous-revision'
+    localStorage.setItem(key, JSON.stringify(cached))
+  }, FILM_DATA_CACHE_KEY)
 
   await page.route('**/screenings.json*', (route) => route.fulfill({ status: 503, contentType: 'application/json', body: '{}' }))
   await page.reload()

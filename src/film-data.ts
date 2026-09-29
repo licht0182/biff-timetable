@@ -12,7 +12,7 @@ export type FilmDataLoadResult = {
   savedAt: string
 }
 
-export const FILM_DATA_VERSION = '2026-official-20260911-1'
+export const FILM_DATA_VERSION = __FILM_DATA_VERSION__
 
 const FILM_DATA_CACHE_KEY = 'biff-timetable:film-data-cache:v1'
 const DATA_VERSION_STORAGE_KEY = 'biff-timetable:data-version:v1'
@@ -73,7 +73,15 @@ function cacheFilmData(data: FilmData, savedAt: string) {
   }
 }
 
-export async function loadFilmData(signal?: AbortSignal): Promise<FilmDataLoadResult> {
+export async function loadFilmData(
+  signal?: AbortSignal,
+  onCached?: (result: FilmDataLoadResult) => void,
+): Promise<FilmDataLoadResult> {
+  const cached = readCachedFilmData()
+  if (cached && !signal?.aborted) {
+    onCached?.({ data: cached.data, source: 'cache', savedAt: cached.savedAt })
+  }
+
   try {
     const url = `${import.meta.env.BASE_URL}screenings.json?v=${encodeURIComponent(FILM_DATA_VERSION)}`
     const response = await fetch(url, { signal })
@@ -87,7 +95,6 @@ export async function loadFilmData(signal?: AbortSignal): Promise<FilmDataLoadRe
     return { data: payload, source: 'network', savedAt }
   } catch (error) {
     if (signal?.aborted) throw error
-    const cached = readCachedFilmData()
     if (cached) return { data: cached.data, source: 'cache', savedAt: cached.savedAt }
     throw new Error('상영 데이터를 불러오지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.')
   }
