@@ -296,6 +296,11 @@ def media_from_page(soup: BeautifulSoup) -> dict[str, Any]:
         else:
             role = "other"
 
+        # The official page rotates these unrelated recommendations on each request.
+        # They are not film assets and would make an unchanged database look new.
+        if role == "relatedFilmThumbnail":
+            continue
+
         images.append({
             "url": src,
             "role": role,
@@ -322,7 +327,7 @@ def media_from_page(soup: BeautifulSoup) -> dict[str, Any]:
         "images": images,
         "filmImages": [item["url"] for item in images if item["role"] == "filmPhoto"],
         "directorImages": [item["url"] for item in images if item["role"] == "directorPhoto"],
-        "relatedFilmThumbnails": [item["url"] for item in images if item["role"] == "relatedFilmThumbnail"],
+        "relatedFilmThumbnails": [],
         "mediaReferences": media_refs,
     }
 
@@ -333,14 +338,8 @@ def parse_related_films(photo_parts: list[str]) -> dict[str, Any]:
 
     more_index = photo_parts.index("MORE")
     section_label = clean(photo_parts[more_index - 1]) if more_index > 0 else ""
-    remaining = [clean(value) for value in photo_parts[more_index + 1:] if clean(value)]
-    films = []
-    for i in range(0, len(remaining) - 1, 2):
-        films.append({
-            "titleKo": remaining[i],
-            "titleEn": remaining[i + 1],
-        })
-    return {"sectionLabel": section_label, "films": films}
+    # Keep the stable section label, but do not archive the rotating suggestions.
+    return {"sectionLabel": section_label, "films": []}
 
 
 def director_photo_credit(parts: list[str], name_ko: str) -> str:
@@ -385,6 +384,9 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
     credit_parts = string_segment(strings, "Credit", "Photo")
     photo_end = "Screening" if "Screening" in strings else "BIFF NEWSLETTER"
     photo_parts = string_segment(strings, "Photo", photo_end)
+    related = parse_related_films(photo_parts)
+    if "MORE" in photo_parts:
+        photo_parts = photo_parts[:photo_parts.index("MORE")]
     screening_label = "Schedule" if schedule_start < director_start else "Screening"
     screening_parts = string_segment(strings, screening_label, "Director" if screening_label == "Schedule" else "BIFF NEWSLETTER")
 
@@ -442,7 +444,6 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
     ))
     media["photoSectionText"] = clean(" ".join(photo_parts))
     media["rawMediaReferences"] = media.pop("mediaReferences", [])
-    related = parse_related_films(photo_parts)
 
     parsed = {
         "id": f"biff-{YEAR}-{record['idx']}",
@@ -505,7 +506,13 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
             "listUrl": LIST_URL,
             "meta": meta_tags,
             "relevantAttributes": data_attributes(soup),
-            "textSha256": hashlib.sha256(clean(" ".join(strings)).encode("utf-8")).hexdigest(),
+            "textSha256": hashlib.sha256(
+                json.dumps(
+                    [info_segment, program_note_parts, director_parts, credit_parts, photo_parts, screening_parts],
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest(),
         },
     }
     return parsed
@@ -606,7 +613,7 @@ def main(argv: list[str] | None = None) -> int:
         raise RuntimeError(f"{len(missing_title)} films are missing titles.")
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(films, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    args.output.write_text(json.dumps(films, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
 
     primary_section_counts = Counter(film["biff"]["section"] or "(unclassified)" for film in films)
     membership_counts = Counter(
@@ -637,11 +644,11 @@ def main(argv: list[str] | None = None) -> int:
             "withMultipleSections": sum(len(film["biff"].get("sections", [])) > 1 for film in films),
             "withThemes": sum(bool(film["classification"]["themes"]) for film in films),
         },
-        "databaseFile": str(args.output),
-        "schemaVersion": 5,
+        "databaseFile": args.output.as_posix(),
+        "schemaVersion": 6,
     }
     args.meta_output.parent.mkdir(parents=True, exist_ok=True)
-    args.meta_output.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    args.meta_output.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(json.dumps(meta, ensure_ascii=False, indent=2))
     return 0
 

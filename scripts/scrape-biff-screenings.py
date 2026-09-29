@@ -379,7 +379,7 @@ def main(argv: list[str] | None = None) -> int:
         "films": films,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    args.output.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     print("BIFF 2026 official screenings generated:")
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0

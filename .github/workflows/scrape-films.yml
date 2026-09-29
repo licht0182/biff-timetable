@@ -1,4 +1,4 @@
-name: Refresh 2026 BIFF Film Database
+name: Refresh 2026 BIFF Official Data
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - data/2026-film-database
     paths:
       - scripts/scrape-biff-films.py
+      - scripts/scrape-biff-screenings.py
       - scripts/requirements-biff-scrape.txt
       - .github/workflows/scrape-films.yml
   pull_request:
@@ -28,11 +29,33 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Install scraper dependencies
         run: pip install -r scripts/requirements-biff-scrape.txt
 
       - name: Scrape all 2026 official BIFF film pages
         run: python scripts/scrape-biff-films.py
+
+      - name: Scrape official screenings using the refreshed film database
+        run: python scripts/scrape-biff-screenings.py
+
+      - name: Validate the complete official data snapshot
+        run: |
+          node scripts/validate-films.mjs
+          node scripts/validate-screenings.mjs
+          node scripts/validate-curator-analysis.mjs
+          node scripts/validate-curator-media.mjs
+
+      - name: Keep the committed collection time when content is unchanged
+        if: github.event_name != 'pull_request'
+        run: |
+          if git diff --quiet -- public/films-2026.json public/screenings.json; then
+            git restore -- public/films-2026.meta.json
+          fi
 
       - name: Show generated database summary
         run: |
@@ -45,24 +68,25 @@ jobs:
           print(json.dumps(meta, ensure_ascii=False, indent=2))
           PY
 
-      - name: Upload generated database artifact
+      - name: Upload generated data snapshot
         uses: actions/upload-artifact@v4
         with:
-          name: biff-2026-film-database
+          name: biff-2026-official-data
           path: |
             public/films-2026.json
             public/films-2026.meta.json
+            public/screenings.json
 
-      - name: Commit generated database
+      - name: Commit complete official data snapshot
         if: github.event_name != 'pull_request'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/films-2026.json public/films-2026.meta.json
+          git add public/films-2026.json public/films-2026.meta.json public/screenings.json
           if git diff --cached --quiet; then
-            echo "Film database is already current."
+            echo "Official film and screening data are already current."
           else
-            git commit -m "Update 2026 BIFF film database"
+            git commit -m "Update 2026 BIFF official data"
             git fetch origin "${{ github.ref_name }}"
             git rebase "origin/${{ github.ref_name }}"
             git push origin HEAD:${{ github.ref_name }}

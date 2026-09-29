@@ -20,7 +20,7 @@ const meta = JSON.parse(fs.readFileSync(META_PATH, 'utf8'))
 if (!Array.isArray(films)) fail('database root must be an array')
 if (films.length !== EXPECTED_FILMS) fail(`expected ${EXPECTED_FILMS} films, got ${films.length}`)
 if (meta.filmCount !== films.length) fail(`meta filmCount ${meta.filmCount} does not match data ${films.length}`)
-if (meta.schemaVersion < 5) fail(`schemaVersion must be >= 3, got ${meta.schemaVersion}`)
+if (meta.schemaVersion < 6) fail(`schemaVersion must be >= 6, got ${meta.schemaVersion}`)
 
 const ids = new Set()
 const urls = new Set()
@@ -59,6 +59,9 @@ for (const [index, film] of films.entries()) {
   if (!Array.isArray(film?.media?.copyrightNotices)) fail(`${label}: copyrightNotices must be an array`)
   if (!Array.isArray(film?.media?.photoCopyrightNotices)) fail(`${label}: photoCopyrightNotices must be an array`)
   if (!Array.isArray(film?.related?.films)) fail(`${label}: related.films must be an array`)
+  if (film.related.films.length > 0 || film?.media?.relatedFilmThumbnails?.length > 0) {
+    fail(`${label}: rotating related-film suggestions must not enter the static database`)
+  }
   if (!Array.isArray(film?.classification?.themes)) fail(`${label}: themes must be an array`)
   if (!Array.isArray(film?.classification?.prizes)) fail(`${label}: prizes must be an array`)
   if (film.classification.themes.length > 0) withThemes += 1
