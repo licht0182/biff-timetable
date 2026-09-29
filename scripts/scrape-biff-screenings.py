@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import sys
@@ -20,6 +21,10 @@ FILM_DB_PATH = Path("public/films-2026.json")
 OUT_PATH = Path("public/screenings.json")
 USER_AGENT = "biff-timetable/2026-screening-database (+https://github.com/licht0182/biff-timetable)"
 DAYS = range(6, 16)
+# The official change notice gives ticket-code-specific running times that the
+# current film-detail pages do not yet reflect. Apply these after date scraping.
+# https://www.biff.kr/kor/artyboard/mboard.asp?Action=view&intSeq=102705&strBoardID=9611_03
+NOTICE_RUNTIME_BY_CODE = {"010": 118, "193": 119, "432": 119}
 
 
 def clean(value: Any) -> str:
@@ -317,6 +322,11 @@ def parse_schedule(films_by_idx: dict[str, dict[str, Any]]) -> tuple[list[dict[s
 
     films = [film for film in canonical.values() if film.get("screenings")]
     films.extend(special)
+    for film in films:
+        for screening in film["screenings"]:
+            runtime = NOTICE_RUNTIME_BY_CODE.get(screening["code"])
+            if runtime is not None:
+                screening["end"] = add_minutes(screening["start"], runtime)
     films.sort(key=lambda film: (
         min(screening["date"] + screening["start"] for screening in film["screenings"]),
         film["title"],
@@ -346,16 +356,20 @@ def parse_schedule(films_by_idx: dict[str, dict[str, Any]]) -> tuple[list[dict[s
     return films, summary
 
 
-def main() -> int:
-    rich_films = json.loads(FILM_DB_PATH.read_text(encoding="utf-8"))
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Collect official 2026 BIFF screenings")
+    parser.add_argument("--film-db", type=Path, default=FILM_DB_PATH)
+    parser.add_argument("--output", type=Path, default=OUT_PATH)
+    args = parser.parse_args(argv)
+    rich_films = json.loads(args.film_db.read_text(encoding="utf-8"))
     films_by_idx = {
         str((film.get("biff") or {}).get("idx")): film
         for film in rich_films
         if (film.get("biff") or {}).get("idx")
     }
-    if len(rich_films) != 246 or len(films_by_idx) != 246:
+    if len(rich_films) != 247 or len(films_by_idx) != 247:
         raise RuntimeError(
-            f"Expected the validated 246-film official 2026 DB, got films={len(rich_films)} idx={len(films_by_idx)}"
+            f"Expected the validated 247-film official 2026 DB, got films={len(rich_films)} idx={len(films_by_idx)}"
         )
 
     films, summary = parse_schedule(films_by_idx)
@@ -364,7 +378,8 @@ def main() -> int:
         "source": "https://www.biff.kr/kor/html/schedule/date.asp",
         "films": films,
     }
-    OUT_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print("BIFF 2026 official screenings generated:")
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0

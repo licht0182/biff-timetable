@@ -7,6 +7,7 @@ const data = JSON.parse(raw)
 const errors = []
 const filmIds = new Set()
 const screeningIds = new Set()
+const screeningCodes = new Map()
 const datePattern = /^\d{4}-\d{2}-\d{2}$/
 const timePattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/
 
@@ -47,7 +48,39 @@ if (!data || !Array.isArray(data.films)) {
       if (typeof screening.venue !== 'string' || !screening.venue.trim()) errors.push(`${sp}.venue is required`)
       if (screening.gv != null && typeof screening.gv !== 'boolean') errors.push(`${sp}.gv must be boolean when present`)
       if (screening.code != null && typeof screening.code !== 'string') errors.push(`${sp}.code must be a string when present`)
+      if (typeof screening.code === 'string') {
+        if (screeningCodes.has(screening.code)) errors.push(`${sp}.code is duplicated: ${screening.code}`)
+        else screeningCodes.set(screening.code, { film, screening })
+      }
     }
+  }
+}
+
+if (filmIds.size < 273 || screeningIds.size < 752) {
+  errors.push(`official 2026 schedule coverage fell below the 09.29 snapshot: ${filmIds.size} entries, ${screeningIds.size} screenings`)
+}
+
+// Ticket-code checks from the official 09.29 change notice and current date schedule.
+const expectedUpdates = {
+  '010': { end: '17:28' },
+  '065': { gv: true },
+  '193': { end: '11:39' },
+  '432': { end: '13:59' },
+  '742': { gv: true },
+  '743': { date: '2026-10-07', start: '20:20', title: '그래비티' },
+  '806': { start: '16:30' },
+  '815': { date: '2026-10-08', start: '12:30' },
+  '827': { date: '2026-10-08', start: '13:30', title: '[씨네 클래스] 샤를로트 갱스부르, 그 고요함 속의 열정' },
+}
+for (const [code, expected] of Object.entries(expectedUpdates)) {
+  const item = screeningCodes.get(code)
+  if (!item) {
+    errors.push(`official update code ${code} is missing`)
+    continue
+  }
+  for (const [key, value] of Object.entries(expected)) {
+    const actual = key === 'title' ? item.film.title : item.screening[key]
+    if (actual !== value) errors.push(`official update code ${code} ${key}: expected ${value}, got ${actual}`)
   }
 }
 

@@ -2,7 +2,7 @@ import fs from 'node:fs'
 
 const FILMS_PATH = new URL('../public/films-2026.json', import.meta.url)
 const META_PATH = new URL('../public/films-2026.meta.json', import.meta.url)
-const EXPECTED_FILMS = 246
+const EXPECTED_FILMS = 247
 const PREMIERE_LABELS = new Set(['World Premiere', 'International Premiere', 'Korean Premiere', 'Asian Premiere'])
 
 function fail(message) {
@@ -60,6 +60,7 @@ for (const [index, film] of films.entries()) {
   if (!Array.isArray(film?.media?.photoCopyrightNotices)) fail(`${label}: photoCopyrightNotices must be an array`)
   if (!Array.isArray(film?.related?.films)) fail(`${label}: related.films must be an array`)
   if (!Array.isArray(film?.classification?.themes)) fail(`${label}: themes must be an array`)
+  if (!Array.isArray(film?.classification?.prizes)) fail(`${label}: prizes must be an array`)
   if (film.classification.themes.length > 0) withThemes += 1
 
   const sections = film?.biff?.sections
@@ -97,7 +98,8 @@ for (const [index, film] of films.entries()) {
   if (prefix[1] && prefix[1] !== film.title.en) {
     fail(`${label}: English title differs from source Film Info (${prefix[1]})`)
   }
-  const sourceThemes = [...new Set(prefix.slice(2))]
+  const prizes = new Set(film.classification.prizes)
+  const sourceThemes = [...new Set(prefix.slice(2).filter(value => !prizes.has(value)))]
   if (JSON.stringify(sourceThemes) !== JSON.stringify(film.classification.themes)) {
     fail(`${label}: normalized themes differ from source Film Info`)
   }

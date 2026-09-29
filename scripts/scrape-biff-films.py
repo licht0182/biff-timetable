@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
 import concurrent.futures
 import hashlib
 import json
@@ -19,7 +20,7 @@ from bs4 import BeautifulSoup, Tag
 YEAR = 2026
 BASE_URL = "https://www.biff.kr"
 LIST_URL = f"{BASE_URL}/kor/html/program/prog_all_list.asp?allYear={YEAR}"
-EXPECTED_OFFICIAL_COUNT = 246
+EXPECTED_OFFICIAL_COUNT = 247
 OUT_PATH = Path("public/films-2026.json")
 META_PATH = Path("public/films-2026.meta.json")
 USER_AGENT = "biff-timetable/2026-film-database (+https://github.com/licht0182/biff-timetable)"
@@ -376,16 +377,29 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
     strings = [clean(s) for s in soup.stripped_strings if clean(s)]
 
     info_segment = string_segment(strings, "영화 정보", "Program Note")
-    program_note_parts = string_segment(strings, "Program Note", "Director")
+    note_start = strings.index("Program Note") if "Program Note" in strings else -1
+    director_start = strings.index("Director", note_start + 1) if note_start >= 0 and "Director" in strings[note_start + 1:] else len(strings)
+    schedule_start = strings.index("Schedule", note_start + 1) if note_start >= 0 and "Schedule" in strings[note_start + 1:] else len(strings)
+    program_note_parts = string_segment(strings, "Program Note", "Schedule" if schedule_start < director_start else "Director")
     director_parts = string_segment(strings, "Director", "Credit")
     credit_parts = string_segment(strings, "Credit", "Photo")
     photo_end = "Screening" if "Screening" in strings else "BIFF NEWSLETTER"
     photo_parts = string_segment(strings, "Photo", photo_end)
-    screening_parts = string_segment(strings, "Screening", "BIFF NEWSLETTER") if "Screening" in strings else []
+    screening_label = "Schedule" if schedule_start < director_start else "Screening"
+    screening_parts = string_segment(strings, screening_label, "Director" if screening_label == "Schedule" else "BIFF NEWSLETTER")
 
-    title_ko, title_en, title_display, themes = derive_title_and_themes(
+    title_ko, title_en, title_display, fallback_themes = derive_title_and_themes(
         info_segment, record.get("listTitle", "")
     )
+    keyword_nodes = soup.select(".film_tit .keywords")
+    prizes = list(dict.fromkeys(
+        clean(node.get_text(" ", strip=True)) for node in keyword_nodes
+        if "prize" in (node.get("class") or []) and clean(node.get_text(" ", strip=True))
+    ))
+    themes = list(dict.fromkeys(
+        clean(node.get_text(" ", strip=True)) for node in keyword_nodes
+        if "prize" not in (node.get("class") or []) and clean(node.get_text(" ", strip=True))
+    )) if keyword_nodes else fallback_themes
     director_ko, director_en, director_display = derive_director_names(
         director_parts, record.get("listDirector", "")
     )
@@ -403,7 +417,8 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
 
     note_text = clean(" ".join(program_note_parts))
     note_author = ""
-    author_match = re.search(r"\(([^()]{2,30})\)\s*$", note_text)
+    author_matches = list(re.finditer(r"\(([가-힣]{2,5})\)(?=\s*(?:\*|$))", note_text))
+    author_match = author_matches[-1] if author_matches else None
     if author_match:
         note_author = clean(author_match.group(1))
 
@@ -447,6 +462,7 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
         },
         "classification": {
             "themes": themes,
+            "prizes": prizes,
             "sourceLabel": "#작품검색",
         },
         "production": {
@@ -495,7 +511,11 @@ def parse_detail(record: dict[str, Any]) -> dict[str, Any]:
     return parsed
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Collect official 2026 BIFF film details")
+    parser.add_argument("--output", type=Path, default=OUT_PATH)
+    parser.add_argument("--meta-output", type=Path, default=META_PATH)
+    args = parser.parse_args(argv)
     list_html = fetch(LIST_URL)
     list_records, catalogue = parse_list_page(list_html)
     print(f"Discovered {len(list_records)} unique film detail URLs from {LIST_URL}")
@@ -585,8 +605,8 @@ def main() -> int:
     if missing_title:
         raise RuntimeError(f"{len(missing_title)} films are missing titles.")
 
-    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUT_PATH.write_text(json.dumps(films, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(films, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     primary_section_counts = Counter(film["biff"]["section"] or "(unclassified)" for film in films)
     membership_counts = Counter(
@@ -617,10 +637,11 @@ def main() -> int:
             "withMultipleSections": sum(len(film["biff"].get("sections", [])) > 1 for film in films),
             "withThemes": sum(bool(film["classification"]["themes"]) for film in films),
         },
-        "databaseFile": str(OUT_PATH),
+        "databaseFile": str(args.output),
         "schemaVersion": 5,
     }
-    META_PATH.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    args.meta_output.parent.mkdir(parents=True, exist_ok=True)
+    args.meta_output.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(meta, ensure_ascii=False, indent=2))
     return 0
 

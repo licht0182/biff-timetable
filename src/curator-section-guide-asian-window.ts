@@ -43,7 +43,7 @@ export const ASIAN_WINDOW_2026_ARTICLE: CuratorArticle = {
         {
           title: '겨울 이야기',
           englishTitle: 'In Winter',
-          meta: '예를란 누르무함베토프 · 카자흐스탄 · 87분 · World Premiere',
+          meta: '예를란 누르무함베토프 · 카자흐스탄 · 85분 · World Premiere',
           description: '눈밭에서 거액의 현금을 발견한 다섯 아이의 아버지가 잠시 풍요로워지지만 돈의 출처가 그의 일상을 압박하기 시작합니다. 생활고와 도덕적 불안을 블랙코미디의 결로 바라봅니다.',
           tags: ['가족/아동', '코미디/유머/블랙코미디/풍자'],
         },
@@ -106,7 +106,7 @@ export const ASIAN_WINDOW_2026_ARTICLE: CuratorArticle = {
         {
           title: '블루 나이트의 연인들',
           englishTitle: 'Lovers in the Blue Night',
-          meta: '아누파르나 로이 · 인도/미국 · 107분',
+          meta: '아누파르나 로이 · 인도/미국 · 105분',
           description: '뭄바이에서 난민, 여성, 성소수자, 무슬림, 하층계급으로 살아가는 네 인물이 외로움과 생계를 나눕니다. 도시의 밤을 사랑과 폭력, 계급이 교차하는 공간으로 바라봅니다.',
           tags: ['도시/도시화', 'LGBTQ+', '인권/노동/사회'],
         },

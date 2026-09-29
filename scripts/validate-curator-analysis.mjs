@@ -157,7 +157,7 @@ const guides = [
   {
     section: '특별상영',
     file: '../src/curator-section-guides-final.ts',
-    expectedCount: 8,
+    expectedCount: 9,
     stats: ({ films: xs, averageRuntime, premiereCount }) => [
       `{ value: '${xs.length}편', label: '전체 작품' }`,
       `{ value: '약 ${averageRuntime}분', label: '평균 러닝타임' }`,

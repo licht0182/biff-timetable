@@ -1,10 +1,10 @@
 {
   "festivalYear": 2026,
   "source": "https://www.biff.kr/kor/html/program/prog_all_list.asp?allYear=2026",
-  "expectedOfficialCount": 246,
-  "filmCount": 246,
-  "collectedAtUtc": "2026-09-11T05:51:19+00:00",
-  "catalogueRowCount": 254,
+  "expectedOfficialCount": 247,
+  "filmCount": 247,
+  "collectedAtUtc": "2026-09-29T19:58:50+00:00",
+  "catalogueRowCount": 255,
   "primarySectionCounts": {
     "갈라 프레젠테이션": 6,
     "개막작": 1,
@@ -19,7 +19,7 @@
     "와이드 앵글": 47,
     "월드 시네마": 29,
     "특별기획 프로그램": 21,
-    "특별상영": 8,
+    "특별상영": 9,
     "플래시 포워드": 12,
     "한국영화의 오늘 - 스페셜 프리미어": 3,
     "한국영화의 오늘 - 파노라마": 6
@@ -38,20 +38,20 @@
     "와이드 앵글": 47,
     "월드 시네마": 29,
     "특별기획 프로그램": 23,
-    "특별상영": 8,
+    "특별상영": 9,
     "플래시 포워드": 12,
     "한국영화의 오늘 - 스페셜 프리미어": 3,
     "한국영화의 오늘 - 파노라마": 6
   },
-  "sectionMembershipCount": 254,
+  "sectionMembershipCount": 255,
   "coverage": {
-    "withProgramNote": 246,
-    "withDirector": 246,
-    "withImages": 246,
-    "withOfficialSection": 246,
+    "withProgramNote": 247,
+    "withDirector": 247,
+    "withImages": 247,
+    "withOfficialSection": 247,
     "withMultipleSections": 8,
     "withThemes": 239
   },
-  "databaseFile": "public/films-2026.json",
+  "databaseFile": "public\\films-2026.json",
   "schemaVersion": 5
 }

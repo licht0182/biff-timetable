@@ -14,13 +14,13 @@ export const KOREAN_PANORAMA_2026_ARTICLE: CuratorArticle = {
     {
       heading:'숫자로 보는 한국영화의 오늘 - 파노라마',
       paragraphs:[
-        '공식 데이터 기준 6편이며 평균 러닝타임은 약 117분입니다. 가장 짧은 작품은 99분의 <수능, 출제의 비밀>, 가장 긴 작품은 156분의 <호프>입니다.',
+        '공식 데이터 기준 6편이며 평균 러닝타임은 약 118분입니다. 가장 짧은 작품은 99분의 <수능, 출제의 비밀>, 가장 긴 작품은 158분의 <호프>입니다.',
         '6편 중 4편이 World Premiere이고, 공식 #작품검색에서 여성 주제가 4편으로 가장 많습니다.',
       ],
       stats:[
         {value:'6편',label:'전체 작품'},
         {value:'4편',label:'World Premiere'},
-        {value:'약 117분',label:'평균 러닝타임'},
+        {value:'약 118분',label:'평균 러닝타임'},
         {value:'4편',label:'여성 주제'},
       ],
     },
@@ -31,8 +31,8 @@ export const KOREAN_PANORAMA_2026_ARTICLE: CuratorArticle = {
         {title:'여전히 찬란하게',englishTitle:'Still Shining',meta:'송일곤 · 118분 · World Premiere',description:'일제강점기 17세였던 두 여성의 우정과 현재 노년의 시간을 교차하며 기억과 치유를 따라갑니다. 고통스러운 순간도 삶의 찬란한 기억이 될 수 있다는 감정을 역사와 멜로드라마로 엮습니다.',tags:['여성','역사/전쟁','사랑/연애/로맨스']},
         {title:'자필',englishTitle:'SINNER',meta:'홍성민 · 110분 · World Premiere',description:'장관 후보가 된 검사가 과거 강압수사 사건과 다시 마주합니다. 한 장의 편지와 사형 구형의 기억을 통해 검찰 권력, 죄책감, 뒤늦은 책임을 추적하는 법정·범죄 드라마입니다.',tags:['범죄/폭력','여성']},
         {title:'첫세계',englishTitle:'The World Before',meta:'윤단비 · 115분',description:'작은 섬에서 살아온 열일곱 소녀가 오랜 친구와 재회하며 자신의 조용한 세계에 처음 균열을 경험합니다. 섬의 일상과 청춘의 감정을 섬세하게 포착하는 성장 멜로드라마입니다.',tags:['성장영화/청춘','여성','사랑/연애/로맨스']},
-        {title:'최종면접',englishTitle:'Final Interview',meta:'김정훈 · 106분 · World Premiere',description:'한 명만 뽑는 최종면접과 6년 뒤의 인터뷰를 교차하며 여섯 사람의 서로 다른 기억을 맞춥니다. 취업 경쟁을 배경으로 증언의 불확실성과 집단 심리를 파고드는 미스터리입니다.',tags:['심리/미스터리/서스펜스/스릴러']},
-        {title:'호프',englishTitle:'HOPE',meta:'나홍진 · 156분',description:'마을과 숲, 도로를 가로지르는 추격의 방향을 끊임없이 뒤집으며 쫓는 자와 쫓기는 자의 경계를 흐립니다. 속도의 쾌감보다 방향 상실과 불안 자체를 키우는 대형 SF 스릴러입니다.',tags:['SF/판타지','심리/미스터리/서스펜스/스릴러']},
+        {title:'최종면접',englishTitle:'Final Interview',meta:'김정훈 · 108분 · World Premiere',description:'한 명만 뽑는 최종면접과 6년 뒤의 인터뷰를 교차하며 여섯 사람의 서로 다른 기억을 맞춥니다. 취업 경쟁을 배경으로 증언의 불확실성과 집단 심리를 파고드는 미스터리입니다.',tags:['심리/미스터리/서스펜스/스릴러']},
+        {title:'호프',englishTitle:'HOPE',meta:'나홍진 · 158분',description:'마을과 숲, 도로를 가로지르는 추격의 방향을 끊임없이 뒤집으며 쫓는 자와 쫓기는 자의 경계를 흐립니다. 속도의 쾌감보다 방향 상실과 불안 자체를 키우는 대형 SF 스릴러입니다.',tags:['SF/판타지','심리/미스터리/서스펜스/스릴러']},
       ],
     },
   ],

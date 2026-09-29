@@ -717,7 +717,7 @@ test('shows complete On Screen, special program, special screening and opening-f
   const guides = [
     { card: /온 스크린 3편 분석/, count: 3, first: '꿀알바', last: '푸른길' },
     { card: /특별기획 프로그램 23편 분석/, count: 23, first: '우리 할머니는 큐브왕', last: '하얀전쟁' },
-    { card: /특별상영 8편 분석/, count: 8, first: 'M \(4K 리마스터링\)', last: '플레시 임팩트' },
+    { card: /특별상영 9편 분석/, count: 9, first: 'M \(4K 리마스터링\)', last: '플레시 임팩트' },
   ]
 
   for (const guide of guides) {
