@@ -506,3 +506,55 @@ test('detaches failed fallback history without leaving dangling references', asy
     currentFallbackFor: [],
   })
 })
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`booking fallback stays readable and tappable in ${colorScheme} mode`, async ({ page, request }) => {
+    const pair = findOverlappingPair(await screeningData(request))
+    test.skip(!pair, '대안 적용 테스트에 필요한 겹치는 회차가 없습니다.')
+    const [origin, candidate] = pair!
+
+    await page.emulateMedia({ colorScheme })
+    await seedFallbackState(page, origin, candidate)
+    await page.goto('./')
+    await page.getByRole('button', { name: '내 시간표' }).click()
+    await page.getByRole('button', { name: '시간표', exact: true }).click()
+
+    const panel = page.locator('.booking-plan-panel')
+    await expect(panel).toBeVisible()
+    const summary = panel.locator('summary')
+    expect((await summary.boundingBox())?.height).toBeGreaterThanOrEqual(44)
+    await summary.click()
+
+    const item = panel.locator('.booking-plan-item').filter({ hasText: candidate.film.title }).first()
+    await expect(item).toBeVisible()
+    for (const selector of ['strong', '.booking-plan-item-main>span', '.booking-plan-fallback']) {
+      const fontSize = await item.locator(selector).first().evaluate((element) => parseFloat(getComputedStyle(element).fontSize))
+      expect(fontSize, `${selector} text should be readable`).toBeGreaterThanOrEqual(12)
+    }
+    const apply = item.getByRole('button', { name: /시간표에 적용/ })
+    expect((await apply.boundingBox())?.height).toBeGreaterThanOrEqual(44)
+    if (process.env.BIFF_VISUAL_AUDIT === '1') {
+      await page.screenshot({ path: `output/playwright/booking-plan-${colorScheme}-${test.info().project.name}.png` })
+    }
+    await apply.click()
+
+    const dialog = page.locator('.booking-apply-dialog')
+    await expect(dialog).toBeVisible()
+    const surface = await dialog.evaluate((element) => getComputedStyle(element).backgroundColor)
+    expect(Number(surface.match(/[\d.]+/g)?.[3] ?? 1), surface).toBeGreaterThanOrEqual(.97)
+    if (process.env.BIFF_VISUAL_AUDIT === '1') {
+      await page.screenshot({ path: `output/playwright/booking-apply-${colorScheme}-${test.info().project.name}.png` })
+    }
+    expect((await dialog.locator('.booking-apply-head button').boundingBox())?.height).toBeGreaterThanOrEqual(44)
+    expect((await dialog.getByRole('button', { name: '시간표에 적용', exact: true }).boundingBox())?.height).toBeGreaterThanOrEqual(44)
+    const detailFont = await dialog.locator('.booking-apply-section span').first().evaluate((element) => parseFloat(getComputedStyle(element).fontSize))
+    expect(detailFont).toBeGreaterThanOrEqual(12)
+    if (colorScheme === 'dark') {
+      const background = await dialog.locator('.booking-apply-section').first().evaluate((element) => getComputedStyle(element).backgroundColor)
+      const channels = background.match(/[\d.]+/g)?.slice(0, 3).map(Number) ?? []
+      expect(channels).toHaveLength(3)
+      expect(Math.max(...channels)).toBeLessThan(110)
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1)
+  })
+}

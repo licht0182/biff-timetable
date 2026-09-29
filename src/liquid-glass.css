@@ -492,6 +492,18 @@ select option{background:#f3f4f6;color:#111827}
   .settings-tab-trigger.active{background:color-mix(in srgb,var(--ios-tint) 20%,transparent)!important}
 }
 
+/* Decision dialogs need a quiet surface so the timetable behind them cannot mix with their text. */
+.booking-conflict-dialog,.booking-apply-dialog,
+.booking-conflict-dialog.liquid-glass-enhanced,.booking-apply-dialog.liquid-glass-enhanced{
+  background:rgba(246,247,249,.98)!important;
+}
+@media(prefers-color-scheme:dark){
+  .booking-conflict-dialog,.booking-apply-dialog,
+  .booking-conflict-dialog.liquid-glass-enhanced,.booking-apply-dialog.liquid-glass-enhanced{
+    background:rgba(28,28,30,.98)!important;
+  }
+}
+
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
   .topbar,.tabs,.liquid-tab-bar-surface,.notice,.controls,.film-results-toolbar,.timetable-actions,.film-card,.schedule-screening-group,.booking-plan-panel,.timetable-scroll,.timetable-empty,.settings-card,.settings-reset-card,.curator-hero,.curator-featured,.curator-latest,.curator-method,.curator-card,.curator-article,.film-modal,.booking-conflict-dialog,.booking-apply-dialog,.custom-event-dialog,.custom-event-modal,.pwa-update-toast{background:rgba(229,231,235,.92)!important}
   .liquid-tab-bar .liquid-tab-bar-surface{background:rgba(229,231,235,.92)!important}
