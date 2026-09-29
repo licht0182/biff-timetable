@@ -73,9 +73,8 @@ test('anchors the movie filter sheet to the viewport and keeps it interactive', 
 
   await page.getByRole('button', { name: '검색·필터' }).click()
   const sheet = page.locator('#film-advanced-filters')
-  const backdrop = page.locator('.filter-sheet-backdrop')
   await expect(sheet).toBeVisible()
-  await expect(backdrop).toBeVisible()
+  expect(await sheet.evaluate((element) => element.matches(':modal'))).toBe(true)
 
   await expect.poll(() => sheet.evaluate((element) => {
     const rect = element.getBoundingClientRect()
@@ -109,7 +108,7 @@ test('anchors the movie filter sheet to the viewport and keeps it interactive', 
     await expect(toolbar.locator(':scope > .liquid-glass-refraction-layer')).toHaveCount(0)
   }
 
-  await backdrop.click({ position: { x: 8, y: 8 } })
+  await page.mouse.click(8, 8)
   await expect(sheet).toBeHidden()
   await expect(page.locator('body')).not.toHaveClass(/filter-sheet-open/)
 })
@@ -315,7 +314,7 @@ test('survives the full mobile navigation flow without leaking layout state', as
 
   await page.getByRole('button', { name: '검색·필터' }).click()
   await expect(page.locator('#film-advanced-filters')).toBeVisible()
-  await page.locator('.filter-sheet-backdrop').click({ position: { x: 8, y: 8 } })
+  await page.mouse.click(8, 8)
   await expect(page.locator('#film-advanced-filters')).toBeHidden()
 
   await page.getByRole('button', { name: '+ 추가' }).first().click()

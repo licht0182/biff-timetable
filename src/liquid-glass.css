@@ -104,7 +104,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .controls{background:var(--ios-bg-elevated);backdrop-filter:none;-webkit-backdrop-filter:none}
   .film-search-autocomplete input{min-height:50px!important;border:0!important;border-radius:16px!important;padding-left:42px!important;background:rgba(127,127,127,.1)!important;font-size:16px!important}
   .mobile-advanced-filter-toggle{min-height:46px!important;border:0!important;border-radius:15px!important;background:rgba(127,127,127,.09)!important}
-  .filter-sheet-backdrop{background:rgba(5,5,8,.34);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
   #film-advanced-filters.filter-row{border:1px solid var(--ios-glass-border);border-radius:30px 30px 0 0;background:var(--ios-glass-strong);box-shadow:0 -1px 4px rgba(15,23,42,.14);transition:transform .28s cubic-bezier(.22,.75,.2,1),visibility .28s;backdrop-filter:blur(32px) saturate(180%);-webkit-backdrop-filter:blur(32px) saturate(180%)}
   .filter-sheet-head{grid-column:1/-1;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;min-height:38px;text-align:center}
   .filter-sheet-head>span{justify-self:center;width:36px;height:5px;border-radius:999px;background:rgba(127,127,127,.3)}

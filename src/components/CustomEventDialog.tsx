@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { CUSTOM_EVENT_CATEGORIES, customEventCategoryLabel, customEventDisplayEnd, customEventDisplayRange, encodeCustomEventEnd, isValidCustomEventDraft, type CustomEvent, type CustomEventDraft } from '../custom-events'
+import { useNativeDialog } from './useNativeDialog'
 
 type CustomEventDialogProps = {
   mode: 'create' | 'detail' | 'edit'
@@ -63,11 +64,17 @@ export default function CustomEventDialog({
   }), [event, defaultDate])
   const [form, setForm] = useState<CustomEventDraft>(initial)
   const [error, setError] = useState('')
+  const dialogRef = useNativeDialog()
+  const titleInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setForm(initial)
     setError('')
   }, [initial, mode])
+
+  useEffect(() => {
+    if (mode === 'edit') titleInputRef.current?.focus()
+  }, [mode])
 
   const update = <K extends keyof CustomEventDraft>(key: K, value: CustomEventDraft[K]) => {
     setForm((current) => ({ ...current, [key]: value }))
@@ -99,11 +106,11 @@ export default function CustomEventDialog({
 
   const titleId = 'custom-event-dialog-title'
 
-  return <div className="modal-backdrop custom-event-backdrop" onMouseDown={onClose}>
-    <section className="custom-event-modal" role="dialog" aria-modal="true" aria-labelledby={titleId} onMouseDown={(mouseEvent) => mouseEvent.stopPropagation()}>
+  return <dialog ref={dialogRef} className="modal-backdrop custom-event-backdrop" aria-labelledby={titleId} tabIndex={-1} onCancel={(event) => { event.preventDefault(); onClose() }} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
+    <section className="custom-event-modal" onMouseDown={(mouseEvent) => mouseEvent.stopPropagation()}>
       <div className="custom-event-modal-head">
         <div><p className="custom-event-kicker">MY TIMETABLE</p><h2 id={titleId}>{mode === 'create' ? '일정 추가' : mode === 'edit' ? '일정 수정' : event?.title}</h2></div>
-        <button type="button" className="modal-close" onClick={onClose} aria-label="일정 창 닫기">×</button>
+        <button type="button" className="modal-close" data-dialog-initial-focus={mode === 'detail' ? true : undefined} onClick={onClose} aria-label="일정 창 닫기">×</button>
       </div>
 
       {mode === 'detail' && event ? <>
@@ -120,7 +127,7 @@ export default function CustomEventDialog({
           <button type="button" className="ui-text-chip custom-event-edit" onClick={onEdit}>수정</button>
         </div>
       </> : <form className="custom-event-form" onSubmit={submit}>
-        <label><span>일정명 *</span><input autoFocus type="text" value={form.title} onChange={(changeEvent) => update('title', changeEvent.target.value)} maxLength={80} placeholder="예: 점심 식사" /></label>
+        <label><span>일정명 *</span><input ref={titleInputRef} data-dialog-initial-focus type="text" value={form.title} onChange={(changeEvent) => update('title', changeEvent.target.value)} maxLength={80} placeholder="예: 점심 식사" /></label>
         <div className="custom-event-form-row">
           <label>
             <span>날짜 *</span>
@@ -159,5 +166,5 @@ export default function CustomEventDialog({
         <div className="custom-event-form-actions"><button type="button" className="ui-text-chip" onClick={onClose}>취소</button><button type="submit" className="ui-text-chip custom-event-save">{mode === 'edit' ? '저장' : '추가'}</button></div>
       </form>}
     </section>
-  </div>
+  </dialog>
 }

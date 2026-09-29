@@ -1,5 +1,6 @@
 import type { CustomEvent } from '../custom-events'
 import type { Film, Screening, TicketStatusMap } from './film-types'
+import { useNativeDialog } from './useNativeDialog'
 
 type TimetableItem = { film: Film; screening: Screening }
 
@@ -28,14 +29,12 @@ export default function BookingFallbackApplyDialog({
   const replaceableConflicts = conflicts.filter(({ screening }) => ticketStatus[screening.id] !== 'booked')
   const activeReplacements = replaceableConflicts.filter(({ screening }) => ticketStatus[screening.id] !== 'failed')
   const blocked = bookedConflicts.length > 0
+  const dialogRef = useNativeDialog()
 
   return (
-    <div className="booking-apply-backdrop" onMouseDown={onClose}>
+    <dialog ref={dialogRef} className="booking-apply-backdrop" aria-labelledby="booking-apply-title" tabIndex={-1} onCancel={(event) => { event.preventDefault(); onClose() }} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
       <section
         className="booking-apply-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="booking-apply-title"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="booking-apply-head">
@@ -43,7 +42,7 @@ export default function BookingFallbackApplyDialog({
             <span>다음 예매 대안</span>
             <h2 id="booking-apply-title">시간표에 적용하시겠습니까?</h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="대안 적용 창 닫기">×</button>
+          <button type="button" data-dialog-initial-focus onClick={onClose} aria-label="대안 적용 창 닫기">×</button>
         </div>
 
         <div className="booking-apply-candidate">
@@ -103,6 +102,6 @@ export default function BookingFallbackApplyDialog({
           </button>
         </div>
       </section>
-    </div>
+    </dialog>
   )
 }

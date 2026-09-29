@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { BOOKING_PRIORITIES, MAX_BOOKING_PRIORITY, type BookingPriority, type Film, type Screening } from './film-types'
+import { useNativeDialog } from './useNativeDialog'
 
 type ConflictItem = { film: Film; screening: Screening }
 
@@ -29,14 +30,12 @@ export default function BookingConflictDialog({
   const [priority, setPriority] = useState<BookingPriority>(minimumPriority ?? MAX_BOOKING_PRIORITY)
   const canSave = minimumPriority !== null
   const priorityOptions = minimumPriority === null ? [] : BOOKING_PRIORITIES.filter((value) => value >= minimumPriority)
+  const dialogRef = useNativeDialog()
 
   return (
-    <div className="booking-conflict-backdrop" onMouseDown={onClose}>
+    <dialog ref={dialogRef} className="booking-conflict-backdrop" aria-labelledby="booking-conflict-title" tabIndex={-1} onCancel={(event) => { event.preventDefault(); onClose() }} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
       <section
         className="booking-conflict-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="booking-conflict-title"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="booking-conflict-head">
@@ -44,7 +43,7 @@ export default function BookingConflictDialog({
             <span>예매 대안</span>
             <h2 id="booking-conflict-title">시간이 겹치는 회차입니다</h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="예매 대안 창 닫기">×</button>
+          <button type="button" data-dialog-initial-focus onClick={onClose} aria-label="예매 대안 창 닫기">×</button>
         </div>
 
         <p className="booking-conflict-guide">실제 시간표에는 동시에 넣지 않고, 예매 실패에 대비한 대안으로만 저장할 수 있습니다.</p>
@@ -96,6 +95,6 @@ export default function BookingConflictDialog({
           </button>
         </div>
       </section>
-    </div>
+    </dialog>
   )
 }

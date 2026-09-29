@@ -25,6 +25,7 @@ import { filmMatchesQuery, rankFilmSearchMatches } from './film-search'
 import { bookingPrioritySymbol, detachBookingPlanEntry, failedFallbackPredecessorIds, fallbackMinimumPriority, filterBookingPlan, nextFallbackIds, normalizeBookingPlan, recalculateFallbackPriorities, removeBookingPlanEntries } from './booking-plan'
 import { loadFilmData } from './film-data'
 import { releaseTimetableViewportLock } from './timetable-viewport-stability'
+import { useNativeDialog } from './components/useNativeDialog'
 
 const loadCuratorPage = () => import('./components/CuratorPage')
 const CuratorPage = lazy(loadCuratorPage)
@@ -258,7 +259,6 @@ export default function App() {
   const importInputRef = useRef<HTMLInputElement>(null)
   const filmScrollPositionRef = useRef(0)
   const filmControlsRef = useRef<HTMLElement>(null)
-  const filterSheetRef = useRef<HTMLDivElement>(null)
   const globalSearchTriggerRef = useRef<HTMLButtonElement>(null)
   const [films, setFilms] = useState<Film[]>([])
   const [dataNote, setDataNote] = useState('')
@@ -298,6 +298,9 @@ export default function App() {
   const [userSettings, setUserSettings] = useState<UserTimetableSettings>(() => normalizeUserSettings(readStorageValue(USER_SETTINGS_KEY)))
   const [timetableView, setTimetableView] = useState<TimetableViewMode>(() => normalizeTimetableView(readStorageValue(TIMETABLE_VIEW_KEY)))
   const [selectedGridDate, setSelectedGridDate] = useState('')
+  const mobileFilterActive = mobileFiltersOpen && viewport.width <= 700 && activeTab === 'films' && !settingsOpen
+  const filterSheetRef = useNativeDialog(mobileFilterActive)
+  const filmModalRef = useNativeDialog(Boolean(detailFilm))
 
   useEffect(() => {
     if (films.length === 0) return
@@ -318,20 +321,11 @@ export default function App() {
   }, [activeTab, settingsOpen, timetableView])
 
   useEffect(() => {
-    document.body.classList.toggle('filter-sheet-open', mobileFiltersOpen)
-    const focusTimeout = mobileFiltersOpen
-      ? window.setTimeout(() => filterSheetRef.current?.focus(), 80)
-      : undefined
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMobileFiltersOpen(false)
-    }
-    window.addEventListener('keydown', handleKeyDown)
+    document.body.classList.toggle('filter-sheet-open', mobileFilterActive)
     return () => {
       document.body.classList.remove('filter-sheet-open')
-      window.removeEventListener('keydown', handleKeyDown)
-      if (focusTimeout) window.clearTimeout(focusTimeout)
     }
-  }, [mobileFiltersOpen])
+  }, [mobileFilterActive])
 
   useEffect(() => setMobileFiltersOpen(false), [activeTab, settingsOpen])
   const [timetableSelectionMode, setTimetableSelectionMode] = useState(false)
@@ -428,44 +422,6 @@ export default function App() {
     const timer = window.setTimeout(() => setToast(''), 2800)
     return () => window.clearTimeout(timer)
   }, [toast])
-
-  useEffect(() => {
-    if (!detailFilm || bookingConflictDialog) return
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      setDetailFilm(null)
-      setDetailScreeningId(null)
-    }
-    window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [detailFilm, bookingConflictDialog])
-
-  useEffect(() => {
-    if (!bookingConflictDialog) return
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setBookingConflictDialog(null)
-    }
-    window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [bookingConflictDialog])
-
-  useEffect(() => {
-    if (!fallbackApplyDialog) return
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setFallbackApplyDialog(null)
-    }
-    window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [fallbackApplyDialog])
-
-  useEffect(() => {
-    if (!customEventDialog) return
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setCustomEventDialog(null)
-    }
-    window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [customEventDialog])
 
   useEffect(() => {
     if (activeTab === 'timetable' && !settingsOpen) return
@@ -1282,8 +1238,8 @@ export default function App() {
   }, [])
 
 
-  const advancedFilterPanel = <div ref={filterSheetRef} id="film-advanced-filters" className={`filter-row ${mobileFiltersOpen ? 'mobile-open' : ''}`} aria-labelledby="filter-sheet-title" tabIndex={mobileFiltersOpen ? -1 : undefined}>
-    <div className="filter-sheet-head"><span aria-hidden="true" /><strong id="filter-sheet-title">상세 필터</strong><button type="button" className="ui-text-chip" onClick={() => setMobileFiltersOpen(false)} aria-label="상세 필터 닫기">완료</button></div>
+  const advancedFilterControls = <>
+    <div className="filter-sheet-head"><span aria-hidden="true" /><strong id="filter-sheet-title">상세 필터</strong><button type="button" data-dialog-initial-focus className="ui-text-chip" onClick={() => setMobileFiltersOpen(false)} aria-label="상세 필터 닫기">완료</button></div>
     <label><span>날짜</span><select value={dateFilter} onChange={(event) => setDateFilter(event.target.value)}><option value="전체">전체 날짜</option>{allDates.map((date) => <option key={date} value={date}>{formatDate(date)}</option>)}</select></label>
     <label><span>상영관</span><select value={venueFilter} onChange={(event) => setVenueFilter(event.target.value)}><option value="전체">전체 상영관</option>{allVenues.map((venue) => <option key={venue} value={venue}>{venue}</option>)}</select></label>
     <div className="time-range-filter">
@@ -1304,7 +1260,7 @@ export default function App() {
     <button className={`ui-text-chip filter-toggle ${gvOnly ? 'active' : ''}`} onClick={() => setGvOnly((value) => !value)} aria-pressed={gvOnly}>GV만</button>
     <button className={`ui-text-chip filter-toggle ${favoritesOnly ? 'active' : ''}`} onClick={() => setFavoritesOnly((value) => !value)} aria-pressed={favoritesOnly}>★ 관심작</button>
     <button className="ui-text-chip filter-reset" onClick={resetFilters}>초기화</button>
-  </div>
+  </>
 
   return (
     <div className={`app-shell has-liquid-navigation ${activeTab === 'timetable' ? `timetable-mode timetable-${timetableView}-mode` : ''} ${activeTab === 'curator' && !settingsOpen ? 'app-shell--editorial' : ''}`}>
@@ -1378,13 +1334,10 @@ export default function App() {
             <span>날짜·상영관·시간대</span>
             <strong>{activeFilterCount > 0 ? `${activeFilterCount}개 적용` : mobileFiltersOpen ? '접기' : '상세 필터'}</strong>
           </button>
-          {viewport.width > 700 && advancedFilterPanel}
+          {viewport.width > 700 && <div id="film-advanced-filters" className="filter-row" aria-labelledby="filter-sheet-title">{advancedFilterControls}</div>}
           <div className="chips" aria-label="상영작 섹션">{sections.map((item) => <button type="button" key={item} className={`ui-text-chip ${section === item ? 'active' : ''}`} aria-pressed={section === item} onClick={() => setSection(item)}>{item}</button>)}</div>
         </section>
-        {viewport.width <= 700 && <>
-          {mobileFiltersOpen && <button type="button" className="filter-sheet-backdrop" aria-label="상세 필터 닫기" onClick={() => setMobileFiltersOpen(false)} />}
-          {advancedFilterPanel}
-        </>}
+        {viewport.width <= 700 && <dialog ref={filterSheetRef} id="film-advanced-filters" className={`filter-row ${mobileFiltersOpen ? 'mobile-open' : ''}`} aria-labelledby="filter-sheet-title" tabIndex={-1} onCancel={(event) => { event.preventDefault(); setMobileFiltersOpen(false) }} onMouseDown={(event) => { if (event.target === event.currentTarget) setMobileFiltersOpen(false) }}>{advancedFilterControls}</dialog>}
 
         <div className="layout-surface layout-toolbar film-results-toolbar">
           <span role="status" aria-live="polite">검색 결과 {filteredFilms.length}편</span>
@@ -1581,9 +1534,9 @@ export default function App() {
         </div>
       </footer>
 
-      {detailFilm && <div className={`modal-backdrop ${detailScreeningId ? 'timetable-detail-backdrop' : ''}`} onMouseDown={() => { setDetailFilm(null); setDetailScreeningId(null) }}>
-        <section className={`film-modal ${detailScreeningId ? 'timetable-detail-modal' : ''}`} role="dialog" aria-modal="true" aria-labelledby="film-detail-title" onMouseDown={(event) => event.stopPropagation()}>
-          <div className="modal-head"><div><span className="section-label">{detailFilm.section ?? '섹션 미정'}</span><h2 id="film-detail-title">{detailFilm.title}</h2>{detailFilm.englishTitle && <p>{detailFilm.englishTitle}</p>}</div><button className="modal-close" onClick={() => { setDetailFilm(null); setDetailScreeningId(null) }} aria-label="상세보기 닫기">×</button></div>
+      {detailFilm && <dialog ref={filmModalRef} className={`modal-backdrop ${detailScreeningId ? 'timetable-detail-backdrop' : ''}`} aria-labelledby="film-detail-title" tabIndex={-1} onCancel={(event) => { event.preventDefault(); setDetailFilm(null); setDetailScreeningId(null) }} onMouseDown={(event) => { if (event.target === event.currentTarget) { setDetailFilm(null); setDetailScreeningId(null) } }}>
+        <section className={`film-modal ${detailScreeningId ? 'timetable-detail-modal' : ''}`} onMouseDown={(event) => event.stopPropagation()}>
+          <div className="modal-head"><div><span className="section-label">{detailFilm.section ?? '섹션 미정'}</span><h2 id="film-detail-title">{detailFilm.title}</h2>{detailFilm.englishTitle && <p>{detailFilm.englishTitle}</p>}</div><button className="modal-close" data-dialog-initial-focus onClick={() => { setDetailFilm(null); setDetailScreeningId(null) }} aria-label="상세보기 닫기">×</button></div>
           <dl className="film-detail-grid">
             {detailFilm.director && <><dt>감독</dt><dd>{detailFilm.director}</dd></>}
             {detailFilm.country && <><dt>국가</dt><dd>{detailFilm.country}</dd></>}
@@ -1616,7 +1569,7 @@ export default function App() {
           })}</div>
           <div className="modal-footer"><button className={`ui-text-chip favorite-button wide ${favorites.includes(detailFilm.id) ? 'active' : ''}`} onClick={() => toggleFavorite(detailFilm.id)}>{favorites.includes(detailFilm.id) ? '★ 관심작 해제' : '☆ 관심작 추가'}</button>{detailFilm.url && <a href={detailFilm.url} target="_blank" rel="noreferrer">BIFF 공식 작품정보 ↗</a>}</div>
         </section>
-      </div>}
+      </dialog>}
 
       {fallbackApplyDialog && <BookingFallbackApplyDialog
         candidate={fallbackApplyDialog.candidate}

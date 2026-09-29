@@ -4,7 +4,8 @@ test('keeps screening actions visible while a long synopsis can expand', async (
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('./')
   await page.getByRole('combobox', { name: '영화 검색' }).fill('아버지의 방')
-  const card = page.locator('.film-card').first()
+  await expect(page.getByRole('status').filter({ hasText: '검색 결과 1편' })).toBeVisible()
+  const card = page.locator('.film-card').filter({ has: page.getByRole('heading', { name: '아버지의 방' }) }).first()
   await expect(card).toBeVisible()
   await card.getByRole('button', { name: '상세' }).click()
 
