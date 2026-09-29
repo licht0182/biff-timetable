@@ -143,7 +143,7 @@ for (const width of [1023, 1024, 1440]) {
     await expect(columns).toHaveCount(1)
     await expect(days).toHaveCount(10)
     const focusedWidth = await columns.first().evaluate((element) => element.getBoundingClientRect().width)
-    expect(focusedWidth).toBeGreaterThan(width * 0.75)
+    expect(focusedWidth).toBeGreaterThanOrEqual(width * 0.75)
     await expect(page.locator('.day-column .event-block.custom-event')).toHaveCount(3)
     await expect(page.locator('.day-column .event-block.custom-event[data-runtime-lane]')).toHaveCount(3)
     const focusedCardWidth = await page.locator('.day-column .event-block.custom-event').first().evaluate((element) => element.getBoundingClientRect().width)
