@@ -305,6 +305,7 @@ test('activates the third priority only after the applied second priority also f
 
 
 test('runs the complete 1-to-2-to-3 fallback journey through the visible UI', async ({ page, request }) => {
+  test.slow()
   const data = await screeningData(request)
   const chain = findFallbackChain(data)
   test.skip(!chain, '전체 예매 대안 여정 테스트에 필요한 회차 조합이 없습니다.')
@@ -351,9 +352,12 @@ test('runs the complete 1-to-2-to-3 fallback journey through the visible UI', as
   await expect(page.locator('.event-block').filter({ hasText: second.film.title })).toHaveCount(1)
   await expect(page.locator('.event-block').filter({ hasText: origin.film.title })).toHaveCount(0)
 
-  await page.locator('.event-block').filter({ hasText: second.film.title }).first().click()
+  const secondBlock = page.locator('.event-block').filter({ hasText: second.film.title }).first()
+  await secondBlock.click()
   await page.locator('.film-modal .current-screening .ticket-select').selectOption('failed')
   await page.getByRole('button', { name: '상세보기 닫기' }).click()
+  await expect(page.locator('.film-modal')).toHaveCount(0)
+  await expect(secondBlock).toBeFocused()
 
   await expect(panel.locator('summary')).toContainText('다음 대안 1')
   await expect(thirdPlan).toContainText('다음 대안')
@@ -390,6 +394,7 @@ test('runs the complete 1-to-2-to-3 fallback journey through the visible UI', as
 
 
 test('activates every option in the same next-priority tier', async ({ page, request }) => {
+  test.slow()
   const data = await screeningData(request)
   const chain = findFallbackChain(data)
   test.skip(!chain, '동일 순위 대안 테스트에 필요한 회차 조합이 없습니다.')
@@ -429,9 +434,12 @@ test('activates every option in the same next-priority tier', async ({ page, req
   await expect(page.locator('.event-block').filter({ hasText: optionA.film.title })).toHaveCount(1)
   await expect(optionBPlan.getByRole('button', { name: /시간표에 적용/ })).toHaveCount(0)
 
-  await page.locator('.event-block').filter({ hasText: optionA.film.title }).first().click()
+  const optionABlock = page.locator('.event-block').filter({ hasText: optionA.film.title }).first()
+  await optionABlock.click()
   await page.locator('.film-modal .current-screening .ticket-select').selectOption('failed')
   await page.getByRole('button', { name: '상세보기 닫기' }).click()
+  await expect(page.locator('.film-modal')).toHaveCount(0)
+  await expect(optionABlock).toBeFocused()
 
   await expect(optionBPlan.getByRole('button', { name: /시간표에 적용/ })).toBeVisible()
   await optionBPlan.getByRole('button', { name: /시간표에 적용/ }).click()
