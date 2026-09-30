@@ -821,4 +821,3 @@ test('uses a solid warm canvas with dark readable text', async ({ page }) => {
   expect(palette.headingColor).toBe('rgb(17, 24, 39)')
   expect(palette.inputColor).toBe('rgb(17, 24, 39)')
 })
-
