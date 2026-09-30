@@ -17,6 +17,33 @@ async function seedTimetable(page: Page, request: any) {
   }, { selectedKey: SELECTED_KEY, statusKey: STATUS_KEY, screeningId: id })
 }
 
+for (const width of [390, 1440]) {
+  test(`centers the more-menu label in empty and populated timetables at ${width}px`, async ({ page, request }) => {
+    await page.setViewportSize({ width, height: 900 })
+    const checkLabel = async () => {
+      const summary = page.locator('.timetable-more-menu > summary')
+      await expect(summary).toBeVisible()
+      await expect.poll(() => summary.evaluate((element) => {
+        const control = element.getBoundingClientRect()
+        const range = document.createRange()
+        range.selectNodeContents(element)
+        const text = range.getBoundingClientRect()
+        return Math.max(
+          Math.abs(text.x + text.width / 2 - control.x - control.width / 2),
+          Math.abs(text.y + text.height / 2 - control.y - control.height / 2),
+        )
+      })).toBeLessThanOrEqual(2)
+    }
+    await page.goto('./')
+    await page.getByRole('button', { name: '내 시간표' }).click()
+    await checkLabel()
+    await seedTimetable(page, request)
+    await page.reload()
+    await page.getByRole('button', { name: '내 시간표' }).click()
+    await checkLabel()
+  })
+}
+
 test('empty timetable controls share font-relative chip geometry and dark material', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.emulateMedia({ colorScheme: 'dark' })

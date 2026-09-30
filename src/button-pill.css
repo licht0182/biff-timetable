@@ -32,6 +32,15 @@ button.schedule-date-tab > em {
   align-self: center;
 }
 
+/* Native disclosure controls need the same centered label as ordinary buttons. */
+:root body .timetable-more-menu > summary.ui-text-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  border-radius: 9999px !important;
+}
+
 /* Feedback changes color only. No press/hover scale, lift, or bounce. */
 :root body :is(button, [role="button"], summary.ui-text-chip) {
   transform: none !important;

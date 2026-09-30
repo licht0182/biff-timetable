@@ -2,7 +2,7 @@
   "schema_version": 1,
   "mode": "balanced",
   "risk": "normal",
-  "revision": "c33865286dd80fac6a6b9357648edf0ccffcc1597594a6de726a7b2a42f602d4",
+  "revision": "fe5035a43d48e8f555085d59e8e727febd7fa97c6be78ca344301dfda3a04b2e",
   "scope": "Latest user correction: preserve clickable cards; ordinary buttons are pills. Press and hover feedback changes color only, without resizing or spring motion.",
   "parent": {
     "agent_id": "/root",
@@ -10,16 +10,16 @@
     "requested_effort": "low",
     "routing_proof_required": false,
     "unconfirmed_disclosure": "Skill recommendation only. Existing parent settings preserved; actual model and effort are not observable.",
-    "verified_revision": "c33865286dd80fac6a6b9357648edf0ccffcc1597594a6de726a7b2a42f602d4",
-    "diff_inspected_revision": "c33865286dd80fac6a6b9357648edf0ccffcc1597594a6de726a7b2a42f602d4",
-    "accepted_revision": "c33865286dd80fac6a6b9357648edf0ccffcc1597594a6de726a7b2a42f602d4",
-    "acceptance_reason": "Two readiness waits adjusted to existing convention, preserving every UI assertion and unchanged application. Final full rerun343pass/1existing skip/0failures/0flakes and fresh GPT-6.1 Sol Medium SHIP. Exact candidate accepted for a new deployment.",
-    "verification_evidence": "Application source unchanged from prior 343-pass full regression. Two initial test visibility waits use existing15-second convention after remote WebKit exhausted five seconds. Diff inspected, current10 pill/card hover tests passed, full rerun343passed/1existing skip/0failed/0flaky in447seconds. Earlier build/data,18 dock repeats,CLI20screens and PNG5 per engine passed."
+    "verified_revision": "fe5035a43d48e8f555085d59e8e727febd7fa97c6be78ca344301dfda3a04b2e",
+    "diff_inspected_revision": "fe5035a43d48e8f555085d59e8e727febd7fa97c6be78ca344301dfda3a04b2e",
+    "accepted_revision": "fe5035a43d48e8f555085d59e8e727febd7fa97c6be78ca344301dfda3a04b2e",
+    "acceptance_reason": "Actual summary label alignment corrected and checked in mobile/desktop empty/populated states. Current build,26 focused tests and full347pass/1existing skip/0failures/0flakes succeeded. Fresh GPT-6.1 Sol Medium SHIP; settled screenshots show label center offsets0.5/0.75px and no overflow. Exact candidate accepted for deployment.",
+    "verification_evidence": "Exact summary-centering correction inspected. TypeScript-b/Vite build and26 Chromium/WebKit button/timetable tests passed, including real label-center checks in empty/populated390/1440 views. Final full regression347passed/1existing skip/0failed/0flaky in480seconds. Settled CLI320/390/1440 screenshots refreshed with actual More center offsets0.5/0.75px and zero overflow. Earlier data validators,dock18repeats,CLI20screens,PNG5pereach engine passed."
   },
   "host_limit": 3,
-  "budget": { "dispatches": 10, "corrections": 8, "reviews": 7 },
-  "budget_reassessment": "Remote CI WebKit failed two new desktop-width tests during the default five-second initial film/favorite visibility wait; geometry/color assertions were not reached. Explicitly bound a readiness-wait correction to the existing 15-second layout-test convention, full local verification, one fresh current-policy review, and new deployment. Application source remains unchanged.",
-  "parent_corrections": 8,
+  "budget": { "dispatches": 11, "corrections": 9, "reviews": 8 },
+  "budget_reassessment": "Latest Verify and Pages succeeded. Final live screenshot exposed desktop More summary label11.5px above center (native summary display:list-item), omitted by ordinary-button assertions. Explicitly bound one summary-only centering correction, real text-center regression checks for empty/populated mobile/desktop, full verification, one fresh review and a new deployment.",
+  "parent_corrections": 9,
   "prior_review_evidence": {
     "id": "shadow-final-review", "agent_id": "/root/pill_shadow_final_review",
     "requested_model": "gpt-6-sol", "requested_effort": "medium", "fresh_context": true,
@@ -119,7 +119,7 @@
       "evidence": "Current-policy fresh GPT-6.1 Sol Medium review inspected exact revision and final JSON report: no blockers in pills/centering, card exceptions, responsive visibility, view toggle and one-row actions, PNG helper or color-only feedback. Read-only; no source changes."
     },
     {
-      "id": "readiness-release-review", "kind": "review", "status": "completed", "required": true,
+      "id": "readiness-release-review", "kind": "review", "status": "completed", "required": false,
       "read_only": true, "fresh_context": true,
       "ownership": ["src", "tests", "playwright.config.ts"], "depends_on": ["buttons"],
       "agent_id": "/root/pill_readiness_release_review", "requested_model": "gpt-6.1-sol", "requested_effort": "medium",
@@ -130,6 +130,19 @@
       "parent_verification_evidence": "Only two initial test readiness waits changed from default5 to15 seconds; all geometry/color assertions and app code preserved. Current10 pill/card tests passed; final full rerun343passed/1existing skip/0failed/0flaky in447seconds.",
       "verdict": "ship",
       "evidence": "Fresh GPT-6.1 Sol Medium reviewer verified only two readiness wait changes since HEAD and consistency with existing15/30-second layout waits. All geometry,color,card and size assertions preserved; no accumulated application blockers. Parent confirmed successful final full rerun before release."
+    },
+    {
+      "id": "summary-release-review", "kind": "review", "status": "completed", "required": true,
+      "read_only": true, "fresh_context": true,
+      "ownership": ["src", "tests", "playwright.config.ts"], "depends_on": ["buttons"],
+      "agent_id": "/root/pill_summary_release_review", "requested_model": "gpt-6.1-sol", "requested_effort": "medium",
+      "dispatch_source": "native collaboration spawn_agent", "routing_proof_required": false,
+      "unconfirmed_disclosure": "Requested settings, no realized telemetry.",
+      "reviewed_revision": "fe5035a43d48e8f555085d59e8e727febd7fa97c6be78ca344301dfda3a04b2e",
+      "parent_verified_revision": "fe5035a43d48e8f555085d59e8e727febd7fa97c6be78ca344301dfda3a04b2e",
+      "parent_verification_evidence": "Current summary-only source correction inspected, TypeScript/Vite build and26 focused tests passed. Real text-center checks in empty/populated mobile/desktop passed. Final full regression347passed/1existing skip/0failed/0flaky in480seconds.",
+      "verdict": "ship",
+      "evidence": "Fresh read-only GPT-6.1 Sol Medium found no blockers. Summary-only scope preserves booking accordion; real center tests cover390/1440 empty/populated. Accumulated pills/card exclusions, view state,mobileactions,PNG access and color-only feedback match scope. Parent confirmed successful latest full regression before release."
     }
   ]
 }
