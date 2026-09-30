@@ -173,12 +173,13 @@ jobs:
               '.controls',
               '.film-results-toolbar',
               '.film-card',
-              '.liquid-tab-bar-surface',
             ]
 
             for (const selector of selectors) {
               const target = page.locator(selector).first()
               await target.waitFor({ state: 'visible' })
+              await target.locator(':scope > .liquid-glass-edge-layer').waitFor({ state: 'attached' })
+              await target.locator(':scope > .liquid-glass-edge-highlight-layer').waitFor({ state: 'attached' })
               const metrics = await target.evaluate((element) => {
                 const host = getComputedStyle(element)
                 const darkElement = element.querySelector(':scope > .liquid-glass-edge-layer')
@@ -224,6 +225,31 @@ jobs:
               }
               console.log(selector, metrics)
             }
+
+            // The dock owns its material and selection lens; it uses a native
+            // border instead of the generic content-surface rim layers.
+            const dock = page.locator('.liquid-tab-bar-surface')
+            await dock.waitFor({ state: 'visible' })
+            const dockMetrics = await dock.evaluate((element) => {
+              const style = getComputedStyle(element)
+              const rect = element.getBoundingClientRect()
+              return {
+                borderWidths: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth],
+                borderColor: style.borderTopColor,
+                radius: Number.parseFloat(style.borderTopLeftRadius),
+                clip: style.clipPath || style.webkitClipPath,
+                rect: [rect.left, rect.top, rect.right, rect.bottom],
+                viewport: [innerWidth, innerHeight],
+              }
+            })
+            if (dockMetrics.borderWidths.some(width => width !== '1px')
+              || dockMetrics.borderColor === 'rgba(0, 0, 0, 0)'
+              || dockMetrics.radius < 30 || !dockMetrics.clip.includes('round 31px')
+              || dockMetrics.rect[0] < 0 || dockMetrics.rect[1] < 0
+              || dockMetrics.rect[2] > dockMetrics.viewport[0] || dockMetrics.rect[3] > dockMetrics.viewport[1]) {
+              throw new Error(`dock border/clip/viewport mismatch: ${JSON.stringify(dockMetrics)}`)
+            }
+            console.log('dock', dockMetrics)
 
             const chip = page.locator('.chips button.active').first()
             await chip.waitFor({ state: 'visible' })
