@@ -544,7 +544,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
     if (process.env.BIFF_VISUAL_AUDIT === '1') {
       await page.screenshot({ path: `output/playwright/booking-plan-${colorScheme}-${test.info().project.name}.png` })
     }
-    await apply.click()
+    if (test.info().project.use.hasTouch) await apply.tap()
+    else await apply.click()
 
     const dialog = page.locator('.booking-apply-dialog')
     await expect(dialog).toBeVisible()
@@ -564,5 +565,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
       expect(Math.max(...channels)).toBeLessThan(110)
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1)
+    await dialog.getByRole('button', { name: '대안 적용 창 닫기' }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect(apply).toBeFocused()
+    await apply.press('Enter')
+    await expect(dialog).toBeVisible()
   })
 }

@@ -1,7 +1,13 @@
+import type { MouseEvent } from 'react'
 import { bookingPrioritySymbol } from '../booking-plan'
 import { BOOKING_PRIORITIES, type BookingPlanMap, type Film, type Screening, type TicketStatusMap } from './film-types'
 
 type BookingPlanItem = { film: Film; screening: Screening }
+
+function preventMouseFocusScroll(event: MouseEvent<HTMLButtonElement>) {
+  // WebKit can scroll the nested plan on mouse focus, moving the button before mouseup.
+  if (event.button === 0) event.preventDefault()
+}
 
 type BookingPlanPanelProps = {
   items: BookingPlanItem[]
@@ -74,6 +80,7 @@ export default function BookingPlanPanel({
                           <button
                             type="button"
                             className="ui-text-chip booking-plan-apply"
+                            onMouseDown={preventMouseFocusScroll}
                             onClick={() => onApplyAlternative(screening.id)}
                             aria-label={`${film.title} 시간표에 적용`}
                           >
@@ -83,6 +90,7 @@ export default function BookingPlanPanel({
                         <button
                           type="button"
                           className="ui-text-chip booking-plan-remove"
+                          onMouseDown={preventMouseFocusScroll}
                           onClick={() => onRemoveAlternative(screening.id)}
                           aria-label={`${film.title} 대안 해제`}
                         >
