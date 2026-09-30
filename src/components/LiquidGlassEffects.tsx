@@ -219,6 +219,9 @@ export default function LiquidGlassEffects() {
           if (getComputedStyle(element).position === 'static') {
             element.classList.add('liquid-glass-positioned')
           }
+          // Set the rim geometry before its layers become observable, including the first frame.
+          element.classList.add('liquid-glass-edge-host')
+          element.dataset.liquidGlass = preset
           // iOS WebKit cannot use the SVG backdrop refraction path reliably.
           // Do not create the extra compositing layer there; retain the CSS glass surface instead.
           const effectiveUsesRefraction = usesRefraction && !iosWebKit

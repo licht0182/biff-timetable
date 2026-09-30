@@ -141,7 +141,6 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
 
       - name: Verify deployed mobile Liquid Glass rims
-        continue-on-error: true
         env:
           LIVE_URL: https://licht0182.github.io/biff-timetable/
         run: |

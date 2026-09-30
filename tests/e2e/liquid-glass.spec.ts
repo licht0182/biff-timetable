@@ -13,6 +13,36 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator('.film-card').first()).toBeVisible()
 })
 
+test('initializes rim geometry before exposing new surface layers', async ({ page }) => {
+  await page.addInitScript(() => {
+    const audit = { checked: 0, failures: [] as string[] }
+    ;(window as Window & { glassRimAudit?: typeof audit }).glassRimAudit = audit
+    new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (!(node instanceof HTMLElement) || !node.classList.contains('liquid-glass-edge-layer')) continue
+          const host = node.parentElement
+          if (!host) continue
+          audit.checked += 1
+          const rim = getComputedStyle(node)
+          const hostRect = host.getBoundingClientRect()
+          const rimRect = node.getBoundingClientRect()
+          if (!host.dataset.liquidGlass || rim.paddingTop !== '1px'
+            || Math.abs(hostRect.width - rimRect.width) > .5
+            || Math.abs(hostRect.height - rimRect.height) > .5) {
+            audit.failures.push(`${host.className}: padding=${rim.paddingTop}, host=${hostRect.width}x${hostRect.height}, rim=${rimRect.width}x${rimRect.height}`)
+          }
+        }
+      }
+    }).observe(document, { childList: true, subtree: true })
+  })
+  await page.reload()
+  await expect(page.locator('.film-card').first()).toBeVisible()
+  const audit = await page.evaluate(() => (window as Window & { glassRimAudit?: { checked: number; failures: string[] } }).glassRimAudit)
+  expect(audit?.checked).toBeGreaterThan(0)
+  expect(audit?.failures).toEqual([])
+})
+
 test('uses an accessible floating tab bar for primary mobile navigation', async ({ page }) => {
   const tabBar = page.locator('.liquid-tab-bar')
   await expect(tabBar).toBeVisible()

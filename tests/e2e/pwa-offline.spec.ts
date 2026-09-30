@@ -5,7 +5,8 @@ test.use({ serviceWorkers: 'allow' })
 test('keeps films and docent text available when an installed app goes offline', async ({ page, context }) => {
   await page.goto('./')
   await expect(page.locator('.film-card').first()).toBeVisible()
-  await page.waitForFunction(async () => Boolean((await navigator.serviceWorker.getRegistration())?.active))
+  // An active worker can still be activating and cannot control the next navigation yet.
+  await page.waitForFunction(async () => (await navigator.serviceWorker.getRegistration())?.active?.state === 'activated')
   await page.reload()
   await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller))
 
