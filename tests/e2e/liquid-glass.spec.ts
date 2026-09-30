@@ -822,18 +822,3 @@ test('uses a solid warm canvas with dark readable text', async ({ page }) => {
   expect(palette.inputColor).toBe('rgb(17, 24, 39)')
 })
 
-test('publishes an installable scoped web app manifest', async ({ page, request }) => {
-  const href = await page.locator('link[rel="manifest"]').getAttribute('href')
-  expect(href).toBeTruthy()
-  const response = await request.get(new URL(href!, page.url()).toString())
-  expect(response.ok()).toBeTruthy()
-  const manifest = await response.json()
-  expect(manifest).toMatchObject({
-    name: 'BIFF Timetable',
-    start_url: '/biff-timetable/',
-    scope: '/biff-timetable/',
-    display: 'standalone',
-    background_color: '#f1eee9',
-    theme_color: '#f1eee9',
-  })
-})

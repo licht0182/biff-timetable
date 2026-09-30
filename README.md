@@ -98,6 +98,12 @@ npm run validate:data
 npm run build
 ```
 
+## UI 검증 기준
+
+`npm run test:e2e`로 일반 사이트의 Chromium·iPhone WebKit 기능·레이아웃·접근성을 검증합니다. 2026년 9월 30일 사용자 지시에 따라 PWA 전용 자동화·실기기 검사를 별도로 실행하지 않고, 일반 사이트가 통과하면 PWA도 통과로 판정합니다. iPhone 17의 최초 실기기 확인은 사용자 회신에 따라 전 항목 통과로 기록했습니다.
+
+도슨트의 작품 그래픽은 자체 SVG·CSS·작품명으로 구성하며 공식 사진을 표시하거나 요청하지 않습니다.
+
 ## GitHub Pages
 
 `.github/workflows/deploy-pages.yml`이 `main` 브랜치 변경 시 데이터 검증 → 빌드 → 배포 순으로 실행됩니다.
