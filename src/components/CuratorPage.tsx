@@ -3,6 +3,7 @@ import { CURATOR_ARTICLES, type CuratorArticle } from '../curator-content'
 import { CURATOR_FEATURE_MEDIA, featureMediaFor, type CuratorFeatureMedia } from '../curator-feature-media'
 import { pushNavigationState, readNavigationState } from '../navigation-history'
 import CuratorGallery from './CuratorGallery'
+import CuratorArtwork from './CuratorArtwork'
 
 type Props = {
   onOpenFilms: () => void
@@ -124,22 +125,11 @@ const editorialPromotions: EditorialFeature[] = [
 
 const galleryStories = mediaFeatures.slice(3).filter((feature): feature is { article: CuratorArticle; media: CuratorFeatureMedia } => Boolean(feature.media))
 
-function FeatureImage({ media, priority = false }: { media: CuratorFeatureMedia; priority?: boolean }) {
-  const [imageFailed, setImageFailed] = useState(false)
-
+function FeatureImage({ media }: { media: CuratorFeatureMedia }) {
   return (
-    <figure className={`curator-feature-image ${imageFailed ? 'curator-feature-image--fallback' : ''}`}>
-      {imageFailed
-        ? <div className="curator-feature-image-placeholder" role="img" aria-label={`${media.filmTitle} 사진을 불러올 수 없습니다`}>{media.filmTitle}</div>
-        : <img
-          src={media.imageSrc}
-          alt={media.imageAlt}
-          loading={priority ? 'eager' : 'lazy'}
-          fetchPriority={priority ? 'high' : 'low'}
-          decoding="async"
-          onError={() => setImageFailed(true)}
-        />}
-      <figcaption>{media.filmTitle} · {media.credit}</figcaption>
+    <figure className="curator-feature-image">
+      <CuratorArtwork media={media} />
+      <figcaption>{media.filmTitle} · BIFF TIMETABLE</figcaption>
     </figure>
   )
 }
@@ -220,7 +210,7 @@ export default function CuratorPage({ onOpenFilms, onOpenFilm }: Props) {
                 칼럼 읽기 <span aria-hidden="true">↗</span>
               </button>
             </div>
-            {leadFeature.media && <FeatureImage media={leadFeature.media} priority />}
+            {leadFeature.media && <FeatureImage media={leadFeature.media} />}
           </article>
         </section>
       )}

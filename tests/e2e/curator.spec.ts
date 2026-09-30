@@ -1,31 +1,25 @@
 import { expect, test } from '@playwright/test'
 
-test('prioritizes the editorial lead image and defers promotion images', async ({ page }) => {
-  await page.route('**/FILM_PHOTO/**', (route) => route.fulfill({
-    status: 200,
-    contentType: 'image/svg+xml',
-    body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>',
-  }))
+test('uses original artwork without requesting official photographs', async ({ page }) => {
+  const photoRequests: string[] = []
+  page.on('request', request => {
+    if (/FILM_PHOTO|cloudfront\.net/i.test(request.url())) photoRequests.push(request.url())
+  })
   await page.goto('./')
   await page.getByRole('button', { name: 'AI 도슨트' }).click()
 
-  const leadImage = page.locator('.curator-cover .curator-feature-image img')
-  await expect(leadImage).toHaveAttribute('loading', 'eager')
-  await expect(leadImage).toHaveAttribute('fetchpriority', 'high')
-  await expect(leadImage).toHaveAttribute('decoding', 'async')
-  await expect(leadImage).toHaveJSProperty('naturalWidth', 1)
-
-  const promotionImages = page.locator('.curator-promotion .curator-feature-image img')
-  await expect(promotionImages).toHaveCount(2)
-  for (const image of await promotionImages.all()) {
-    await expect(image).toHaveAttribute('loading', 'lazy')
-    await expect(image).toHaveAttribute('fetchpriority', 'low')
-    await expect(image).toHaveAttribute('decoding', 'async')
+  await expect(page.locator('.curator-cover .curator-artwork')).toBeVisible()
+  await expect(page.locator('.curator-promotion .curator-artwork')).toHaveCount(2)
+  const gallery = page.getByRole('region', { name: '감독의 시선으로 고르는 영화' })
+  for (let index = 0; index < 5; index++) {
+    await expect(gallery.locator('.curator-artwork')).toBeVisible()
+    await gallery.getByRole('button', { name: '다음 추천' }).click()
   }
+  await expect(page.locator('.curator-page img')).toHaveCount(0)
+  expect(photoRequests).toEqual([])
 })
 
 test('navigates the director gallery with controls and keyboard', async ({ page }) => {
-  await page.route('**/FILM_PHOTO/**', (route) => route.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>' }))
   await page.goto('./')
   await page.getByRole('button', { name: 'AI 도슨트' }).click()
   const gallery = page.getByRole('region', { name: '감독의 시선으로 고르는 영화' })
@@ -46,8 +40,7 @@ test('navigates the director gallery with controls and keyboard', async ({ page 
   await gallery.getByRole('button', { name: '칼럼 읽기' }).focus()
   await page.keyboard.press('End')
   await expect(gallery.getByRole('status')).toHaveText('1 / 5')
-  await expect(gallery.locator('.curator-gallery-image img')).toHaveAttribute('loading', 'lazy')
-  await expect(gallery.locator('.curator-gallery-image img')).toHaveAttribute('fetchpriority', 'low')
+  await expect(gallery.locator('.curator-artwork')).toBeVisible()
 })
 
 test('starts rotation only on request and stops it for reduced motion', async ({ page }) => {
@@ -80,13 +73,36 @@ test('keeps gallery actions legible in dark appearance', async ({ page }) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0)
 })
 
-test('keeps gallery credit and navigation when a photo fails', async ({ page }) => {
-  await page.route('**/FILM_PHOTO/**', (route) => route.abort())
+test('keeps original artwork titles within responsive frames', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'AI 도슨트' }).click()
+  const gallery = page.getByRole('region', { name: '감독의 시선으로 고르는 영화' })
+  await gallery.getByRole('button', { name: /^4번 이야기:/ }).click()
+  for (const width of [320, 390, 700, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 })
+    const metrics = await page.locator('.curator-artwork-title').evaluateAll(elements => elements.map(element => {
+      const text = element.getBoundingClientRect()
+      const frame = element.parentElement!.getBoundingClientRect()
+      return { left: text.left - frame.left, right: frame.right - text.right, top: text.top - frame.top, bottom: frame.bottom - text.bottom, height: text.height }
+    }))
+    for (const metric of metrics) {
+      expect(metric.left, `left at ${width}px`).toBeGreaterThanOrEqual(0)
+      expect(metric.right, `right at ${width}px`).toBeGreaterThanOrEqual(0)
+      expect(metric.top, `top at ${width}px`).toBeGreaterThanOrEqual(0)
+      expect(metric.bottom, `bottom at ${width}px`).toBeGreaterThanOrEqual(0)
+      expect(metric.height).toBeGreaterThan(0)
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0)
+  }
+})
+
+test('keeps original gallery artwork and navigation offline', async ({ page, context }) => {
   await page.goto('./')
   await page.getByRole('button', { name: 'AI 도슨트' }).click()
   const gallery = page.getByRole('region', { name: '감독의 시선으로 고르는 영화' })
   await gallery.scrollIntoViewIfNeeded()
-  await expect(gallery.locator('.curator-gallery-image-fallback')).toBeVisible()
+  await context.setOffline(true)
+  await expect(gallery.locator('.curator-artwork')).toBeVisible()
   const title = await gallery.locator('h3').innerText()
   const filmTitle = (await gallery.locator('figcaption').innerText()).split(' · ')[0]
   await gallery.getByRole('button', { name: '칼럼 읽기' }).click()
@@ -96,18 +112,16 @@ test('keeps gallery credit and navigation when a photo fails', async ({ page }) 
   await expect(page.getByRole('combobox', { name: '영화 검색' })).toHaveValue(filmTitle)
 })
 
-test('retries a failed gallery photo after the request recovers', async ({ page }) => {
-  await page.route('**/FILM_PHOTO/**', (route) => route.abort())
+test('updates original artwork with the selected story offline', async ({ page, context }) => {
   await page.goto('./')
   await page.getByRole('button', { name: 'AI 도슨트' }).click()
   const gallery = page.getByRole('region', { name: '감독의 시선으로 고르는 영화' })
   await gallery.scrollIntoViewIfNeeded()
-  await expect(gallery.getByRole('button', { name: '사진 다시 시도' })).toBeVisible()
-  await page.unroute('**/FILM_PHOTO/**')
-  await page.route('**/FILM_PHOTO/**', (route) => route.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>' }))
-  await gallery.getByRole('button', { name: '사진 다시 시도' }).click()
-  await expect(gallery.locator('.curator-gallery-image img')).toHaveJSProperty('naturalWidth', 1)
-  await expect(gallery.locator('.curator-gallery-image-fallback')).toHaveCount(0)
+  await context.setOffline(true)
+  await expect(gallery.locator('.curator-artwork-title')).toHaveText('호프')
+  await gallery.getByRole('button', { name: '다음 추천' }).click()
+  await expect(gallery.locator('.curator-artwork-title')).toHaveText('파더랜드')
+  await expect(gallery.locator('figcaption')).toContainText('파더랜드')
 })
 
 test('supports horizontal swipe without taking over vertical scrolling', async ({ page }) => {
@@ -136,16 +150,15 @@ test('supports horizontal swipe without taking over vertical scrolling', async (
   await expect(gallery.getByRole('status')).toHaveText('2 / 5')
 })
 
-test('opens the editorial feature and keeps its photo credit when the image fails', async ({ page }) => {
-  await page.route('**/FILM_PHOTO/**', (route) => route.abort())
+test('opens the editorial feature with original title artwork', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: 'AI 도슨트' }).click()
 
   const cover = page.locator('.curator-cover')
   await expect(cover).toBeVisible({ timeout: 15_000 })
   await expect(page.locator('.curator-promotion')).toHaveCount(2)
-  await expect(cover.locator('.curator-feature-image-placeholder')).toBeVisible()
-  await expect(cover.locator('figcaption')).toContainText('© Tatsuki Fujimoto/SHUEISHA')
+  await expect(cover.locator('.curator-artwork-title')).toHaveText('룩백')
+  await expect(cover.locator('figcaption')).toContainText('룩백 · BIFF TIMETABLE')
 
   await cover.getByRole('button', { name: '칼럼 읽기' }).click()
   await expect(page.locator('.curator-detail-page h2')).toContainText('고레에다 히로카즈')

@@ -306,6 +306,8 @@ test('uses BIFF shell colors in dark mode', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' })
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('./')
+  const rim = page.locator('.topbar > .liquid-glass-edge-highlight-layer')
+  await expect(rim).toHaveCSS('padding-top', '1px')
 
   const shell = await page.locator('.topbar').evaluate((element) => {
     const root = getComputedStyle(document.documentElement)
@@ -313,13 +315,14 @@ test('uses BIFF shell colors in dark mode', async ({ page }) => {
     return {
       action: root.getPropertyValue('--biff-action').trim(),
       background: header.backgroundColor,
-      border: header.borderTopColor,
+      border: root.getPropertyValue('--biff-shell-border').trim(),
     }
   })
 
   expect(shell.action).toBe('#ff7568')
   expect(shell.background).toBe('rgba(34, 36, 40, 0.88)')
-  expect(shell.border).toBe('rgba(255, 255, 255, 0.15)')
+  expect(shell.border).toBe('rgba(255,255,255,.15)')
+  await expect(rim).toHaveCSS('--glass-rim-white-peak', 'rgba(255,255,255,.88)')
 })
 
 test('keeps official-source footer readable above the mobile dock', async ({ page }) => {

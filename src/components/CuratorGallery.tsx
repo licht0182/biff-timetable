@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type TouchEvent } from 'react'
 import type { CuratorArticle } from '../curator-content'
 import type { CuratorFeatureMedia } from '../curator-feature-media'
+import CuratorArtwork from './CuratorArtwork'
 import '../curator-gallery.css'
 
 type GalleryStory = { article: CuratorArticle; media: CuratorFeatureMedia }
@@ -17,7 +18,6 @@ export default function CuratorGallery({ stories, onOpenArticle, onOpenFilm }: P
   const [reducedMotion, setReducedMotion] = useState(() => (
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   ))
-  const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set())
   const touchStart = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
@@ -37,12 +37,6 @@ export default function CuratorGallery({ stories, onOpenArticle, onOpenFilm }: P
     }
     document.addEventListener('visibilitychange', stopWhenHidden)
     return () => document.removeEventListener('visibilitychange', stopWhenHidden)
-  }, [])
-
-  useEffect(() => {
-    const retryWhenOnline = () => setFailedImages(new Set())
-    window.addEventListener('online', retryWhenOnline)
-    return () => window.removeEventListener('online', retryWhenOnline)
   }, [])
 
   useEffect(() => {
@@ -97,30 +91,13 @@ export default function CuratorGallery({ stories, onOpenArticle, onOpenFilm }: P
     >
       <div className="curator-gallery-heading">
         <div><p>DIRECTOR SPOTLIGHT</p><h2 id="curator-gallery-title">감독의 시선으로 고르는 영화</h2></div>
-        <p>사진과 칼럼을 넘겨 보며 마음에 드는 작품을 찾아보세요.</p>
+        <p>작품과 칼럼을 넘겨 보며 마음에 드는 영화를 찾아보세요.</p>
       </div>
       <div className="curator-gallery-stage" role="group" aria-label="추천 이야기 키보드 탐색" tabIndex={0} onKeyDown={handleKeys} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <article className="curator-gallery-card" aria-live={playing ? 'off' : 'polite'} aria-atomic="true">
           <figure className="curator-gallery-image">
-            {failedImages.has(current.media.slug)
-              ? <div className="curator-gallery-image-fallback">
-                <span role="img" aria-label={`${current.media.filmTitle} 사진을 불러올 수 없습니다`}>{current.media.filmTitle}</span>
-                <button type="button" onClick={() => setFailedImages((previous) => {
-                  const next = new Set(previous)
-                  next.delete(current.media.slug)
-                  return next
-                })}>사진 다시 시도</button>
-              </div>
-              : <img
-                key={current.media.slug}
-                src={current.media.imageSrc}
-                alt={current.media.imageAlt}
-                loading="lazy"
-                fetchPriority="low"
-                decoding="async"
-                onError={() => setFailedImages((previous) => new Set(previous).add(current.media.slug))}
-              />}
-            <figcaption>{current.media.filmTitle} · {current.media.credit}</figcaption>
+            <CuratorArtwork media={current.media} />
+            <figcaption>{current.media.filmTitle} · BIFF TIMETABLE</figcaption>
           </figure>
           <div className="curator-gallery-copy">
             <span className="curator-category">{current.article.category}</span>
