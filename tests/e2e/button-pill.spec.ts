@@ -4,7 +4,7 @@ for (const width of [390, 1280]) {
   test(`centers pill buttons while retaining curator cards at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 })
     await page.goto('./')
-    await expect(page.locator('.film-card').first()).toBeVisible()
+    await expect(page.locator('.film-card').first()).toBeVisible({ timeout: 15_000 })
     if (width > 700) {
       await expect(page.locator('.mobile-advanced-filter-toggle')).toBeHidden()
       await expect(page.locator('.mobile-filter-jump')).toBeHidden()
@@ -72,7 +72,7 @@ for (const width of [390, 1280]) {
     await page.setViewportSize({ width, height: 900 })
     await page.goto('./')
     const button = page.locator('.favorite-button').first()
-    await expect(button).toBeVisible()
+    await expect(button).toBeVisible({ timeout: 15_000 })
     await page.mouse.move(0, 0)
     const measure = () => button.evaluate((element) => {
       const bounds = element.getBoundingClientRect()

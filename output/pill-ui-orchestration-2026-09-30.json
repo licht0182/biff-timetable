@@ -2,7 +2,7 @@
   "schema_version": 1,
   "mode": "balanced",
   "risk": "normal",
-  "revision": "ca8df107b0cc7702069e2fd2eae38ebbaf1d0949d9a8bd6790bbf19cee7a1c7f",
+  "revision": "c33865286dd80fac6a6b9357648edf0ccffcc1597594a6de726a7b2a42f602d4",
   "scope": "Latest user correction: preserve clickable cards; ordinary buttons are pills. Press and hover feedback changes color only, without resizing or spring motion.",
   "parent": {
     "agent_id": "/root",
@@ -10,16 +10,16 @@
     "requested_effort": "low",
     "routing_proof_required": false,
     "unconfirmed_disclosure": "Skill recommendation only. Existing parent settings preserved; actual model and effort are not observable.",
-    "verified_revision": "ca8df107b0cc7702069e2fd2eae38ebbaf1d0949d9a8bd6790bbf19cee7a1c7f",
-    "diff_inspected_revision": "ca8df107b0cc7702069e2fd2eae38ebbaf1d0949d9a8bd6790bbf19cee7a1c7f",
-    "accepted_revision": "ca8df107b0cc7702069e2fd2eae38ebbaf1d0949d9a8bd6790bbf19cee7a1c7f",
-    "acceptance_reason": "Latest user scope implemented and verified on the exact candidate. Final full regression passed 343 tests, 1 existing skip, no failures or flakes; current-policy fresh gpt-6.1-sol Medium review returned SHIP. No source changes after verification and review.",
-    "verification_evidence": "Final shadow/color candidate full suite passed 343 tests, 1 existing skip, zero failures and flakes in 452 seconds. Accumulated diff inspected; TypeScript and build passed and 10 pill/card hover tests passed. Earlier 18 dock repeats, CLI 20 screens, and 5 PNG exports per engine passed."
+    "verified_revision": "c33865286dd80fac6a6b9357648edf0ccffcc1597594a6de726a7b2a42f602d4",
+    "diff_inspected_revision": "c33865286dd80fac6a6b9357648edf0ccffcc1597594a6de726a7b2a42f602d4",
+    "accepted_revision": "c33865286dd80fac6a6b9357648edf0ccffcc1597594a6de726a7b2a42f602d4",
+    "acceptance_reason": "Two readiness waits adjusted to existing convention, preserving every UI assertion and unchanged application. Final full rerun343pass/1existing skip/0failures/0flakes and fresh GPT-6.1 Sol Medium SHIP. Exact candidate accepted for a new deployment.",
+    "verification_evidence": "Application source unchanged from prior 343-pass full regression. Two initial test visibility waits use existing15-second convention after remote WebKit exhausted five seconds. Diff inspected, current10 pill/card hover tests passed, full rerun343passed/1existing skip/0failed/0flaky in447seconds. Earlier build/data,18 dock repeats,CLI20screens and PNG5 per engine passed."
   },
   "host_limit": 3,
-  "budget": { "dispatches": 9, "corrections": 7, "reviews": 6 },
-  "budget_reassessment": "Final full regression passed 343 tests with 1 existing skip and no flakes. Shadow correction and fifth review completed. Acceptance validator now requires gpt-6.1-sol rather than the earlier gpt-6-sol route; explicitly bound one additional current-policy fresh review without source changes or redundant test reruns.",
-  "parent_corrections": 7,
+  "budget": { "dispatches": 10, "corrections": 8, "reviews": 7 },
+  "budget_reassessment": "Remote CI WebKit failed two new desktop-width tests during the default five-second initial film/favorite visibility wait; geometry/color assertions were not reached. Explicitly bound a readiness-wait correction to the existing 15-second layout-test convention, full local verification, one fresh current-policy review, and new deployment. Application source remains unchanged.",
+  "parent_corrections": 8,
   "prior_review_evidence": {
     "id": "shadow-final-review", "agent_id": "/root/pill_shadow_final_review",
     "requested_model": "gpt-6-sol", "requested_effort": "medium", "fresh_context": true,
@@ -106,7 +106,7 @@
       "evidence": "Reviewer requested fixed curator hover shadows. Parent preserved resting shadows and added actual hover checks; current curator-card already had an important resting shadow, featured-card fallback is now fixed too."
     },
     {
-      "id": "policy-release-review", "kind": "review", "status": "completed", "required": true,
+      "id": "policy-release-review", "kind": "review", "status": "completed", "required": false,
       "read_only": true, "fresh_context": true,
       "ownership": ["src", "tests", "playwright.config.ts"], "depends_on": ["buttons"],
       "agent_id": "/root/pill_policy_release_review", "requested_model": "gpt-6.1-sol", "requested_effort": "medium",
@@ -117,6 +117,19 @@
       "parent_verification_evidence": "Accumulated diff inspected, build and 10 actual pill/card hover tests passed. Final full rerun passed 343 tests, 1 existing skip, zero failures and flakes in 452 seconds. No source changes after verification.",
       "verdict": "ship",
       "evidence": "Current-policy fresh GPT-6.1 Sol Medium review inspected exact revision and final JSON report: no blockers in pills/centering, card exceptions, responsive visibility, view toggle and one-row actions, PNG helper or color-only feedback. Read-only; no source changes."
+    },
+    {
+      "id": "readiness-release-review", "kind": "review", "status": "completed", "required": true,
+      "read_only": true, "fresh_context": true,
+      "ownership": ["src", "tests", "playwright.config.ts"], "depends_on": ["buttons"],
+      "agent_id": "/root/pill_readiness_release_review", "requested_model": "gpt-6.1-sol", "requested_effort": "medium",
+      "dispatch_source": "native collaboration spawn_agent", "routing_proof_required": false,
+      "unconfirmed_disclosure": "Requested settings, no realized telemetry.",
+      "reviewed_revision": "c33865286dd80fac6a6b9357648edf0ccffcc1597594a6de726a7b2a42f602d4",
+      "parent_verified_revision": "c33865286dd80fac6a6b9357648edf0ccffcc1597594a6de726a7b2a42f602d4",
+      "parent_verification_evidence": "Only two initial test readiness waits changed from default5 to15 seconds; all geometry/color assertions and app code preserved. Current10 pill/card tests passed; final full rerun343passed/1existing skip/0failed/0flaky in447seconds.",
+      "verdict": "ship",
+      "evidence": "Fresh GPT-6.1 Sol Medium reviewer verified only two readiness wait changes since HEAD and consistency with existing15/30-second layout waits. All geometry,color,card and size assertions preserved; no accumulated application blockers. Parent confirmed successful final full rerun before release."
     }
   ]
 }
