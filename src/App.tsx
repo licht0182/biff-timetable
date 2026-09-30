@@ -13,6 +13,7 @@ import LiquidTabBar from './components/LiquidTabBar'
 import LiquidGlassEffects from './components/LiquidGlassEffects'
 import PwaUpdatePrompt from './components/PwaUpdatePrompt'
 import TimetableOverflowMenu from './components/TimetableOverflowMenu'
+import TimetableViewSwitch from './components/TimetableViewSwitch'
 import OfficialUpdateRibbon from './components/OfficialUpdateRibbon'
 import { BOOKING_PRIORITIES, MAX_BOOKING_PRIORITY, type BookingPlanMap, type BookingPriority, type Film, type Screening, type TicketStatus, type TicketStatusMap } from './components/film-types'
 import { createCustomEventId, customEventAbsoluteWindow, customEventCategoryLabel, customEventPaletteIndex, customEventTimetableDate, customEventTimetableEndMinutes, customEventTimetableStartMinutes, normalizeCustomEvents, windowsOverlap, type CustomEvent, type CustomEventDraft } from './custom-events'
@@ -1418,25 +1419,24 @@ export default function App() {
       </main> : activeTab === 'curator' ? <Suspense fallback={<main className="app-page app-page--curator curator-page curator-loading" aria-busy="true"><div className="empty">AI 도슨트 칼럼을 불러오는 중입니다.</div></main>}><CuratorPage key={curatorPageKey} onOpenFilms={openFilms} onOpenFilm={openFilmFromCurator} /></Suspense> : <main className="app-page app-page--timetable timetable-page">
         <input ref={importInputRef} type="file" accept="application/json,.json" className="visually-hidden" onChange={importBackup} />
         {filmDataFeedback}
-        {selectedItems.length === 0 && customEvents.length === 0 ? <div className="layout-surface empty timetable-empty"><strong>아직 시간표에 일정이 없습니다.</strong><span>영화 회차를 고르거나 직접 일정을 추가해 주세요.</span><div className="layout-actions timetable-empty-actions"><div className="timetable-view-switch" role="group" aria-label="시간표 보기 방식"><button type="button" className={`ui-text-chip ${timetableView === 'list' ? 'active' : ''}`} aria-pressed={timetableView === 'list'} onClick={() => setTimetableView('list')}>목록</button><button type="button" className={`ui-text-chip ${timetableView === 'grid' ? 'active' : ''}`} aria-pressed={timetableView === 'grid'} onClick={() => setTimetableView('grid')}>시간표</button></div><button className="ui-text-chip timetable-empty-find-button" onClick={openFilms}>영화 찾기</button><button type="button" className="ui-text-chip custom-event-add-button" onClick={openCreateCustomEvent}>일정 추가</button><TimetableOverflowMenu label="더보기" className="timetable-empty-backup"><button className="ui-text-chip" onClick={exportBackup}>JSON 저장</button><button className="ui-text-chip" onClick={() => importInputRef.current?.click()}>JSON 가져오기</button></TimetableOverflowMenu></div></div> : <>
+        {selectedItems.length === 0 && customEvents.length === 0 ? <div className="layout-surface empty timetable-empty"><strong>아직 시간표에 일정이 없습니다.</strong><span>영화 회차를 고르거나 직접 일정을 추가해 주세요.</span><div className="layout-actions timetable-empty-actions"><TimetableViewSwitch value={timetableView} onChange={setTimetableView} /><button className="ui-text-chip timetable-empty-find-button" onClick={openFilms}>영화 찾기</button><button type="button" className="ui-text-chip custom-event-add-button" onClick={openCreateCustomEvent}>일정 추가</button><TimetableOverflowMenu label="더보기" className="timetable-empty-backup"><button className="ui-text-chip" onClick={exportBackup}>JSON 저장</button><button className="ui-text-chip" onClick={() => importInputRef.current?.click()}>JSON 가져오기</button></TimetableOverflowMenu></div></div> : <>
           <div className="layout-surface layout-toolbar timetable-actions enhanced-timetable-actions">
             <div><span className="booking-summary">{timetableSelectionMode ? `삭제할 일정 ${timetableDeleteSelection.length}개 선택` : timetableView === 'list' ? listSummaryText : bookingSummaryText}</span></div>
             <div className="layout-actions timetable-action-buttons">
-              <div className="timetable-view-switch" role="group" aria-label="시간표 보기 방식">
-                <button type="button" className={`ui-text-chip ${timetableView === 'list' ? 'active' : ''}`} aria-pressed={timetableView === 'list'} onClick={() => setTimetableView('list')}>목록</button>
-                <button type="button" className={`ui-text-chip ${timetableView === 'grid' ? 'active' : ''}`} aria-pressed={timetableView === 'grid'} onClick={() => setTimetableView('grid')}>시간표</button>
-              </div>
+              <TimetableViewSwitch value={timetableView} onChange={setTimetableView} />
               <button type="button" className="ui-text-chip custom-event-add-button" onClick={openCreateCustomEvent}>일정 추가</button>
               <button
                 type="button"
-                className="ui-text-chip png-export-trigger"
+                className="ui-text-chip png-export-trigger png-export-desktop"
                 title="데스크탑은 기존 넓은 레이아웃, 모바일은 기본 3:4 고해상도 레이아웃으로 저장하며 늦은 일정은 세로로 확장합니다."
                 onClick={() => void savePng()}
                 disabled={pngExportState === 'working'}
               >{pngExportState === 'working' ? 'PNG 생성 중…' : pngExportState === 'ready' ? 'PNG 준비 완료' : pngExportState === 'done' ? '저장 완료' : pngExportState === 'error' ? '저장 실패' : 'PNG 저장'}</button>
-              <button type="button" className={`ui-text-chip timetable-selection-button ${timetableSelectionMode ? 'active' : ''}`} onClick={toggleTimetableSelectionMode}>{timetableSelectionMode ? '선택 취소' : '선택'}</button>
+              <button type="button" className={`ui-text-chip timetable-selection-button ${timetableSelectionMode ? 'active' : ''}`} aria-label={timetableSelectionMode ? '선택 취소' : undefined} onClick={toggleTimetableSelectionMode}>{timetableSelectionMode ? '취소' : '선택'}</button>
               {timetableSelectionMode && <button type="button" className="ui-text-chip timetable-delete-button" onClick={deleteTimetableSelection} disabled={timetableDeleteSelection.length === 0}>삭제 {timetableDeleteSelection.length}</button>}
               <TimetableOverflowMenu label="더보기">
+                <button className="ui-text-chip png-export-mobile" onClick={() => void savePng()} disabled={pngExportState === 'working'}>{pngExportState === 'working' ? 'PNG 생성 중…' : pngExportState === 'ready' ? 'PNG 준비 완료' : pngExportState === 'done' ? '저장 완료' : pngExportState === 'error' ? '저장 실패' : 'PNG 저장'}</button>
+                {timetableSelectionMode && <button className="ui-text-chip timetable-add-mobile" onClick={openCreateCustomEvent}>일정 추가</button>}
                 <button className="ui-text-chip" onClick={exportIcs}>캘린더</button>
                 <button className="ui-text-chip" onClick={exportBackup}>JSON 저장</button>
                 <button className="ui-text-chip" onClick={() => importInputRef.current?.click()}>JSON 가져오기</button>

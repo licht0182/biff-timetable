@@ -47,13 +47,13 @@
 
 .timetable-more-menu>div button{
   min-width:0;
-  min-height:34px;
+  min-height:40px;
   padding:0 8px;
   border:1px solid #e1e1e1;
   border-radius:8px;
   background:#fff;
   color:#666;
-  font-size:10px;
+  font-size:12px;
   font-weight:700;
   line-height:1.2;
 }
@@ -71,6 +71,67 @@
   grid-template-columns:minmax(0,1fr);
 }
 
+.timetable-more-menu>div .png-export-mobile,
+.timetable-more-menu>div .timetable-add-mobile{display:none}
+
+.timetable-page .timetable-view-switch{
+  display:inline-flex;
+  align-items:center;
+  width:max-content;
+  min-width:0;
+  box-sizing:border-box;
+  height:50px;
+  min-height:50px;
+  gap:2px;
+  padding:2px!important;
+  border:1px solid var(--ios-separator, #cfcfcf)!important;
+  border-radius:999px!important;
+  background:var(--ios-surface-soft, #f1f1f1)!important;
+  white-space:nowrap;
+}
+
+:root body .timetable-page .timetable-view-switch>button.ui-text-chip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  min-height:44px!important;
+  padding:0 10px!important;
+  border:0!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  color:var(--ios-label, #303030)!important;
+  font-size:12px!important;
+  font-weight:700;
+  line-height:1!important;
+  white-space:nowrap!important;
+  overflow-wrap:normal;
+}
+
+:root body .timetable-page .timetable-view-switch>button.ui-text-chip.active{
+  background:var(--biff-action, #c7372b)!important;
+  color:var(--biff-on-action, #fff)!important;
+  box-shadow:0 1px 4px rgba(0,0,0,.16);
+}
+
+.timetable-page .timetable-view-switch>button::before,
+.timetable-page .timetable-view-switch>button::after{display:none!important}
+
+:root body .timetable-page .timetable-view-switch>button:focus-visible{
+  outline:3px solid var(--biff-focus, #c7372b);
+  outline-offset:2px;
+}
+
+:root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>button.ui-text-chip,
+:root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>.timetable-more-menu>summary.ui-text-chip{
+  min-height:50px!important;
+}
+
+:root body .timetable-page .timetable-more-menu>div button.ui-text-chip{
+  min-height:44px!important;
+  font-size:12px!important;
+}
+
 @media(max-width:700px){
   .timetable-more-menu>summary{min-width:54px}
   .timetable-more-menu>div{
@@ -82,55 +143,48 @@
   .timetable-empty-backup>div{width:176px;min-width:176px}
 }
 
-/* The view switch should not add a second, taller surface around its buttons. */
-.timetable-page .timetable-view-switch{
-  gap:6px;
-  padding:0!important;
-  border:0!important;
-  background:transparent!important;
-}
-
-/* Keep the empty-timetable actions on the same control geometry. */
-.timetable-empty .timetable-view-switch button,
-.timetable-empty .timetable-empty-actions>button,
-.timetable-empty .timetable-empty-backup>summary{
-  box-sizing:border-box;
-  width:auto;
-  height:33px!important;
-  min-height:33px!important;
-  padding:7px 10px!important;
-  border:1px solid #cfcfcf!important;
-  border-radius:var(--layout-control-radius,14px)!important;
-}
-
-.timetable-action-buttons .timetable-view-switch button,
-.timetable-action-buttons .timetable-more-menu>summary{
-  box-sizing:border-box;
-  min-height:30px!important;
-  padding:0 9px!important;
-  border:1px solid #cfcfcf!important;
-  border-radius:var(--layout-control-radius,14px)!important;
-}
-
-.timetable-action-buttons .timetable-view-switch button{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  font-size:10px!important;
-  line-height:1!important;
-  white-space:nowrap;
-}
-
 @media(max-width:700px){
-  .timetable-action-buttons .timetable-view-switch button,
-  .timetable-action-buttons .timetable-more-menu>summary{
-    min-height:36px!important;
-    padding:0 7px!important;
+  :root body .timetable-page .timetable-action-buttons,
+  :root body .timetable-page .timetable-empty-actions{
+    display:flex!important;
+    align-items:center!important;
+    flex-wrap:nowrap!important;
+    justify-content:flex-start!important;
+    gap:3px!important;
+    min-width:0;
+    width:100%;
   }
+  .timetable-page .timetable-empty-actions>.timetable-view-switch{width:max-content;flex:0 0 auto}
+  :root body .timetable-page .timetable-view-switch>button.ui-text-chip{padding:0 6px!important}
+  .timetable-page .timetable-action-buttons>.png-export-desktop{display:none!important}
+  .timetable-page .timetable-action-buttons>.custom-event-add-button{order:1}
+  .timetable-page .timetable-action-buttons>.timetable-view-switch{order:0}
+  .timetable-page .timetable-action-buttons>.timetable-selection-button{order:2}
+  .timetable-page .timetable-action-buttons>.timetable-delete-button{order:3}
+  .timetable-page .timetable-action-buttons>.timetable-more-menu{order:4;margin-left:auto}
+  .timetable-page .timetable-action-buttons:has(.timetable-delete-button)>.custom-event-add-button{display:none!important}
+  .timetable-page .timetable-action-buttons>.timetable-more-menu>div .png-export-mobile,
+  .timetable-page .timetable-action-buttons>.timetable-more-menu>div .timetable-add-mobile{display:inline-flex!important}
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>button.ui-text-chip,
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>.timetable-more-menu>summary.ui-text-chip{
+    box-sizing:border-box;
+    flex:0 0 auto;
+    width:auto!important;
+    min-height:50px!important;
+    padding:0 5px!important;
+    font-size:12px!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+    overflow-wrap:normal;
+  }
+  :root body .timetable-page .timetable-action-buttons>.timetable-delete-button{padding-inline:4px!important}
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>.timetable-more-menu>summary.ui-text-chip{min-width:44px!important}
+  .timetable-page .timetable-empty-actions>.timetable-empty-backup{grid-column:auto;justify-self:auto;margin-left:auto}
+  :root body .timetable-page .timetable-empty-actions>.timetable-empty-find-button{min-width:0!important}
+  .timetable-page .timetable-more-menu>div button{min-height:44px;font-size:12px!important}
 }
 
 @media(prefers-color-scheme:dark){
-  .timetable-empty .timetable-view-switch button,
   .timetable-empty .timetable-empty-actions>button,
   .timetable-empty .timetable-empty-backup>summary{
     border-color:var(--ios-separator)!important;
@@ -142,7 +196,6 @@
     color:var(--ios-label)!important;
   }
 
-  .timetable-action-buttons .timetable-view-switch button,
   .timetable-action-buttons .timetable-more-menu>summary{
     border-color:var(--ios-separator)!important;
   }

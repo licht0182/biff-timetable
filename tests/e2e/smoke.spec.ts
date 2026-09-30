@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
+import { openPngExport } from './helpers/timetable-export'
 
 type Screening = { id: string; date: string; start: string; end?: string; venue: string; code?: string }
 type Film = { id: string; title: string; runtime?: number; screenings: Screening[] }
@@ -121,7 +122,7 @@ test('exports desktop and mobile timetable PNGs with separate high-resolution pr
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
   await page.getByRole('button', { name: '시간표', exact: true }).click()
-  await page.getByRole('button', { name: 'PNG 저장' }).click()
+  await openPngExport(page)
 
   const desktop = await pngPreviewSize(page)
   expect(desktop.width).toBe(2160)
@@ -130,7 +131,7 @@ test('exports desktop and mobile timetable PNGs with separate high-resolution pr
 
   await page.setViewportSize({ width: 393, height: 852 })
   await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(393)
-  await page.getByRole('button', { name: 'PNG 저장' }).click()
+  await openPngExport(page)
 
   const mobile = await pngPreviewSize(page)
   expect(mobile.width).toBe(1920)
@@ -149,7 +150,7 @@ test('extends mobile PNG height when the last timetable hour runs past midnight'
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
   await page.getByRole('button', { name: '시간표', exact: true }).click()
-  await page.getByRole('button', { name: 'PNG 저장' }).click()
+  await openPngExport(page)
 
   const mobile = await pngPreviewSize(page)
   expect(mobile.width).toBe(1920)
@@ -202,7 +203,7 @@ test('keeps distinct personal-event colors in the timetable and PNG export', asy
   const screenColors = await screenEvents.evaluateAll((events) => events.map((event) => getComputedStyle(event).backgroundColor))
   expect(new Set(screenColors).size).toBe(2)
 
-  await page.getByRole('button', { name: 'PNG 저장' }).click()
+  await openPngExport(page)
   await pngPreviewSize(page)
 
   const exportEvents = page.locator('.png-export-host .png-export-event.custom-event.category-personal')

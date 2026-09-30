@@ -368,7 +368,7 @@ test('fits first and last dock lenses at 320px in normal and pressed states', as
     await button.hover({ position: { x: normal.buttonWidth / 2, y: 28 } })
     await page.mouse.down()
     await expect(tabBar).toHaveAttribute('data-lens-pressed', id)
-    const expectedPressedWidth = Math.min(88, normal.buttonWidth + 1.5)
+    const expectedPressedWidth = expectedNormalWidth
     await expect.poll(async () => Math.abs((await measure()).opticalWidth - expectedPressedWidth)).toBeLessThanOrEqual(.1)
     await expect.poll(async () => {
       const bounds = await measure()
@@ -457,7 +457,7 @@ test('moves the selection lens with active navigation', async ({ page }) => {
   await expect.poll(async () => Number.parseFloat(await readOpticalPosition())).toBeLessThan(Number.parseFloat(timetableOpticalPosition))
 })
 
-test('deforms the selection lens on press without duplicating actions', async ({ page }) => {
+test('keeps selection lens size fixed on press without duplicating actions', async ({ page }) => {
   dockNaNErrors.get(page)?.splice(0)
   await page.setViewportSize({ width: 390, height: 852 })
   await page.reload()
@@ -465,18 +465,25 @@ test('deforms the selection lens on press without duplicating actions', async ({
 
   const tabBar = page.locator('.liquid-tab-bar')
   const button = tabBar.getByRole('button', { name: 'AI 도슨트' })
+  const surface = tabBar.locator('.liquid-tab-bar-surface')
+  const dimensions = () => surface.evaluate((element) => {
+    const style = getComputedStyle(element)
+    return { width: style.getPropertyValue('--dock-lens-width'), height: style.getPropertyValue('--dock-lens-height') }
+  })
+  const before = await dimensions()
+  const beforeColor = await button.evaluate((element) => getComputedStyle(element).backgroundColor)
 
   await button.hover({ position: { x: 16, y: 24 } })
   await page.mouse.down()
   await expect(tabBar).toHaveAttribute('data-lens-pressed', 'curator')
   await expect(button).toHaveAttribute('data-pressed', 'true')
   await expect(tabBar.getByRole('button')).toHaveCount(4)
-  await expect(tabBar.locator('.liquid-tab-bar-surface')).toHaveCSS('--dock-lens-width', '88px')
-  await expect(tabBar.locator('.liquid-tab-bar-surface')).toHaveCSS('--dock-lens-height', '56px')
+  expect(await dimensions()).toEqual(before)
+  await expect.poll(() => button.evaluate((element) => getComputedStyle(element).backgroundColor)).not.toBe(beforeColor)
   await page.mouse.up()
   await expect(tabBar).not.toHaveAttribute('data-lens-pressed')
-  await expect(tabBar.locator('.liquid-tab-bar-surface')).toHaveCSS('--dock-lens-width', '92px')
-  await expect(tabBar.locator('.liquid-tab-bar-surface')).toHaveCSS('--dock-lens-height', '59px')
+  expect(await dimensions()).toEqual(before)
+  await expect(button).toHaveAttribute('aria-current', 'page')
 })
 
 test('uses the plain tab surface when transparency is reduced', async ({ page, browserName }) => {

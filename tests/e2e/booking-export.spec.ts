@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
+import { openPngExport } from './helpers/timetable-export'
 
 type Screening = { id: string; date: string; start: string; end?: string; venue: string }
 type Film = { id: string; title: string; runtime?: number; screenings: Screening[] }
@@ -254,7 +255,7 @@ test('shows priority and failure symbols in PNG while excluding unselected alter
   await page.setViewportSize({ width: 393, height: 852 })
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
-  await page.getByRole('button', { name: 'PNG 저장' }).click()
+  await openPngExport(page)
   await expect(page.locator('.png-ios-preview')).toBeVisible({ timeout: 20_000 })
 
   const titles = await page.locator('.png-export-host .png-export-event-title').allTextContents()

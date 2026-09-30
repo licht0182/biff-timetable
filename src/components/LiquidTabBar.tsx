@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { LiquidGlass, type LiquidGlassHandle } from 'liquid-glass-web-react'
 
 export type AppTab = 'films' | 'timetable' | 'curator' | 'settings'
@@ -58,17 +58,12 @@ function useMediaPreference(queryText: string) {
   return matches
 }
 
-function useDockLensMotion(activeTab: AppTab, enabled: boolean, reducedMotion: boolean) {
+function useDockLensGeometry(activeTab: AppTab, enabled: boolean) {
   const dockRef = useRef<HTMLDivElement>(null)
   const lensRef = useRef<LiquidGlassHandle>(null)
   const [geometry, setGeometry] = useState(initialLensGeometry)
   const [pressedTab, setPressedTab] = useState<AppTab | null>(null)
-  const targetRef = useRef<LensPosition>(initialLensPosition)
   const positionRef = useRef<LensPosition>(initialLensPosition)
-  const velocityRef = useRef<LensPosition>({ x: 0, y: 0 })
-  const frameRef = useRef<number | null>(null)
-  const lastFrameRef = useRef(0)
-  const hasMeasuredActiveRef = useRef(false)
 
   const syncLensPosition = useCallback((position: LensPosition) => {
     const dock = dockRef.current
@@ -105,50 +100,12 @@ function useDockLensMotion(activeTab: AppTab, enabled: boolean, reducedMotion: b
     dockRef.current?.style.setProperty('--dock-lens-height', `${height}px`)
   }, [])
 
-  const animate = useCallback((time: number) => {
-    const target = targetRef.current
-    const position = positionRef.current
-    const velocity = velocityRef.current
-    const elapsed = lastFrameRef.current ? (time - lastFrameRef.current) / 1000 : 1 / 60
-    const dt = Math.min(Math.max(elapsed, 1 / 120), 1 / 30)
-    lastFrameRef.current = time
-
-    velocity.x += (360 * (target.x - position.x) - 32 * velocity.x) * dt
-    velocity.y += (360 * (target.y - position.y) - 32 * velocity.y) * dt
-    position.x += velocity.x * dt
-    position.y += velocity.y * dt
-    syncLensPosition(position)
-
-    const settled = Math.abs(target.x - position.x) < 0.0002
-      && Math.abs(target.y - position.y) < 0.0002
-      && Math.abs(velocity.x) < 0.0002
-      && Math.abs(velocity.y) < 0.0002
-    if (settled) {
-      positionRef.current = { ...target }
-      velocityRef.current = { x: 0, y: 0 }
-      syncLensPosition(target)
-      frameRef.current = null
-      lastFrameRef.current = 0
-      return
-    }
-    frameRef.current = window.requestAnimationFrame(animate)
+  const moveLens = useCallback((next: LensPosition) => {
+    positionRef.current = { ...next }
+    syncLensPosition(next)
   }, [syncLensPosition])
 
-  const moveLens = useCallback((next: LensPosition, animatePosition: boolean) => {
-    targetRef.current = next
-    if (!enabled || reducedMotion || !animatePosition) {
-      if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current)
-      frameRef.current = null
-      lastFrameRef.current = 0
-      positionRef.current = { ...next }
-      velocityRef.current = { x: 0, y: 0 }
-      syncLensPosition(next)
-      return
-    }
-    if (frameRef.current === null) frameRef.current = window.requestAnimationFrame(animate)
-  }, [animate, enabled, reducedMotion, syncLensPosition])
-
-  const measureButton = useCallback((button: HTMLButtonElement, animatePosition: boolean) => {
+  const measureButton = useCallback((button: HTMLButtonElement) => {
     const dock = dockRef.current
     if (!dock) return
     const dockRect = dock.getBoundingClientRect()
@@ -179,26 +136,24 @@ function useDockLensMotion(activeTab: AppTab, enabled: boolean, reducedMotion: b
     moveLens({
       x: (buttonRect.left - dockRect.left + buttonRect.width / 2) / dockRect.width,
       y: (buttonRect.top - dockRect.top + buttonRect.height / 2) / dockRect.height,
-    }, animatePosition)
+    })
   }, [moveLens, syncLensDimensions])
 
-  const measureActive = useCallback((animatePosition: boolean) => {
+  const measureActive = useCallback(() => {
     const activeButton = dockRef.current?.querySelector<HTMLButtonElement>('button[aria-current="page"]')
-    if (activeButton) measureButton(activeButton, animatePosition)
+    if (activeButton) measureButton(activeButton)
   }, [measureButton])
 
   useLayoutEffect(() => {
     const dock = dockRef.current
     if (!dock) return
-    const animatePosition = hasMeasuredActiveRef.current
-    measureActive(animatePosition)
-    hasMeasuredActiveRef.current = true
-    const observer = new ResizeObserver(() => measureActive(false))
+    measureActive()
+    const observer = new ResizeObserver(() => measureActive())
     observer.observe(dock)
     dock.querySelectorAll('button').forEach((button) => observer.observe(button))
     const lensHost = dock.querySelector<HTMLElement>('[data-tab-lens-host="true"]')
     if (lensHost) observer.observe(lensHost)
-    const onOrientationChange = () => measureActive(false)
+    const onOrientationChange = () => measureActive()
     window.addEventListener('orientationchange', onOrientationChange)
     return () => {
       observer.disconnect()
@@ -206,16 +161,12 @@ function useDockLensMotion(activeTab: AppTab, enabled: boolean, reducedMotion: b
     }
   }, [activeTab, measureActive])
 
-  useEffect(() => () => {
-    if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current)
-  }, [])
-
   useEffect(() => {
     if (enabled) syncLensPosition(positionRef.current)
   }, [enabled, syncLensPosition])
 
   useEffect(() => {
-    if (!enabled || pressedTab) return
+    if (!enabled) return
     syncLensDimensions(geometry.width, geometry.height)
     lensRef.current?.engine?.setOptions({
       ...ACTIVE_LENS_OPTIONS,
@@ -224,44 +175,15 @@ function useDockLensMotion(activeTab: AppTab, enabled: boolean, reducedMotion: b
       radius: 30,
       specularAngle: 45,
     })
-  }, [enabled, geometry.height, geometry.width, pressedTab, syncLensDimensions])
+  }, [enabled, geometry.height, geometry.width, syncLensDimensions])
 
-  const pressLens = useCallback((tab: AppTab, event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (!enabled) return
-    setPressedTab(tab)
-    measureButton(event.currentTarget, true)
-    if (reducedMotion) return
-    const rect = event.currentTarget.getBoundingClientRect()
-    if (!Number.isFinite(rect.width) || rect.width <= 0) return
-    const width = Math.min(88, rect.width + 1.5)
-    if (!Number.isFinite(width) || width <= 0) return
-    const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width))
-    lensRef.current?.engine?.setOptions({
-      ...ACTIVE_LENS_OPTIONS,
-      width,
-      height: 56,
-      strength: 0.12,
-      curvature: 0.96,
-      radius: 28,
-      specularAngle: 35 + ratio * 20,
-    })
-    syncLensDimensions(width, 56)
-    event.currentTarget.setPointerCapture?.(event.pointerId)
-  }, [enabled, geometry.height, geometry.width, measureButton, reducedMotion, syncLensDimensions])
+  const pressLens = useCallback((tab: AppTab) => {
+    if (enabled) setPressedTab(tab)
+  }, [enabled])
 
-  const releaseLens = useCallback((restorePosition: boolean) => {
-    if (!enabled) return
+  const releaseLens = useCallback(() => {
     setPressedTab(null)
-    syncLensDimensions(geometry.width, geometry.height)
-    lensRef.current?.engine?.setOptions({
-      ...ACTIVE_LENS_OPTIONS,
-      width: geometry.width,
-      height: geometry.height,
-      radius: 30,
-      specularAngle: 45,
-    })
-    if (restorePosition) measureActive(true)
-  }, [enabled, geometry.height, geometry.width, measureActive, syncLensDimensions])
+  }, [])
 
   return { dockRef, lensRef, geometry, pressedTab, pressLens, releaseLens }
 }
@@ -269,13 +191,12 @@ function useDockLensMotion(activeTab: AppTab, enabled: boolean, reducedMotion: b
 export default function LiquidTabBar({ activeTab, timetableCount, onOpenFilms, onOpenTimetable, onOpenCurator, onOpenSettings }: LiquidTabBarProps) {
   const handlers = { films: onOpenFilms, timetable: onOpenTimetable, curator: onOpenCurator, settings: onOpenSettings }
   const reducedTransparency = useMediaPreference('(prefers-reduced-transparency: reduce)')
-  const reducedMotion = useMediaPreference('(prefers-reduced-motion: reduce)')
   const forcedColors = useMediaPreference('(forced-colors: active)')
   const liquidEnabled = !reducedTransparency && !forcedColors
   const [materialReady, setMaterialReady] = useState(false)
   const [selectionReady, setSelectionReady] = useState(false)
   const materialRef = useRef<LiquidGlassHandle>(null)
-  const { dockRef, lensRef, geometry, pressedTab, pressLens, releaseLens } = useDockLensMotion(activeTab, liquidEnabled, reducedMotion)
+  const { dockRef, lensRef, geometry, pressedTab, pressLens, releaseLens } = useDockLensGeometry(activeTab, liquidEnabled)
 
   useEffect(() => {
     if (!liquidEnabled) {
@@ -304,10 +225,10 @@ export default function LiquidTabBar({ activeTab, timetableCount, onOpenFilms, o
       aria-current={active ? 'page' : undefined}
       data-tab-id={item.id}
       data-pressed={pressedTab === item.id ? 'true' : undefined}
-      onPointerDown={(event) => pressLens(item.id, event)}
-      onPointerUp={() => releaseLens(false)}
-      onPointerCancel={() => releaseLens(true)}
-      onPointerLeave={() => pressedTab === item.id && releaseLens(true)}
+      onPointerDown={() => pressLens(item.id)}
+      onPointerUp={() => releaseLens()}
+      onPointerCancel={() => releaseLens()}
+      onPointerLeave={() => pressedTab === item.id && releaseLens()}
       onClick={handlers[item.id]}
     >
       <span className="liquid-tab-icon"><TabIcon name={item.icon} />{item.id === 'timetable' && timetableCount > 0 && <b aria-label={`${timetableCount}개 일정`}>{timetableCount > 99 ? '99+' : timetableCount}</b>}</span>

@@ -228,14 +228,13 @@ test('keeps dark desktop timetable events readable', async ({ page }) => {
   expect(colors.contrast).toBeGreaterThanOrEqual(4.5)
 })
 
-test('keeps text actions pill-shaped while icon controls retain their radius', async ({ page }) => {
+test('keeps text and icon actions pill-shaped while the search input retains its radius', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('./')
   await expect(page.locator('.film-card').first()).toBeVisible()
 
   const radius = async (selector: string) => page.locator(selector).first().evaluate((element) => getComputedStyle(element).borderRadius)
   expect(await radius('.film-search-autocomplete')).toBe('14px')
-  expect(await radius('.favorite-button')).toBe('14px')
 
   for (const selector of ['.mobile-advanced-filter-toggle', '.chips button', '.detail-button']) {
     const control = page.locator(selector).first()
@@ -248,9 +247,13 @@ test('keeps text actions pill-shaped while icon controls retain their radius', a
         height: element.getBoundingClientRect().height,
       }
     })
-    expect(shape.radius / shape.fontSize).toBeCloseTo(999, 0)
     expect(shape.radius).toBeGreaterThan(shape.height / 2)
   }
+  const favorite = await page.locator('.favorite-button').first().evaluate((element) => {
+    const box = element.getBoundingClientRect()
+    return { radius: Number.parseFloat(getComputedStyle(element).borderRadius), shortestSide: Math.min(box.width, box.height) }
+  })
+  expect(favorite.radius).toBeGreaterThanOrEqual(favorite.shortestSide / 2)
 })
 
 test('keeps mobile and desktop navigation tokens aligned with their distinct active tints', async ({ page }) => {

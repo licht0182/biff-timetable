@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "mode": "balanced",
+  "risk": "normal",
+  "revision": "ca8df107b0cc7702069e2fd2eae38ebbaf1d0949d9a8bd6790bbf19cee7a1c7f",
+  "scope": "Latest user correction: preserve clickable cards; ordinary buttons are pills. Press and hover feedback changes color only, without resizing or spring motion.",
+  "parent": {
+    "agent_id": "/root",
+    "requested_model": "gpt-6-astra",
+    "requested_effort": "low",
+    "routing_proof_required": false,
+    "unconfirmed_disclosure": "Skill recommendation only. Existing parent settings preserved; actual model and effort are not observable.",
+    "verified_revision": "ca8df107b0cc7702069e2fd2eae38ebbaf1d0949d9a8bd6790bbf19cee7a1c7f",
+    "diff_inspected_revision": "ca8df107b0cc7702069e2fd2eae38ebbaf1d0949d9a8bd6790bbf19cee7a1c7f",
+    "accepted_revision": "ca8df107b0cc7702069e2fd2eae38ebbaf1d0949d9a8bd6790bbf19cee7a1c7f",
+    "acceptance_reason": "Latest user scope implemented and verified on the exact candidate. Final full regression passed 343 tests, 1 existing skip, no failures or flakes; current-policy fresh gpt-6.1-sol Medium review returned SHIP. No source changes after verification and review.",
+    "verification_evidence": "Final shadow/color candidate full suite passed 343 tests, 1 existing skip, zero failures and flakes in 452 seconds. Accumulated diff inspected; TypeScript and build passed and 10 pill/card hover tests passed. Earlier 18 dock repeats, CLI 20 screens, and 5 PNG exports per engine passed."
+  },
+  "host_limit": 3,
+  "budget": { "dispatches": 9, "corrections": 7, "reviews": 6 },
+  "budget_reassessment": "Final full regression passed 343 tests with 1 existing skip and no flakes. Shadow correction and fifth review completed. Acceptance validator now requires gpt-6.1-sol rather than the earlier gpt-6-sol route; explicitly bound one additional current-policy fresh review without source changes or redundant test reruns.",
+  "parent_corrections": 7,
+  "prior_review_evidence": {
+    "id": "shadow-final-review", "agent_id": "/root/pill_shadow_final_review",
+    "requested_model": "gpt-6-sol", "requested_effort": "medium", "fresh_context": true,
+    "status": "completed", "verdict": "ship",
+    "reviewed_revision": "ca8df107b0cc7702069e2fd2eae38ebbaf1d0949d9a8bd6790bbf19cee7a1c7f",
+    "disposition": "Historical completed review preserved here; not used for acceptance because current policy requires gpt-6.1-sol. No code changes followed this review.",
+    "evidence": "Fresh read-only review found no concrete blockers in button/card shape, centering, color feedback, dock motion removal, mobile one-row controls or PNG assertions."
+  },
+  "work": [
+    {
+      "id": "inventory", "kind": "discovery", "status": "failed", "required": false,
+      "read_only": true, "ownership": ["src"], "depends_on": [],
+      "agent_id": "/root/pill_inventory", "requested_model": "gpt-6-luna", "requested_effort": "max",
+      "dispatch_source": "native collaboration spawn_agent", "routing_proof_required": false,
+      "unconfirmed_disclosure": "Requested settings, no realized telemetry.",
+      "disposition": "Usage limit interrupted exploration. Parent continues inspection."
+    },
+    {
+      "id": "buttons", "kind": "implementation", "roles": ["worker", "tester"], "status": "completed", "required": true,
+      "read_only": false, "ownership": ["src/button-pill.css", "tests/e2e/button-pill.spec.ts"], "depends_on": [],
+      "agent_id": "/root/pill_buttons_worker", "requested_model": "gpt-6-sol", "requested_effort": "medium",
+      "dispatch_source": "native collaboration spawn_agent", "routing_proof_required": false,
+      "unconfirmed_disclosure": "Requested settings, no realized telemetry.",
+      "evidence": "CSS and tests delivered; diff check and test collection passed. Parent will run browser verification."
+    },
+    {
+      "id": "toolbar", "kind": "implementation", "roles": ["worker", "tester"], "status": "failed", "required": false,
+      "read_only": false, "ownership": ["src/App.tsx", "src/timetable-more-menu.css", "src/components/TimetableViewSwitch.tsx", "tests/e2e/timetable-more-menu.spec.ts", "tests/e2e/mobile-layout-regression.spec.ts"], "depends_on": [],
+      "agent_id": "/root/timetable_chips_worker", "requested_model": "gpt-6-sol", "requested_effort": "medium",
+      "dispatch_source": "native collaboration spawn_agent", "routing_proof_required": false,
+      "unconfirmed_disclosure": "Requested settings, no realized telemetry.",
+      "disposition": "Usage limit interrupted testing. Parent integrates and verifies delivered changes."
+    },
+    {
+      "id": "final-review", "kind": "review", "status": "completed", "required": false,
+      "read_only": true, "fresh_context": true,
+      "ownership": ["src", "tests", "playwright.config.ts"], "depends_on": ["buttons"],
+      "agent_id": "/root/pill_final_review", "requested_model": "gpt-6-sol", "requested_effort": "medium",
+      "dispatch_source": "native collaboration spawn_agent", "routing_proof_required": false,
+      "unconfirmed_disclosure": "Requested settings, no realized telemetry.",
+      "reviewed_revision": "1e1d03dc192aa00cc319690c6c740f2ed1b85975395c62b1e46cab302eaa756b",
+      "parent_verified_revision": "1e1d03dc192aa00cc319690c6c740f2ed1b85975395c62b1e46cab302eaa756b",
+      "parent_verification_evidence": "Build, data validators, focused Chromium/WebKit tests, 18 repeated dock checks, CLI 20-screen geometry inspection passed before dispatch.",
+      "verdict": "fix-first",
+      "evidence": "Global display selector specificity overrides desktop hidden controls. Parent reproduced and corrected with :where specificity zero."
+    },
+    {
+      "id": "corrected-review", "kind": "review", "status": "completed", "required": false,
+      "read_only": true, "fresh_context": true,
+      "ownership": ["src", "tests", "playwright.config.ts"], "depends_on": ["buttons"],
+      "agent_id": "/root/pill_corrected_review", "requested_model": "gpt-6-sol", "requested_effort": "medium",
+      "dispatch_source": "native collaboration spawn_agent", "routing_proof_required": false,
+      "unconfirmed_disclosure": "Requested settings, no realized telemetry.",
+      "reviewed_revision": "c4bc3a69566b4fe1f0e3e3b69172dc737e8c5b0b2eed781a6c6d42a531405387",
+      "parent_verified_revision": "c4bc3a69566b4fe1f0e3e3b69172dc737e8c5b0b2eed781a6c6d42a531405387",
+      "parent_verification_evidence": "Build, data validators, 54 focused Chromium/WebKit tests, and corrected CLI 20-screen geometry and desktop hidden inspection passed before dispatch.",
+      "verdict": "ship",
+      "evidence": "Fresh review found no blockers. Specificity zero display preserves responsive hidden rules; card exclusions, fixed-size color feedback, mobile one-row actions and accessibility states verified statically. Review relies on parent browser evidence."
+    },
+    {
+      "id": "png-release-review", "kind": "review", "status": "completed", "required": false,
+      "read_only": true, "fresh_context": true,
+      "ownership": ["src", "tests", "playwright.config.ts"], "depends_on": ["buttons"],
+      "agent_id": "/root/pill_png_release_review", "requested_model": "gpt-6-sol", "requested_effort": "medium",
+      "dispatch_source": "native collaboration spawn_agent", "routing_proof_required": false,
+      "unconfirmed_disclosure": "Requested settings, no realized telemetry.",
+      "reviewed_revision": "b7854d2bf444fa58344c90b6ad4aae42ddc1a7f7ce0b826303e6a8eaebf565f6",
+      "parent_verified_revision": "b7854d2bf444fa58344c90b6ad4aae42ddc1a7f7ce0b826303e6a8eaebf565f6",
+      "parent_verification_evidence": "Application source unchanged after SHIP review. Parent inspected accumulated diff and verified 5 actual PNG exports with updated helper before dispatch. Earlier app 54 focused tests and CLI geometry checks passed.",
+      "verdict": "ship",
+      "evidence": "PNG helper preserves output checks and correctly uses desktop direct button or mobile more menu. Standard WebKit match excludes PNG specs; parent subsequently ran 5 export cases with a dedicated Desktop Safari project, including emulated iPhone preview cases."
+    },
+    {
+      "id": "color-final-review", "kind": "review", "status": "completed", "required": false,
+      "read_only": true, "fresh_context": true,
+      "ownership": ["src", "tests", "playwright.config.ts"], "depends_on": ["buttons"],
+      "agent_id": "/root/pill_color_final_review", "requested_model": "gpt-6-sol", "requested_effort": "medium",
+      "dispatch_source": "native collaboration spawn_agent", "routing_proof_required": false,
+      "unconfirmed_disclosure": "Requested settings, no realized telemetry.",
+      "reviewed_revision": "beb76db8aba479478a15533ad32d86918892d2808789f15669f209f3eb871b99",
+      "parent_verified_revision": "beb76db8aba479478a15533ad32d86918892d2808789f15669f209f3eb871b99",
+      "parent_verification_evidence": "Current build and accumulated diff inspected. 12 pill/shape tests, 2 dock color tests, and 3 WebKit dialog repeats passed. Debug injection removed from original booking spec. Earlier PNG 5 per engine and layout geometry passed; full suite subsequently passed 343 tests without failures or flakes.",
+      "verdict": "fix-first",
+      "evidence": "Reviewer requested fixed curator hover shadows. Parent preserved resting shadows and added actual hover checks; current curator-card already had an important resting shadow, featured-card fallback is now fixed too."
+    },
+    {
+      "id": "policy-release-review", "kind": "review", "status": "completed", "required": true,
+      "read_only": true, "fresh_context": true,
+      "ownership": ["src", "tests", "playwright.config.ts"], "depends_on": ["buttons"],
+      "agent_id": "/root/pill_policy_release_review", "requested_model": "gpt-6.1-sol", "requested_effort": "medium",
+      "dispatch_source": "native collaboration spawn_agent", "routing_proof_required": false,
+      "unconfirmed_disclosure": "Requested settings, no realized telemetry.",
+      "reviewed_revision": "ca8df107b0cc7702069e2fd2eae38ebbaf1d0949d9a8bd6790bbf19cee7a1c7f",
+      "parent_verified_revision": "ca8df107b0cc7702069e2fd2eae38ebbaf1d0949d9a8bd6790bbf19cee7a1c7f",
+      "parent_verification_evidence": "Accumulated diff inspected, build and 10 actual pill/card hover tests passed. Final full rerun passed 343 tests, 1 existing skip, zero failures and flakes in 452 seconds. No source changes after verification.",
+      "verdict": "ship",
+      "evidence": "Current-policy fresh GPT-6.1 Sol Medium review inspected exact revision and final JSON report: no blockers in pills/centering, card exceptions, responsive visibility, view toggle and one-row actions, PNG helper or color-only feedback. Read-only; no source changes."
+    }
+  ]
+}

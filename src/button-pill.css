@@ -1,0 +1,63 @@
+/* Preserve card geometry and typography, even when a card is a native button. */
+:root body :is(button, [role="button"]):not(.event-block, .curator-card, .curator-featured-card, .schedule-list-main, .global-search-quick-links button) {
+  border-radius: 9999px !important;
+  text-align: center !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Low specificity keeps responsive visibility and card display modes intact. */
+:where(button:not(.event-block, .curator-card, .curator-featured-card, .schedule-list-main, .global-search-quick-links button),
+[role="button"]:not(.event-block, .curator-card, .curator-featured-card, .schedule-list-main)) {
+  display: inline-flex;
+}
+
+:root body button:not(.event-block, .curator-card, .curator-featured-card, .schedule-list-main, .global-search-quick-links button) > :is(span, strong, em) {
+  text-align: center !important;
+}
+
+/* Dock icons and labels remain a single centered group. */
+.liquid-tab-bar .liquid-tab-actions > button {
+  flex-direction: column;
+}
+
+/* Dates are multiline buttons, with all three labels centered together. */
+:root body button.schedule-date-tab {
+  display: flex !important;
+  flex-direction: column;
+  gap: 2px;
+}
+
+button.schedule-date-tab > em {
+  align-self: center;
+}
+
+/* Feedback changes color only. No press/hover scale, lift, or bounce. */
+:root body :is(button, [role="button"], summary.ui-text-chip) {
+  transform: none !important;
+  scale: none !important;
+  translate: none !important;
+  animation: none !important;
+  filter: none !important;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease !important;
+}
+
+:root body :is(button, [role="button"], summary.ui-text-chip):not(.event-block, .curator-card, .curator-featured-card, .schedule-list-main, .global-search-quick-links button):not(:disabled):active {
+  background-color: var(--biff-action-pressed, #9f2f24) !important;
+  border-color: var(--biff-action-pressed, #9f2f24) !important;
+  color: var(--biff-on-action, #fff) !important;
+}
+
+/* The dock's selection decoration follows the active tab without deforming. */
+.liquid-dock-optical-lens {
+  transition: none !important;
+}
+
+/* Keep each card's resting shadow constant while its border color responds. */
+:root body .curator-featured-card {
+  box-shadow: none !important;
+}
+
+:root body .curator-card {
+  box-shadow: var(--ios-shadow) !important;
+}

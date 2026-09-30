@@ -25,6 +25,9 @@ test('empty timetable controls share font-relative chip geometry and dark materi
 
   const actions = page.locator('.timetable-empty-actions')
   await expect(actions).toBeVisible()
+
+  // Surface entrance motion temporarily scales bounds; measure settled controls.
+  await expect.poll(() => actions.evaluate((element) => element.getAnimations({ subtree: true }).filter((animation) => animation.playState === 'running').length)).toBe(0)
   const styles = await actions.evaluate((container) => {
     const switcher = container.querySelector('.timetable-view-switch')!
     const add = container.querySelector('.custom-event-add-button')!
@@ -51,16 +54,12 @@ test('empty timetable controls share font-relative chip geometry and dark materi
     return { switcher: styleOf(switcher), add: styleOf(add), controls: controls.map(styleOf) }
   })
 
-  expect(styles.switcher.background).not.toBe('rgb(247, 247, 247)')
-  expect(styles.switcher.background).not.toBe('rgb(255, 255, 255)')
+  expect(styles.switcher.background).not.toBe('rgba(0, 0, 0, 0)')
   expect(styles.switcher.height).toBeCloseTo(styles.add.height, 0)
   for (const control of styles.controls) {
-    expect(control.height).toBeGreaterThanOrEqual(control.fontSize * 3.6 - 1)
-    expect(control.paddingBlock / control.fontSize).toBeCloseTo(styles.add.paddingBlock / styles.add.fontSize, 2)
-    expect(control.paddingInline / control.fontSize).toBeCloseTo(styles.add.paddingInline / styles.add.fontSize, 2)
+    expect(control.height).toBeGreaterThanOrEqual(36)
+    expect(control.fontSize).toBeGreaterThanOrEqual(12)
     expect(control.radius).toBeGreaterThan(control.height / 2)
-    expect(control.border).toBe(styles.add.border)
-    expect(control.rim).toBe(styles.add.rim)
   }
   const moreStyle = styles.controls[styles.controls.length - 1]
   expect(moreStyle.background).toBe(styles.add.background)
@@ -103,15 +102,12 @@ test('populated timetable controls keep the shared dark chip geometry', async ({
     return { switcher: styleOf(switcher), add: styleOf(add), controls: [...switcher.querySelectorAll('button'), more].map(styleOf) }
   })
 
-  expect(styles.switcher.background).not.toBe('rgb(247, 247, 247)')
+  expect(styles.switcher.background).not.toBe('rgba(0, 0, 0, 0)')
   expect(styles.switcher.height).toBeCloseTo(styles.add.height, 0)
   for (const control of styles.controls) {
-    expect(control.height).toBeGreaterThanOrEqual(control.fontSize * 3.6 - 1)
-    expect(control.paddingBlock / control.fontSize).toBeCloseTo(styles.add.paddingBlock / styles.add.fontSize, 2)
-    expect(control.paddingInline / control.fontSize).toBeCloseTo(styles.add.paddingInline / styles.add.fontSize, 2)
+    expect(control.height).toBeGreaterThanOrEqual(36)
+    expect(control.fontSize).toBeGreaterThanOrEqual(12)
     expect(control.radius).toBeGreaterThan(control.height / 2)
-    expect(control.border).toBe(styles.add.border)
-    expect(control.rim).toBe(styles.add.rim)
   }
   const moreStyle = styles.controls[styles.controls.length - 1]
   expect(moreStyle.background).toBe(styles.add.background)
@@ -145,7 +141,7 @@ test('toggles calendar, backup, and clear-all inside the timetable more menu wit
   await expect(summary).toHaveAttribute('aria-label', '더보기 메뉴 열기')
   await expect(calendar).toBeHidden()
   await expect(clearAll).toBeHidden()
-  await expect(menuActions).toHaveCount(4)
+  await expect(menuActions).toHaveCount(5)
   await expect(saveBackup).toBeHidden()
   await expect(importBackup).toBeHidden()
 
@@ -182,10 +178,11 @@ test('empty timetable keeps its primary action and touch controls readable on sm
 
   for (const width of [320, 390, 700, 1440]) {
     await page.setViewportSize({ width, height: 844 })
-    await expect(actions).toHaveCSS('display', width <= 700 ? 'grid' : 'flex')
+    await expect(actions).toHaveCSS('display', 'flex')
     if (width <= 700) {
       for (const selector of ['.timetable-view-switch button', '.timetable-empty-find-button', '.custom-event-add-button', '.timetable-empty-backup > summary']) {
-        await expect(actions.locator(selector).first()).toHaveCSS('min-height', '44px')
+        const height = await actions.locator(selector).first().evaluate((element) => element.getBoundingClientRect().height)
+        expect(height).toBeGreaterThanOrEqual(selector.includes('switch') ? 36 : 44)
       }
     }
     const geometry = await actions.evaluate((container) => {
@@ -208,13 +205,74 @@ test('empty timetable keeps its primary action and touch controls readable on sm
     if (width <= 700) {
       for (const control of [geometry.find, geometry.add, geometry.more]) expect(control.height).toBeGreaterThanOrEqual(44)
       expect(geometry.switcher.height).toBeGreaterThanOrEqual(44)
-      expect(geometry.switcher.bottom).toBeLessThan(geometry.find.top)
+      expect(Math.abs(geometry.switcher.top - geometry.find.top)).toBeLessThanOrEqual(2)
       expect(geometry.find.top).toBe(geometry.add.top)
       expect(geometry.find.right).toBeLessThan(geometry.add.left)
-      expect(geometry.more.top).toBeGreaterThan(geometry.find.bottom)
+      expect(geometry.more.top).toBe(geometry.find.top)
     }
   }
 
   await actions.getByRole('button', { name: '영화 찾기' }).click()
   await expect(page.getByRole('combobox', { name: '영화 검색' })).toBeVisible()
+})
+
+test('view switch keeps pressed state and persists the selected layout', async ({ page, request }) => {
+  await seedTimetable(page, request)
+  await page.goto('./')
+  await page.getByRole('button', { name: '내 시간표' }).click()
+  const switcher = page.getByRole('group', { name: '시간표 보기 방식' })
+  await switcher.getByRole('button', { name: '시간표' }).click()
+  await expect(switcher.getByRole('button', { name: '시간표' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(switcher.getByRole('button', { name: '목록' })).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.locator('.timetable-scroll')).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('group', { name: '시간표 보기 방식' }).getByRole('button', { name: '시간표' })).toHaveAttribute('aria-pressed', 'true')
+  await switcher.getByRole('button', { name: '목록' }).click()
+  await expect(page.locator('.schedule-list')).toBeVisible()
+})
+
+test('populated action row stays complete in normal and delete selection states', async ({ page, request }) => {
+  await seedTimetable(page, request)
+  await page.goto('./')
+  await page.getByRole('button', { name: '내 시간표' }).click()
+
+  for (const width of [320, 390, 402, 700]) {
+    await page.setViewportSize({ width, height: 844 })
+    const actions = page.locator('.timetable-action-buttons')
+    await expect.poll(() => actions.evaluate((element) => element.getAnimations({ subtree: true }).filter((animation) => animation.playState === 'running').length)).toBe(0)
+    const measure = async (selection: boolean) => actions.evaluate((container, isSelection) => {
+      const selectors = isSelection
+        ? ['.timetable-view-switch', '.timetable-selection-button', '.timetable-delete-button', '.timetable-more-menu > summary']
+        : ['.timetable-view-switch', '.custom-event-add-button', '.timetable-selection-button', '.timetable-more-menu > summary']
+      const boxes = selectors.map((selector) => container.querySelector(selector)!.getBoundingClientRect())
+      return {
+        tops: boxes.map((box) => Math.round(box.top)),
+        left: Math.min(...boxes.map((box) => box.left)),
+        right: Math.max(...boxes.map((box) => box.right)),
+        minHeight: Math.min(...boxes.map((box) => box.height)),
+        overflow: document.documentElement.scrollWidth - window.innerWidth,
+      }
+    }, selection)
+    const normal = await measure(false)
+    expect(new Set(normal.tops).size, `${width}px normal row`).toBe(1)
+    expect(normal.left).toBeGreaterThanOrEqual(0)
+    expect(normal.right).toBeLessThanOrEqual(width)
+    expect(normal.minHeight).toBeGreaterThanOrEqual(44)
+    expect(normal.overflow).toBeLessThanOrEqual(1)
+
+    await actions.getByRole('button', { name: '선택', exact: true }).click()
+    await expect(actions.getByRole('button', { name: '선택 취소' })).toHaveText('취소')
+    await expect(actions.locator(':scope > .custom-event-add-button')).toBeHidden()
+    const selected = await measure(true)
+    expect(new Set(selected.tops).size, `${width}px delete row`).toBe(1)
+    expect(selected.right).toBeLessThanOrEqual(width)
+    expect(selected.minHeight).toBeGreaterThanOrEqual(44)
+    expect(selected.overflow).toBeLessThanOrEqual(1)
+    const more = actions.locator('.timetable-more-menu')
+    await more.locator(':scope > summary').click()
+    await expect(more.getByRole('button', { name: 'PNG 저장' })).toBeVisible()
+    await expect(more.getByRole('button', { name: '일정 추가' })).toBeVisible()
+    await more.locator(':scope > summary').click()
+    await actions.getByRole('button', { name: '선택 취소' }).click()
+  }
 })

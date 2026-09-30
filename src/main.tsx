@@ -31,6 +31,7 @@ import './settings-editorial.css'
 import './app-footer.css'
 import './official-update-ribbon.css'
 import './native-dialog.css'
+import './button-pill.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

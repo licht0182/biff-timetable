@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { openPngExport } from './helpers/timetable-export'
 import { readFile, stat } from 'node:fs/promises'
 
 const SELECTED_KEY = 'biff-timetable:selected-screenings:v1'
@@ -263,7 +264,7 @@ test('exports a custom-only timetable as a non-empty PNG', async ({ page }) => {
   await addCustomEvent(page, { title: 'PNG 일정', start: '07:30', end: '09:00' })
 
   const downloadPromise = page.waitForEvent('download')
-  await page.getByRole('button', { name: 'PNG 저장' }).click()
+  await openPngExport(page)
   const download = await downloadPromise
   const path = await download.path()
   expect(path).not.toBeNull()
