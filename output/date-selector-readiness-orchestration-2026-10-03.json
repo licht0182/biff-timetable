@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "mode": "balanced",
+  "risk": "normal",
+  "revision": "7099804b744751a4736b43cef71d576dd83b14e916cc62c99245c7c2e9f4a4d9",
+  "parent": {
+    "agent_id": "/root",
+    "requested_model": "gpt-6-astra",
+    "requested_effort": "low",
+    "routing_proof_required": false,
+    "unconfirmed_disclosure": "Skill recommendation metadata required by the declared-state validator, not actual model selection. Existing parent settings preserved; realized model and effort are unobservable.",
+    "diff_inspected_revision": "7099804b744751a4736b43cef71d576dd83b14e916cc62c99245c7c2e9f4a4d9",
+    "verified_revision": "7099804b744751a4736b43cef71d576dd83b14e916cc62c99245c7c2e9f4a4d9",
+    "verification_evidence": "UI candidate 8df0603 remains unchanged and passed full CI and public Chrome/WebKit at four widths. Only deployment readiness changed: await actual visible film card after HTTP success and emit diagnostics on failure. Parent inspected the patch. A real WebKit delayed-DOM reproduction returned oldImmediate=false and newWaitReady=true. The complete modified live rim script also exited 0 against the public site at 393px and deviceScaleFactor 3. All three inline JS blocks compile.",
+    "accepted_revision": "7099804b744751a4736b43cef71d576dd83b14e916cc62c99245c7c2e9f4a4d9",
+    "acceptance_reason": "Fresh read-only Sol Medium review returned ship for the identical verified fingerprint with no findings. Parent accepts this bounded workflow correction for commit, gated by the new remote verification and deployment run."
+  },
+  "budget": { "dispatches": 1, "corrections": 1, "reviews": 1 },
+  "parent_corrections": 1,
+  "reassessment": "Two remote readiness failures after successful deployment require one bounded workflow correction and a new fresh review. This separate scope preserves the accepted UI; the CI-only original failure cause remains unconfirmed until diagnostic output is available. No further unchanged reruns or speculative UI changes.",
+  "work": [
+    {
+      "id": "readiness-fresh-review",
+      "kind": "review",
+      "roles": ["reviewer"],
+      "status": "completed",
+      "required": true,
+      "read_only": true,
+      "fresh_context": true,
+      "ownership": [".github/workflows/deploy-pages.yml"],
+      "depends_on": [],
+      "agent_id": "/root/readiness_fresh_review",
+      "requested_model": "gpt-6.1-sol",
+      "requested_effort": "medium",
+      "dispatch_source": "collaboration.spawn_agent explicit native model/effort and fork_turns=none returned /root/readiness_fresh_review",
+      "routing_proof_required": false,
+      "unconfirmed_disclosure": "Requested native controls will be recorded; realized settings are not independently observable.",
+      "parent_verified_revision": "7099804b744751a4736b43cef71d576dd83b14e916cc62c99245c7c2e9f4a4d9",
+      "parent_verification_evidence": "Parent verified the exact diff, real delayed-DOM race and full modified script against the deployed UI before dispatch.",
+      "reviewed_revision": "7099804b744751a4736b43cef71d576dd83b14e916cc62c99245c7c2e9f4a4d9",
+      "verdict": "ship",
+      "evidence": "Reviewer matched the fingerprint, confirmed success requires HTTP OK plus actual visible film card, failure diagnostics match artifact paths and existing retry/error/visual gates remain intact. Three inline JS blocks compiled. No findings; original CI-specific root cause remains unconfirmed."
+    }
+  ]
+}

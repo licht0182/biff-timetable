@@ -158,16 +158,41 @@ jobs:
             })
 
             let ready = false
+            let readinessDetails = null
             for (let attempt = 0; attempt < 12; attempt += 1) {
+              let navigationError = null
               const response = await page.goto(
                 `${process.env.LIVE_URL}?deployment=${process.env.GITHUB_SHA ?? Date.now()}`,
                 { waitUntil: 'networkidle', timeout: 30000 },
-              ).catch(() => null)
-              ready = Boolean(response?.ok()) && await page.locator('.film-card').first().isVisible().catch(() => false)
+              ).catch((error) => {
+                navigationError = error.message
+                return null
+              })
+              ready = Boolean(response?.ok()) && await page.locator('.film-card').first()
+                .waitFor({ state: 'visible', timeout: 10000 })
+                .then(() => true)
+                .catch(() => false)
+              readinessDetails = {
+                attempt: attempt + 1,
+                status: response?.status() ?? null,
+                ready,
+                navigationError,
+              }
+              console.log('Live readiness:', JSON.stringify(readinessDetails))
               if (ready) break
               await sleep(5000)
             }
-            if (!ready) throw new Error('GitHub Pages did not become ready for live rim verification')
+            if (!ready) {
+              await page.screenshot({ path: 'live-liquid-glass-mobile.png', fullPage: false })
+                .catch(() => {})
+              console.log('Live readiness page:', JSON.stringify({
+                url: page.url(),
+                filmCards: await page.locator('.film-card').count().catch(() => 0),
+                body: await page.locator('body').innerText({ timeout: 3000 })
+                  .then((text) => text.slice(0, 500)).catch(() => ''),
+              }))
+              throw new Error(`GitHub Pages did not become ready for live rim verification: ${JSON.stringify(readinessDetails)}`)
+            }
 
             const selectors = [
               '.controls',
