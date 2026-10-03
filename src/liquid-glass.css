@@ -1024,3 +1024,14 @@ select option{background:#f3f4f6;color:#111827}
     --control-rim-white-peak:rgba(255,255,255,.56);
   }
 }
+
+/* List and grid dates share the text-chip glass rim and selection colors. */
+:root body button.timetable-day-button{
+  background:var(--ios-surface, #fff)!important;
+  color:var(--biff-text, #292929)!important;
+  box-shadow:0 1px 3px rgba(15,23,42,.1)!important;
+}
+:root body button.timetable-day-button.active{
+  background:var(--biff-action, #b9271d)!important;
+  color:var(--biff-on-action, #fff)!important;
+}

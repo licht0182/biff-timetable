@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "mode": "balanced",
+  "risk": "normal",
+  "revision": "624a9c89e9f9449ec0f6235d996bc99c5d43ffe090f735cf6de9089c90591750",
+  "parent": {
+    "agent_id": "/root",
+    "requested_model": "gpt-6-astra",
+    "requested_effort": "low",
+    "routing_proof_required": false,
+    "unconfirmed_disclosure": "Prior skill recommendation metadata only, not actual model selection. Existing parent settings preserved; realized parent model and effort are unobservable.",
+    "diff_inspected_revision": "624a9c89e9f9449ec0f6235d996bc99c5d43ffe090f735cf6de9089c90591750",
+    "verified_revision": "624a9c89e9f9449ec0f6235d996bc99c5d43ffe090f735cf6de9089c90591750",
+    "verification_evidence": "Parent inspected integrated source/settings diff plus new test. TypeScript and Vite passed.30 corrected date/list checks passed with zero failures/flakes;48 existing grid/button checks passed on the same UI code before assertion-only corrections.78 unique focused checks combined. Actual Chrome/WebKit four widths match list/grid geometry, fonts, colors, single-line labels, glass masks,44px target and zero page overflow; initial-dark393 screenshots directly inspected after paint settling. New WebKit allowlist entry executed all5 new cases.",
+    "accepted_revision": "624a9c89e9f9449ec0f6235d996bc99c5d43ffe090f735cf6de9089c90591750",
+    "acceptance_reason": "Fresh review SHIP matched the source/config/test fingerprint and78 unique passing checks and independently confirmed the stable-grid-dark image. Its required report-image reference correction now points to that already reviewed stable capture; implementation is unchanged. Parent accepts the candidate for commit/deployment, gated by full remote CI and public verification."
+  },
+  "budget": { "dispatches": 1, "corrections": 2, "reviews": 1 },
+  "parent_corrections": 2,
+  "work": [{
+    "id": "fresh-review",
+    "kind": "review",
+    "roles": ["reviewer"],
+    "status": "completed",
+    "required": true,
+    "read_only": true,
+    "fresh_context": true,
+    "ownership": ["src/App.tsx", "src/components/ScheduleList.tsx", "src/button-pill.css", "src/liquid-glass.css", "src/schedule-list.css", "src/timetable-display.css", "tests/e2e/schedule-list.spec.ts", "tests/e2e/timetable-date-selector.spec.ts", "playwright.config.ts"],
+    "depends_on": [],
+    "agent_id": "/root/date_selector_review",
+    "requested_model": "gpt-6.1-sol",
+    "requested_effort": "medium",
+    "dispatch_source": "collaboration.spawn_agent explicit native model/effort and fork_turns=none",
+    "routing_proof_required": false,
+    "unconfirmed_disclosure": "Requested native controls recorded; realized settings not independently observable.",
+    "parent_verified_revision": "624a9c89e9f9449ec0f6235d996bc99c5d43ffe090f735cf6de9089c90591750",
+    "parent_verification_evidence": "Parent inspected current source/config/new-test candidate and real before/after images, confirmed30 corrected date/list checks and48 unchanged-UI grid/button passes before fresh review.",
+    "reviewed_revision": "624a9c89e9f9449ec0f6235d996bc99c5d43ffe090f735cf6de9089c90591750",
+    "verdict": "ship",
+    "evidence": "Reviewer matched fingerprint, inspected CSS cascade/44px/single-line/active-color behavior, ARIA and keyboard preservation, deduplicated78 passing checks and directly viewed stable-grid-dark matching the list. No implementation findings. Required report image reference updated to its already reviewed stable screenshot without source changes."
+  }]
+}

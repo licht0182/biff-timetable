@@ -17,7 +17,7 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     {
       name: 'webkit-iphone',
-      testMatch: /(?:button-pill|booking-apply|official-update-ribbon|modal-focus|custom-event-mobile-width|timetable-grid-day-focus|timetable-viewport-stability|timetable-more-menu|screening-selection-count|screening-vertical-alignment|reliability-accessibility|schedule-list|schedule-readability|settings-readability|film-detail-hierarchy|liquid-glass|mobile-layout-regression|layout-system|curator|global-search)\.spec\.ts/,
+      testMatch: /(?:button-pill|booking-apply|official-update-ribbon|modal-focus|custom-event-mobile-width|timetable-grid-day-focus|timetable-date-selector|timetable-viewport-stability|timetable-more-menu|screening-selection-count|screening-vertical-alignment|reliability-accessibility|schedule-list|schedule-readability|settings-readability|film-detail-hierarchy|liquid-glass|mobile-layout-regression|layout-system|curator|global-search)\.spec\.ts/,
       use: { ...devices['iPhone 13'] },
     },
   ],

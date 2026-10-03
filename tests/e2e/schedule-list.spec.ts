@@ -230,9 +230,12 @@ test('shows one selected date at a time and keeps the mobile list scrollable', a
     const style = getComputedStyle(element)
     return { backgroundColor: style.backgroundColor, color: style.color }
   })
-  expect(selectedDateStyle.backgroundColor).not.toBe('rgb(52, 58, 67)')
-  expect(selectedDateStyle.backgroundColor).not.toBe('rgb(0, 0, 0)')
-  expect(selectedDateStyle.color).not.toBe('rgb(255, 255, 255)')
+  const inactiveDateStyle = await tabs.nth(1).evaluate((element) => {
+    const style = getComputedStyle(element)
+    return { backgroundColor: style.backgroundColor, color: style.color }
+  })
+  expect(selectedDateStyle.backgroundColor).not.toBe(inactiveDateStyle.backgroundColor)
+  expect(selectedDateStyle.color).not.toBe(inactiveDateStyle.color)
 
   const scrollState = await page.evaluate(() => ({
     bodyLocked: document.body.classList.contains('timetable-viewport-locked'),

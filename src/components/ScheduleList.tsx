@@ -8,6 +8,7 @@ type ScreeningItem = { film: Film; screening: Screening }
 
 type ScheduleListProps = {
   items: ScreeningItem[]
+  formatDate: (date: string) => string
   selectedSet: ReadonlySet<string>
   nextFallbackIds: ReadonlySet<string>
   bookingPlan: BookingPlanMap
@@ -75,6 +76,7 @@ function groupOverlappingScreenings(items: ScreeningListItem[]) {
 
 export default function ScheduleList({
   items,
+  formatDate,
   selectedSet,
   nextFallbackIds,
   bookingPlan,
@@ -131,10 +133,9 @@ export default function ScheduleList({
   return <div className={`schedule-list ${selectionMode ? 'schedule-list-selection-mode' : ''}`}>
     <div className="schedule-date-tabs" role="tablist" aria-label="날짜별 시간표">
       {dates.map((date) => {
-        const label = formatListDate(date)
         const active = date === selectedDate
-        return <button type="button" className={`ui-text-chip schedule-date-tab ${active ? 'active' : ''}`} role="tab" aria-selected={active} aria-controls={`schedule-panel-${date}`} id={`schedule-tab-${date}`} key={date} onClick={() => setRequestedDate(date)}>
-          <strong>{label.date}</strong><span className={`weekday-${label.weekday}`}>{label.weekday}</span><em>{dateCounts.get(date)}개</em>
+        return <button type="button" className={`ui-text-chip timetable-day-button schedule-date-tab ${active ? 'active' : ''}`} role="tab" aria-selected={active} aria-controls={`schedule-panel-${date}`} id={`schedule-tab-${date}`} key={date} onClick={() => setRequestedDate(date)}>
+          {formatDate(date)}
         </button>
       })}
     </div>

@@ -21,17 +21,6 @@
   flex-direction: column;
 }
 
-/* Dates are multiline buttons, with all three labels centered together. */
-:root body button.schedule-date-tab {
-  display: flex !important;
-  flex-direction: column;
-  gap: 2px;
-}
-
-button.schedule-date-tab > em {
-  align-self: center;
-}
-
 /* Native disclosure controls need the same centered label as ordinary buttons. */
 :root body .timetable-more-menu > summary.ui-text-chip {
   display: inline-flex !important;

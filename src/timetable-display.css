@@ -73,7 +73,8 @@
   outline:3px solid var(--biff-focus, rgba(185,39,29,.55));
   outline-offset:2px;
 }
-.timetable-day-selector{
+.timetable-day-selector,
+.schedule-date-tabs{
   display:flex;
   gap:6px;
   width:100%;
@@ -97,6 +98,11 @@
   font-size:12px;
   font-weight:700;
   cursor:pointer;
+}
+:root body button.timetable-day-button.ui-text-chip{
+  --text-chip-min-height:44px;
+  white-space:nowrap!important;
+  overflow-wrap:normal;
 }
 .timetable-day-button.active{
   border-color:var(--biff-action, #b9271d);

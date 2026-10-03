@@ -1463,6 +1463,7 @@ export default function App() {
           </div>
           {timetableView === 'list' ? <ScheduleList
             items={allScreeningItems}
+            formatDate={formatDate}
             selectedSet={selectedSet}
             nextFallbackIds={nextFallbackSet}
             bookingPlan={bookingPlan}
@@ -1495,7 +1496,7 @@ export default function App() {
               {dates.map((date, index) => <button
                 type="button"
                 key={date}
-                className={`timetable-day-button ${activeGridDate === date ? 'active' : ''}`}
+                className={`ui-text-chip timetable-day-button ${activeGridDate === date ? 'active' : ''}`}
                 aria-pressed={activeGridDate === date}
                 tabIndex={activeGridDate === date ? 0 : -1}
                 onClick={() => setSelectedGridDate(date)}
