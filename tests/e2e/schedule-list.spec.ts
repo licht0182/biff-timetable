@@ -163,6 +163,48 @@ for (const width of [320, 390, 768]) {
   })
 }
 
+for (const width of [320, 393, 1440]) {
+  test(`draws one glass surface per standalone screening at ${width}px`, async ({ page, request }) => {
+    const item = (await items(request))[0]
+    await page.addInitScript(({ selectedKey, customKey, screeningId, date }) => {
+      localStorage.setItem(selectedKey, JSON.stringify([screeningId]))
+      localStorage.setItem(customKey, JSON.stringify([{
+        id: 'custom-single-rim', title: '흰여울문화마을 출사', date,
+        start: '12:20', end: '14:20', category: 'personal',
+      }]))
+    }, {
+      selectedKey: SELECTED_KEY, customKey: CUSTOM_EVENTS_KEY,
+      screeningId: item.screening.id, date: item.screening.date,
+    })
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto('./')
+    await openTimetable(page)
+    const row = page.locator('.schedule-list-row[data-screening-id]')
+    const wrapper = row.locator('..')
+    await expect(row).toBeVisible()
+    await expect(row.locator(':scope > .liquid-glass-edge-highlight-layer')).toHaveCount(1)
+    await expect(wrapper.locator(':scope > .liquid-glass-edge-highlight-layer')).toHaveCount(0)
+    await expect(wrapper).not.toHaveClass(/liquid-glass-enhanced/)
+    const appearance = await row.evaluate((element) => {
+      const wrapperStyle = getComputedStyle(element.parentElement!)
+      const custom = document.querySelector('.schedule-custom-row')!
+      return {
+        background: wrapperStyle.backgroundColor, border: wrapperStyle.borderWidth,
+        shadow: wrapperStyle.boxShadow, filter: wrapperStyle.getPropertyValue('backdrop-filter'),
+        rowRadius: getComputedStyle(element).borderRadius,
+        customRadius: getComputedStyle(custom).borderRadius,
+      }
+    })
+    expect(appearance.background).toBe('rgba(0, 0, 0, 0)')
+    expect(appearance.border).toBe('0px')
+    expect(appearance.shadow).toBe('none')
+    expect(['', 'none']).toContain(appearance.filter)
+    expect(appearance.rowRadius).toBe(appearance.customRadius)
+    await row.locator('.schedule-list-main').click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+  })
+}
+
 test('shows one selected date at a time and keeps the mobile list scrollable', async ({ page, request }) => {
   const all = await items(request)
   const dateCounts = new Map<string, number>()

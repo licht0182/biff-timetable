@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "mode": "balanced",
+  "risk": "normal",
+  "revision": "3fc44e603341de7efbbd68eb8f2ee514fdf8b68a27f6a1adce1bcca904e31568",
+  "parent": {
+    "agent_id": "/root",
+    "requested_model": "gpt-6-astra",
+    "requested_effort": "low",
+    "routing_proof_required": false,
+    "unconfirmed_disclosure": "Prior skill recommendation metadata only, not actual model selection. Existing parent settings preserved; realized parent model and effort are unobservable.",
+    "diff_inspected_revision": "3fc44e603341de7efbbd68eb8f2ee514fdf8b68a27f6a1adce1bcca904e31568",
+    "verified_revision": "3fc44e603341de7efbbd68eb8f2ee514fdf8b68a27f6a1adce1bcca904e31568",
+    "verification_evidence": "Parent reproduced the exact photograph films267/325 with same-size nested10px/20px glass frames, inspected the three-file diff, confirmed build and64 focused checks with zero failures/flakes. Actual Chrome/WebKit widths320/393/768/1440 show parent rims0, row rims1, transparent borderless parent, matching custom-card radii and zero horizontal overflow. Dark393 screens inspected.",
+    "accepted_revision": "3fc44e603341de7efbbd68eb8f2ee514fdf8b68a27f6a1adce1bcca904e31568",
+    "acceptance_reason": "Fresh read-only review SHIP matched the unchanged verified fingerprint, source, stored64 passing checks and real before/after images. Parent accepts the structural-wrapper change for commit and deployment. Full remote CI and public-site verification remain delivery gates."
+  },
+  "budget": { "dispatches": 1, "corrections": 1, "reviews": 1 },
+  "parent_corrections": 1,
+  "work": [{
+    "id": "fresh-review",
+    "kind": "review",
+    "roles": ["reviewer"],
+    "status": "completed",
+    "required": true,
+    "read_only": true,
+    "fresh_context": true,
+    "ownership": ["src/components/ScheduleList.tsx", "src/schedule-list.css", "tests/e2e/schedule-list.spec.ts"],
+    "depends_on": [],
+    "agent_id": "/root/card_rim_review",
+    "requested_model": "gpt-6.1-sol",
+    "requested_effort": "medium",
+    "dispatch_source": "collaboration.spawn_agent explicit native model/effort and fork_turns=none",
+    "routing_proof_required": false,
+    "unconfirmed_disclosure": "Requested native controls recorded; realized settings not independently observable.",
+    "parent_verified_revision": "3fc44e603341de7efbbd68eb8f2ee514fdf8b68a27f6a1adce1bcca904e31568",
+    "parent_verification_evidence": "Parent inspected diff, before/after real WebKit393 screens plus dark screen, Chrome/WebKit four widths and64 green focused tests before dispatch.",
+    "reviewed_revision": "3fc44e603341de7efbbd68eb8f2ee514fdf8b68a27f6a1adce1bcca904e31568",
+    "verdict": "ship",
+    "evidence": "Reviewer independently matched fingerprint before and after read-only review, inspected selectors and React key lifecycle, checked new rim/style/detail regression coverage and64 passed/zero failed/flaky/skipped stored results, and directly viewed WebKit before/after393, Chrome393 and WebKit dark screenshots. No blocking findings and no edits or reruns."
+  }]
+}
