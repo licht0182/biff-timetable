@@ -22,6 +22,75 @@ async function openSection(page: Page, label: string) {
   await navigation.getByRole('button', { name: label, exact: true }).click()
 }
 
+for (const width of [320, 390, 768, 1280]) {
+  for (const colorScheme of ['light', 'dark'] as const) {
+    test(`shares Film Finder header geometry at ${width}px in ${colorScheme}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 })
+      await page.emulateMedia({ colorScheme })
+      await page.goto('./')
+      await expect(page.locator('.film-card').first()).toBeVisible({ timeout: 30_000 })
+
+      const measureHeader = () => page.locator('.topbar').evaluate((header) => {
+        const measure = (element: Element) => {
+          const rect = element.getBoundingClientRect()
+          const style = getComputedStyle(element)
+          return {
+            x: Number(rect.x.toFixed(1)), y: Number(rect.y.toFixed(1)),
+            width: Number(rect.width.toFixed(1)), height: Number(rect.height.toFixed(1)),
+            fontSize: style.fontSize, display: style.display, padding: style.padding,
+            borderColor: style.borderBottomColor,
+            borderWidths: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth],
+          }
+        }
+        const brand = header.querySelector('div')!
+        const logo = getComputedStyle(brand, '::before')
+        const navigation = document.querySelector(window.innerWidth <= 700 ? '.liquid-tab-bar' : '.tabs')!
+        return {
+          header: measure(header), title: measure(header.querySelector('h1')!),
+          subtitle: measure(header.querySelector('.subtitle')!),
+          eyebrow: measure(header.querySelector('.eyebrow')!),
+          actions: measure(header.querySelector('.global-search-header-actions')!),
+          search: measure(header.querySelector('.global-search-trigger')!),
+          count: measure(header.querySelector('.selection-count')!),
+          navigation: measure(navigation),
+          logo: { width: logo.width, height: logo.height, radius: logo.borderRadius, fontSize: logo.fontSize },
+        }
+      })
+
+      const canonical = await measureHeader()
+      expect(canonical.subtitle.height).toBeGreaterThan(0)
+      expect(canonical.eyebrow.display).toBe(width <= 700 ? 'none' : 'block')
+      expect(canonical.header.borderColor).toBe(colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.14)' : 'rgba(255, 255, 255, 0.48)')
+      expect(canonical.header.borderWidths).toEqual(['0px', '0px', '0px', '0px'])
+      const expectCanonicalHeader = async () => {
+        await expect.poll(async () => {
+          const height = await page.locator('.topbar').evaluate((element) => element.getBoundingClientRect().height)
+          return Math.abs(height - canonical.header.height)
+        }).toBeLessThanOrEqual(0.1)
+        await expect.poll(measureHeader).toEqual(canonical)
+      }
+      await page.getByRole('button', { name: '+ 추가', exact: true }).first().click()
+      await expect(page.locator('.selection-count')).toHaveText('총 1개 선택')
+      await expectCanonicalHeader()
+
+      await openSection(page, '내 시간표')
+      await expect(page.locator('.enhanced-timetable-actions')).toBeVisible()
+      for (const mode of ['목록', '시간표']) {
+        await page.getByRole('button', { name: mode, exact: true }).click()
+        await expectCanonicalHeader()
+      }
+
+      await openSection(page, 'AI 도슨트')
+      await expect(page.locator('.curator-intro')).toBeVisible({ timeout: 30_000 })
+      await expectCanonicalHeader()
+      await openSection(page, '설정')
+      await expect(page.locator('.settings-intro')).toBeVisible()
+      await expectCanonicalHeader()
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1)
+    })
+  }
+}
+
 for (const viewport of viewports) {
   test(`keeps one layout contract at ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport)

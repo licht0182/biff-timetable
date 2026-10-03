@@ -107,8 +107,24 @@
   outline:3px solid var(--biff-focus, rgba(185,39,29,.55));
   outline-offset:2px;
 }
-.timetable-scroll.day-focused .timetable{min-width:0}
-.timetable-scroll.day-focused .date-head{font-size:12px}
+.timetable-scroll.day-focused{
+  container-type:inline-size;
+  max-width:100%;
+  min-width:0;
+  overflow-x:auto;
+  overscroll-behavior-inline:contain;
+  scrollbar-width:thin;
+  -webkit-overflow-scrolling:touch;
+}
+.timetable-scroll.day-focused .timetable{min-width:var(--focused-grid-min-width, 0px)}
+.timetable-scroll.day-focused :is(.corner,.time-axis){position:sticky;left:0;z-index:5}
+.timetable-scroll.day-focused .date-head{
+  position:sticky;
+  left:var(--axis-width);
+  width:calc(100cqw - var(--axis-width));
+  max-width:100%;
+  font-size:12px;
+}
 .timetable-scroll.day-focused .event-block{padding:3px 5px}
 .timetable-scroll.day-focused .event-block strong{font-size:11.5px;line-height:1.08}
 .timetable-scroll.day-focused .event-block span{font-size:9.5px;line-height:1.1}

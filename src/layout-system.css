@@ -1,3 +1,5 @@
+.film-actions>.favorite-button{min-width:40px;width:40px;min-height:40px;height:40px}
+
 /*
  * Application layout ownership layer.
  *
@@ -644,7 +646,9 @@ body{min-width:0}
   .favorite-button,
   .detail-button,
   .screening-row>.screening-actions>button,
-  .screening-row>.screening-actions>.ticket-select{min-height:36px;height:36px}
+  .screening-row>.screening-actions>.ticket-select{min-height:44px;height:44px}
+
+  .film-actions>.favorite-button{min-width:44px;width:44px;min-height:44px;height:44px}
 
   .timetable-action-buttons>button,
   .timetable-action-buttons>.backup-menu>summary{min-height:36px}

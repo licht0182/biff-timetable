@@ -80,8 +80,8 @@
   width:max-content;
   min-width:0;
   box-sizing:border-box;
-  height:50px;
-  min-height:50px;
+  height:44px;
+  min-height:44px;
   gap:2px;
   padding:2px!important;
   border:1px solid var(--ios-separator, #cfcfcf)!important;
@@ -95,7 +95,9 @@
   align-items:center;
   justify-content:center;
   flex:0 0 auto;
-  min-height:44px!important;
+  min-width:38px;
+  height:38px!important;
+  min-height:38px!important;
   padding:0 10px!important;
   border:0!important;
   border-radius:999px!important;
@@ -124,7 +126,7 @@
 
 :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>button.ui-text-chip,
 :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>.timetable-more-menu>summary.ui-text-chip{
-  min-height:50px!important;
+  min-height:44px!important;
 }
 
 :root body .timetable-page .timetable-more-menu>div button.ui-text-chip{
@@ -161,7 +163,7 @@
   .timetable-page .timetable-action-buttons>.timetable-view-switch{order:0}
   .timetable-page .timetable-action-buttons>.timetable-selection-button{order:2}
   .timetable-page .timetable-action-buttons>.timetable-delete-button{order:3}
-  .timetable-page .timetable-action-buttons>.timetable-more-menu{order:4;margin-left:auto}
+  .timetable-page .timetable-action-buttons>.timetable-more-menu{order:4;margin-left:0}
   .timetable-page .timetable-action-buttons:has(.timetable-delete-button)>.custom-event-add-button{display:none!important}
   .timetable-page .timetable-action-buttons>.timetable-more-menu>div .png-export-mobile,
   .timetable-page .timetable-action-buttons>.timetable-more-menu>div .timetable-add-mobile{display:inline-flex!important}
@@ -170,7 +172,8 @@
     box-sizing:border-box;
     flex:0 0 auto;
     width:auto!important;
-    min-height:50px!important;
+    min-width:44px;
+    min-height:44px!important;
     padding:0 5px!important;
     font-size:12px!important;
     line-height:1!important;
@@ -179,7 +182,7 @@
   }
   :root body .timetable-page .timetable-action-buttons>.timetable-delete-button{padding-inline:4px!important}
   :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>.timetable-more-menu>summary.ui-text-chip{min-width:44px!important}
-  .timetable-page .timetable-empty-actions>.timetable-empty-backup{grid-column:auto;justify-self:auto;margin-left:auto}
+  .timetable-page .timetable-empty-actions>.timetable-empty-backup{grid-column:auto;justify-self:auto;margin-left:0}
   :root body .timetable-page .timetable-empty-actions>.timetable-empty-find-button{min-width:0!important}
   .timetable-page .timetable-more-menu>div button{min-height:44px;font-size:12px!important}
 }

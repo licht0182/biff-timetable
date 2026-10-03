@@ -582,7 +582,7 @@ export default function App() {
     return focusDate
   }, [viewport.width, dates, selectedItems, customEvents])
   const desktopGridNeedsFocus = Boolean(desktopDenseGridDate)
-  const dayFocusedGrid = viewport.width <= 1023 || dates.length > 1 && (desktopGridDateMode === 'focus' || desktopGridDateMode === null && desktopGridNeedsFocus)
+  const dayFocusedGrid = viewport.width <= 1023 || dates.length === 1 || dates.length > 1 && (desktopGridDateMode === 'focus' || desktopGridDateMode === null && desktopGridNeedsFocus)
   const activeGridDate = dates.includes(selectedGridDate) ? selectedGridDate : desktopDenseGridDate || dates[0] || ''
   const visibleGridDates = dayFocusedGrid ? (activeGridDate ? [activeGridDate] : []) : dates
   const handleGridDateKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -624,12 +624,28 @@ export default function App() {
     const headerHeight = isMobile ? 32 : 38
     const hourHeight = FIXED_TIMETABLE_HOUR_HEIGHT
     const gridHeight = hourHeight * (timetableEndHour - timetableStartHour)
-    const dayWidth = visibleGridDates.length > 0 ? Math.max(1, (contentWidth - axisWidth) / visibleGridDates.length) : contentWidth - axisWidth
+    // Match the runtime's visible card intervals, including the minimum card height.
+    // A focused date can still have many simultaneous screenings: grow its canvas
+    // inside the scroll container instead of squeezing each title into a few pixels.
+    const focusedIntervals = dayFocusedGrid ? [
+      ...selectedItems.filter(({ screening }) => timetableDate(screening) === activeGridDate).map(({ film, screening }) => {
+        const start = timetableStartMinutes(screening) * hourHeight / 60
+        return { value: screening.id, start, end: start + Math.max((timetableEndMinutes(film, screening) - timetableStartMinutes(screening)) * hourHeight / 60, 22) }
+      }),
+      ...customEvents.filter((event) => customEventTimetableDate(event) === activeGridDate).map((event) => {
+        const start = customEventTimetableStartMinutes(event) * hourHeight / 60
+        return { value: event.id, start, end: start + Math.max((customEventTimetableEndMinutes(event) - customEventTimetableStartMinutes(event)) * hourHeight / 60, 22) }
+      }),
+    ] : []
+    const focusedLaneCount = Math.max(1, ...assignTimetableLanes(focusedIntervals).map(({ laneCount }) => laneCount))
+    // 112px of title space per lane, plus the runtime's 2px gap on each side.
+    const focusedMinWidth = dayFocusedGrid && focusedLaneCount > 1 ? axisWidth + focusedLaneCount * 116 : 0
+    const dayWidth = visibleGridDates.length > 0 ? Math.max(1, (Math.max(contentWidth, focusedMinWidth) - axisWidth) / visibleGridDates.length) : contentWidth - axisWidth
     const dense = dayWidth < 76
     const ultraDense = dayWidth < 48
 
-    return { axisWidth, headerHeight, hourHeight, gridHeight, dayWidth, dense, ultraDense }
-  }, [viewport.width, visibleGridDates.length, timetableEndHour, timetableStartHour])
+    return { axisWidth, headerHeight, hourHeight, gridHeight, dayWidth, dense, ultraDense, focusedMinWidth }
+  }, [viewport.width, visibleGridDates.length, timetableEndHour, timetableStartHour, dayFocusedGrid, activeGridDate, selectedItems, customEvents])
 
   const conflictingSelections = useCallback((film: Film, screening: Screening) => (
     selectedItems.filter(({ film: otherFilm, screening: other }) => screeningsOverlap(film, screening, otherFilm, other))
@@ -1162,6 +1178,7 @@ export default function App() {
     '--header-height': `${timetableMetrics.headerHeight}px`,
     '--hour-height': `${timetableMetrics.hourHeight}px`,
     '--grid-height': `${timetableMetrics.gridHeight}px`,
+    '--focused-grid-min-width': `${timetableMetrics.focusedMinWidth}px`,
     gridTemplateColumns: `${timetableMetrics.axisWidth}px repeat(${visibleGridDates.length}, minmax(0, 1fr))`,
   } as CSSProperties
 

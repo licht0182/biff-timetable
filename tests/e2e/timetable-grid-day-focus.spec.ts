@@ -210,3 +210,63 @@ test('auto focus opens the crowded date when it is not the first date', async ({
   await days.first().click()
   await expect(days.first()).toHaveAttribute('aria-pressed', 'true')
 })
+
+for (const width of [320, 390, 1440]) {
+  test(`eleven concurrent lanes scroll inside the focused grid at ${width}px`, async ({ page, request }) => {
+    await page.setViewportSize({ width, height: 900 })
+    await openMultiDayGrid(page, request, 2, 11)
+    const cards = page.locator('.day-column .custom-event[data-runtime-lane]')
+    await expect(cards).toHaveCount(11)
+    const geometry = await page.evaluate(() => {
+      const scroller = document.querySelector<HTMLElement>('.timetable-scroll')!
+      const selector = document.querySelector<HTMLElement>('.timetable-day-selector')!
+      const axis = document.querySelector<HTMLElement>('.time-axis')!
+      const header = document.querySelector<HTMLElement>('.date-head')!
+      const column = document.querySelector<HTMLElement>('.day-column')!
+      const cards = [...column.querySelectorAll<HTMLElement>('.custom-event')]
+      const selectorLeft = selector.getBoundingClientRect().left
+      const axisLeft = axis.getBoundingClientRect().left
+      const headerLeft = header.getBoundingClientRect().left
+      scroller.scrollLeft = scroller.scrollWidth
+      return {
+        pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        internalOverflow: scroller.scrollWidth - scroller.clientWidth,
+        scrollLeft: scroller.scrollLeft,
+        minCardWidth: Math.min(...cards.map((card) => card.getBoundingClientRect().width)),
+        selectorMoved: selector.getBoundingClientRect().left - selectorLeft,
+        axisMoved: axis.getBoundingClientRect().left - axisLeft,
+        headerMoved: header.getBoundingClientRect().left - headerLeft,
+        headerRight: header.getBoundingClientRect().right,
+        cardHourOffset: Number.parseFloat(cards[0].style.top) - Number.parseFloat(column.querySelectorAll<HTMLElement>('.hour-line')[4].style.top),
+      }
+    })
+    expect(geometry.pageOverflow).toBeLessThanOrEqual(1)
+    expect(geometry.internalOverflow).toBeGreaterThan(100)
+    expect(geometry.scrollLeft).toBeGreaterThan(100)
+    expect(geometry.minCardWidth).toBeGreaterThanOrEqual(111)
+    expect(Math.abs(geometry.selectorMoved)).toBeLessThanOrEqual(1)
+    expect(Math.abs(geometry.axisMoved)).toBeLessThanOrEqual(1)
+    expect(Math.abs(geometry.headerMoved)).toBeLessThanOrEqual(1)
+    expect(geometry.headerRight).toBeLessThanOrEqual(width)
+    expect(geometry.cardHourOffset).toBe(0)
+    await page.locator('.timetable-day-button').nth(1).click()
+    const sparseOverflow = await page.locator('.timetable-scroll').evaluate((element) => element.scrollWidth - element.clientWidth)
+    expect(sparseOverflow).toBeLessThanOrEqual(1)
+  })
+}
+
+test('one crowded desktop date also preserves readable lanes and contained scrolling', async ({ page, request }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await openMultiDayGrid(page, request, 1, 11)
+  await expect(page.locator('.day-column .custom-event[data-runtime-lane]')).toHaveCount(11)
+  const geometry = await page.locator('.timetable-scroll').evaluate((element) => ({
+    focused: element.classList.contains('day-focused'),
+    overflow: element.scrollWidth - element.clientWidth,
+    minCardWidth: Math.min(...[...element.querySelectorAll('.custom-event')].map((card) => card.getBoundingClientRect().width)),
+    pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  }))
+  expect(geometry.focused).toBeTruthy()
+  expect(geometry.overflow).toBeGreaterThan(100)
+  expect(geometry.minCardWidth).toBeGreaterThanOrEqual(111)
+  expect(geometry.pageOverflow).toBeLessThanOrEqual(1)
+})

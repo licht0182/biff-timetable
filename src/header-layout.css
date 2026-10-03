@@ -1,0 +1,91 @@
+/* Every primary section uses the Film Finder's header, including grid/list views. */
+:root body .app-shell > .topbar {
+  padding: 22px 26px;
+  gap: 24px;
+  border: 0 solid rgba(255, 255, 255, .48) !important;
+}
+
+.app-shell > .topbar > div:first-child {
+  padding-left: 54px;
+}
+
+.app-shell > .topbar > div:first-child::before {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  font-size: 11px;
+}
+
+.app-shell > .topbar h1 {
+  font-size: var(--biff-type-display);
+}
+
+.app-shell > .topbar :is(.eyebrow, .subtitle) {
+  display: block;
+}
+
+.app-shell > .topbar .selection-count {
+  min-width: 108px;
+  min-height: 38px;
+  padding: 8px 11px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  justify-content: center;
+}
+
+/* React's existing glass rim covers the full host. Physical borders would inset
+ * its layers, so navigation keeps zero border width in every view and viewport.
+ * The rim's --glass-rim-* variables and reduced-transparency policy remain owned
+ * by liquid-glass.css; no extra pseudo-element highlight is added here. */
+:root body .app-shell > .tabs {
+  border: 0 solid rgba(255, 255, 255, .48) !important;
+}
+
+@media (max-width: 700px) {
+  :root body .app-shell > .topbar {
+    padding: calc(15px + env(safe-area-inset-top)) 16px 14px;
+    gap: 10px;
+    border-width: 0 !important;
+  }
+
+  .app-shell > .topbar > div:first-child {
+    padding-left: 42px;
+  }
+
+  .app-shell > .topbar > div:first-child::before {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    font-size: 9px;
+  }
+
+  .app-shell > .topbar h1 {
+    font-size: 21px;
+  }
+
+  .app-shell > .topbar .eyebrow {
+    display: none !important;
+  }
+
+  .app-shell > .topbar .subtitle {
+    display: block;
+    max-width: none;
+    margin-top: 3px;
+    font-size: 11px;
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+
+  .app-shell > .topbar .selection-count {
+    min-width: 80px;
+    min-height: 34px;
+    padding: 0 11px;
+    font-size: 10px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root body .app-shell > :is(.topbar, .tabs) {
+    border-color: rgba(255, 255, 255, .14) !important;
+  }
+}

@@ -1,5 +1,15 @@
 body.app-native-dialog-open{overflow:hidden;overscroll-behavior:none}
 
+:root body :is(.modal-head,.custom-event-modal-head)>.modal-close{
+  width:44px;
+  min-width:44px;
+  height:44px;
+  min-height:44px;
+  flex:0 0 44px;
+  padding:0;
+  line-height:1;
+}
+
 dialog.modal-backdrop,
 dialog.booking-conflict-backdrop,
 dialog.booking-apply-backdrop{
@@ -40,6 +50,8 @@ dialog#film-advanced-filters:focus-visible{outline:2px solid var(--biff-accent,#
     place-items:center;
     width:44px;
     min-width:44px;
+    height:44px!important;
+    min-height:44px!important;
     padding:0!important;
     white-space:nowrap;
   }

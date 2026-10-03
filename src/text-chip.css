@@ -1,5 +1,10 @@
 /* Opt-in pill geometry for ordinary text actions. Keep each control's own
  * background, foreground, active state, width, and layout display. */
+dialog,
+[role="dialog"] {
+  --text-chip-min-height: 44px;
+}
+
 :root body :is(button, summary).ui-text-chip {
   --control-rim-dark: rgba(0, 0, 0, .28);
   --control-rim-white-mid: rgba(255, 255, 255, .28);
@@ -8,14 +13,21 @@
   position: relative;
   box-sizing: border-box;
   height: auto !important;
-  min-height: var(--text-chip-min-height, 3.6em) !important;
-  padding-block: .7em !important;
-  padding-inline: 1.4em !important;
+  min-width: var(--text-chip-min-height, 40px);
+  min-height: var(--text-chip-min-height, 40px) !important;
+  padding-block: .5em !important;
+  padding-inline: 1em !important;
   border-radius: 999em !important;
   border-color: transparent !important;
   white-space: normal !important;
   overflow-wrap: anywhere;
   line-height: 1.25;
+}
+
+@media (max-width: 767px) {
+  :root body :is(button, summary).ui-text-chip {
+    --text-chip-min-height: 44px;
+  }
 }
 
 :root body :is(button, summary).ui-text-chip::before,
