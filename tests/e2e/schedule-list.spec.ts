@@ -115,6 +115,54 @@ test('keeps a custom event delete action aligned inside the list row on mobile',
   expect(Math.abs(geometry.rowCenter - geometry.buttonCenter)).toBeLessThanOrEqual(1)
 })
 
+for (const width of [320, 390, 768]) {
+  test(`wraps long agenda titles and locations without covering actions at ${width}px`, async ({ page }) => {
+    const event = {
+      id: 'custom-long-agenda-copy',
+      title: '부산국제영화제관객과의대화참석후친구들과저녁식사',
+      date: '2026-10-10',
+      start: '11:30',
+      end: '12:30',
+      location: '동서대학교-경남정보대학교4층북카페라운지',
+      category: 'meal',
+      createdAt: '2026-10-03T00:00:00.000Z',
+    }
+    await page.addInitScript(({ key, value }) => localStorage.setItem(key, JSON.stringify([value])), {
+      key: CUSTOM_EVENTS_KEY,
+      value: event,
+    })
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto('./')
+    await openTimetable(page)
+    const row = page.locator('.schedule-custom-row')
+    await expect(row.locator('.schedule-list-copy>strong')).toHaveText(event.title)
+    const geometry = await row.evaluate((element) => {
+      const rowBox = element.getBoundingClientRect()
+      const main = element.querySelector<HTMLElement>('.schedule-list-main')!.getBoundingClientRect()
+      const actions = element.querySelector<HTMLElement>('.schedule-row-actions')!.getBoundingClientRect()
+      const fragments = [...element.querySelectorAll('.schedule-list-copy>strong,.schedule-list-copy>span')].flatMap((copy) => {
+        const range = document.createRange()
+        range.selectNodeContents(copy)
+        return [...range.getClientRects()].map((rect) => ({ left: rect.left, right: rect.right, bottom: rect.bottom }))
+      })
+      return {
+        mainLeft: main.left, mainRight: main.right, actionLeft: actions.left, rowBottom: rowBox.bottom,
+        rowOverflow: element.scrollWidth - element.clientWidth, fragments,
+        pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      }
+    })
+    expect(geometry.rowOverflow).toBeLessThanOrEqual(1)
+    expect(geometry.pageOverflow).toBeLessThanOrEqual(1)
+    expect(geometry.mainRight).toBeLessThanOrEqual(geometry.actionLeft + 1)
+    for (const fragment of geometry.fragments) {
+      expect(fragment.left).toBeGreaterThanOrEqual(geometry.mainLeft)
+      expect(fragment.right).toBeLessThanOrEqual(geometry.mainRight)
+      expect(fragment.right).toBeLessThanOrEqual(geometry.actionLeft - 1)
+      expect(fragment.bottom).toBeLessThanOrEqual(geometry.rowBottom - 1)
+    }
+  })
+}
+
 test('shows one selected date at a time and keeps the mobile list scrollable', async ({ page, request }) => {
   const all = await items(request)
   const dateCounts = new Map<string, number>()

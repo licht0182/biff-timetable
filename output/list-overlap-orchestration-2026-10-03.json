@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "mode": "balanced",
+  "risk": "normal",
+  "revision": "06ae6e7c4307f14220a05b668e4a9510e57962d5d5cd57413e225b24ed9bdc9c",
+  "parent": {
+    "agent_id": "/root",
+    "requested_model": "gpt-6-astra",
+    "requested_effort": "low",
+    "routing_proof_required": false,
+    "unconfirmed_disclosure": "Prior skill recommendation metadata only, not actual model selection. Existing parent settings preserved and realized parent model/effort unobservable.",
+    "diff_inspected_revision": "06ae6e7c4307f14220a05b668e4a9510e57962d5d5cd57413e225b24ed9bdc9c",
+    "verified_revision": "06ae6e7c4307f14220a05b668e4a9510e57962d5d5cd57413e225b24ed9bdc9c",
+    "verification_evidence": "Parent reproduced actual long custom title intrusion159px at320, inspected the four-line CSS fix and fragment-boundary regression checks. Latest build and26 focused checks passed. Actual Chrome/WebKit five widths show zero title/meta/action/row/page overflow, including failed-booking fallback actions and dark mode. Full remote CI will gate delivery.",
+    "accepted_revision": "06ae6e7c4307f14220a05b668e4a9510e57962d5d5cd57413e225b24ed9bdc9c",
+    "acceptance_reason": "Fresh read-only review SHIP on the unchanged parent-verified candidate. Focused checks and compiled real screenshots confirm overlap eliminated with existing card/control behavior preserved. Accepted for commit/deployment; full CI and public verification gate final delivery."
+  },
+  "budget": { "dispatches": 1, "corrections": 1, "reviews": 1 },
+  "parent_corrections": 1,
+  "work": [
+    {
+      "id": "fresh-review",
+      "kind": "review",
+      "roles": ["reviewer"],
+      "status": "completed",
+      "required": true,
+      "read_only": true,
+      "fresh_context": true,
+      "ownership": ["src/schedule-list.css", "tests/e2e/schedule-list.spec.ts"],
+      "depends_on": [],
+      "agent_id": "/root/list_overlap_review",
+      "requested_model": "gpt-6.1-sol",
+      "requested_effort": "medium",
+      "dispatch_source": "collaboration.spawn_agent explicit native model/effort and fork_turns=none",
+      "routing_proof_required": false,
+      "unconfirmed_disclosure": "Requested native controls recorded; realized settings not independently observable.",
+      "parent_verified_revision": "06ae6e7c4307f14220a05b668e4a9510e57962d5d5cd57413e225b24ed9bdc9c",
+      "parent_verification_evidence": "Parent inspected the diff, reproduced before/after screens in both engines and confirmed26 focused checks before dispatch.",
+      "reviewed_revision": "06ae6e7c4307f14220a05b668e4a9510e57962d5d5cd57413e225b24ed9bdc9c",
+      "verdict": "ship",
+      "evidence": "Reviewer independently matched the fingerprint, checked source and Range fragment regression tests, verified26 pass/zero failures or flakes, and inspected before320/afterChrome320/WebKit390 screenshots. No blockers; no edits or broad reruns."
+    }
+  ]
+}
