@@ -43,7 +43,7 @@ export default function BookingConflictDialog({
             <span>예매 대안</span>
             <h2 id="booking-conflict-title">시간이 겹치는 회차입니다</h2>
           </div>
-          <button type="button" data-dialog-initial-focus onClick={onClose} aria-label="예매 대안 창 닫기">×</button>
+          <button type="button" className="ui-icon-button" data-dialog-initial-focus onClick={onClose} aria-label="예매 대안 창 닫기">×</button>
         </div>
 
         <p className="booking-conflict-guide">실제 시간표에는 동시에 넣지 않고, 예매 실패에 대비한 대안으로만 저장할 수 있습니다.</p>

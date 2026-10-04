@@ -44,15 +44,13 @@ dialog.booking-apply-backdrop:focus-visible,
 dialog#film-advanced-filters:focus-visible{outline:2px solid var(--biff-accent,#d92d20);outline-offset:-4px}
 
 @media(max-width:700px){
-  .filter-sheet-head{display:grid}
+  .filter-sheet-head{
+    display:grid;
+    grid-template-columns:44px minmax(0,1fr) max-content;
+  }
   dialog#film-advanced-filters .filter-sheet-head button{
     display:grid;
     place-items:center;
-    width:44px;
-    min-width:44px;
-    height:44px!important;
-    min-height:44px!important;
-    padding:0!important;
     white-space:nowrap;
   }
   dialog#film-advanced-filters.filter-row{

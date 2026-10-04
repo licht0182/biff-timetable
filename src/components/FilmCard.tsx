@@ -47,7 +47,7 @@ function FilmCard({
         </div>
         <div className="film-actions">
           <button
-            className={`favorite-button ${isFavorite ? 'active' : ''}`}
+            className={`favorite-button ui-icon-button ${isFavorite ? 'active' : ''}`}
             onClick={() => onFavorite(film.id)}
             aria-label={`${film.title} 관심작 ${isFavorite ? '해제' : '추가'}`}
           >

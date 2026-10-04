@@ -110,7 +110,7 @@ export default function CustomEventDialog({
     <section className="custom-event-modal" onMouseDown={(mouseEvent) => mouseEvent.stopPropagation()}>
       <div className="custom-event-modal-head">
         <div><p className="custom-event-kicker">MY TIMETABLE</p><h2 id={titleId}>{mode === 'create' ? '일정 추가' : mode === 'edit' ? '일정 수정' : event?.title}</h2></div>
-        <button type="button" className="modal-close" data-dialog-initial-focus={mode === 'detail' ? true : undefined} onClick={onClose} aria-label="일정 창 닫기">×</button>
+        <button type="button" className="modal-close ui-icon-button" data-dialog-initial-focus={mode === 'detail' ? true : undefined} onClick={onClose} aria-label="일정 창 닫기">×</button>
       </div>
 
       {mode === 'detail' && event ? <>

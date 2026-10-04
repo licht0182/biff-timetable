@@ -1612,7 +1612,7 @@ export default function App() {
 
       {detailFilm && <dialog ref={filmModalRef} className={`modal-backdrop ${detailScreeningId ? 'timetable-detail-backdrop' : ''}`} aria-labelledby="film-detail-title" tabIndex={-1} onCancel={(event) => { event.preventDefault(); setDetailFilm(null); setDetailScreeningId(null) }} onMouseDown={(event) => { if (event.target === event.currentTarget) { setDetailFilm(null); setDetailScreeningId(null) } }}>
         <section className={`film-modal ${detailScreeningId ? 'timetable-detail-modal' : ''}`} onMouseDown={(event) => event.stopPropagation()}>
-          <div className="modal-head"><div><span className="section-label">{detailFilm.section ?? '섹션 미정'}</span><h2 id="film-detail-title">{detailFilm.title}</h2>{detailFilm.englishTitle && <p>{detailFilm.englishTitle}</p>}</div><button className="modal-close" data-dialog-initial-focus onClick={() => { setDetailFilm(null); setDetailScreeningId(null) }} aria-label="상세보기 닫기">×</button></div>
+          <div className="modal-head"><div><span className="section-label">{detailFilm.section ?? '섹션 미정'}</span><h2 id="film-detail-title">{detailFilm.title}</h2>{detailFilm.englishTitle && <p>{detailFilm.englishTitle}</p>}</div><button className="modal-close ui-icon-button" data-dialog-initial-focus onClick={() => { setDetailFilm(null); setDetailScreeningId(null) }} aria-label="상세보기 닫기">×</button></div>
           <dl className="film-detail-grid">
             {detailFilm.director && <><dt>감독</dt><dd>{detailFilm.director}</dd></>}
             {detailFilm.country && <><dt>국가</dt><dd>{detailFilm.country}</dd></>}

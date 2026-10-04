@@ -1,6 +1,46 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 const dockNaNErrors = new WeakMap<object, string[]>()
+
+async function expectDockActionsFit(page: Page) {
+  const geometry = await page.locator('.liquid-tab-bar-surface').evaluate((surface) => {
+    const outer = surface.getBoundingClientRect()
+    const controls = [...surface.querySelectorAll<HTMLButtonElement>('.liquid-tab-actions > button')].map((button) => {
+      const box = button.getBoundingClientRect()
+      const range = document.createRange()
+      range.selectNodeContents(button)
+      const content = range.getBoundingClientRect()
+      return {
+        left: box.left, right: box.right, top: box.top, bottom: box.bottom,
+        height: box.height, contentLeft: content.left, contentRight: content.right,
+        visible: getComputedStyle(button).visibility === 'visible',
+      }
+    })
+    return {
+      controls,
+      outer: { left: outer.left, right: outer.right, top: outer.top, bottom: outer.bottom },
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+    }
+  })
+  expect(geometry.controls).toHaveLength(4)
+  expect(geometry.outer.left).toBeGreaterThanOrEqual(0)
+  expect(geometry.outer.right).toBeLessThanOrEqual(geometry.viewport.width)
+  expect(geometry.outer.bottom).toBeLessThan(geometry.viewport.height)
+  for (const [index, control] of geometry.controls.entries()) {
+    expect(control.visible).toBe(true)
+    expect(control.height).toBeGreaterThanOrEqual(44)
+    expect(control.left).toBeGreaterThanOrEqual(geometry.outer.left)
+    expect(control.right).toBeLessThanOrEqual(geometry.outer.right)
+    expect(control.top).toBeGreaterThanOrEqual(geometry.outer.top)
+    expect(control.bottom).toBeLessThanOrEqual(geometry.outer.bottom)
+    expect(control.contentLeft - control.left).toBeGreaterThanOrEqual(control.height / 2 - 1)
+    expect(control.right - control.contentRight).toBeGreaterThanOrEqual(control.height / 2 - 1)
+    for (const other of geometry.controls.slice(index + 1)) {
+      expect(Math.min(control.right, other.right) > Math.max(control.left, other.left) + 1
+        && Math.min(control.bottom, other.bottom) > Math.max(control.top, other.top) + 1).toBe(false)
+    }
+  }
+}
 
 test.beforeEach(async ({ page }) => {
   const errors: string[] = []
@@ -108,15 +148,12 @@ test('keeps the fixed dock material outside Safari toolbar tint sampling', async
   expect(metrics.bottomGap).toBeGreaterThanOrEqual(18)
   expect(metrics.bottomGap).toBeLessThanOrEqual(20)
   expect(metrics.navPaddingBottom).toBe(0)
-  expect(metrics.shellPaddingBottom).toBeGreaterThanOrEqual(metrics.surfaceHeight + 24)
+  expect(metrics.shellPaddingBottom).toBeGreaterThanOrEqual(metrics.surfaceHeight + metrics.bottomGap + 12)
   expect(metrics.surfaceBackground).not.toBe('none')
   const dockAlpha = Number(metrics.surfaceBackgroundColor.match(/[\d.]+(?=\)$)/)?.[0])
   expect(dockAlpha).toBeGreaterThan(0.1)
   expect(dockAlpha).toBeLessThan(0.2)
-  expect(metrics.surfaceHeight).toBeGreaterThanOrEqual(62)
-  expect(metrics.surfaceHeight).toBeLessThanOrEqual(64)
-  expect(metrics.surfaceWidth).toBeGreaterThanOrEqual(351)
-  expect(metrics.surfaceWidth).toBeLessThanOrEqual(352)
+  await expectDockActionsFit(page)
   expect(metrics.surfaceRadius).toBe('31px')
   expect(metrics.navPosition).toBe('fixed')
   expect(metrics.surfaceBackdrop).toContain('blur(')
@@ -131,10 +168,7 @@ test('keeps the fixed dock material outside Safari toolbar tint sampling', async
   expect(metrics.iconWidth).toBeGreaterThanOrEqual(25)
   expect(metrics.iconWidth).toBeLessThanOrEqual(27)
   expect(metrics.iconRadius).toBe('0px')
-  expect(metrics.buttonWidth).toBeGreaterThanOrEqual(86)
-  expect(metrics.buttonWidth).toBeLessThanOrEqual(87)
-  expect(metrics.buttonHeight).toBeGreaterThanOrEqual(58)
-  expect(metrics.buttonHeight).toBeLessThanOrEqual(60)
+  expect(metrics.buttonHeight).toBeGreaterThanOrEqual(44)
   expect(metrics.activeColor).toBe('rgb(217, 45, 32)')
   expect(metrics.inactiveColor).toBe('rgba(17, 24, 39, 0.72)')
   expect(metrics.labelFontSize).toBe('11px')
@@ -218,7 +252,7 @@ test('uses two package lenses for the tab dock in Chromium and iPhone WebKit', a
   await expect(tabBar.getByRole('button', { name: 'AI 도슨트' })).toHaveAttribute('aria-current', 'page')
 })
 
-test('keeps the four-slot dock track aligned without painted inactive lenses', async ({ page }) => {
+test('keeps content-sized dock actions aligned without painted inactive lenses', async ({ page }) => {
   const tabBar = page.locator('.liquid-tab-bar')
   const surface = tabBar.locator('.liquid-tab-bar-surface')
   const scene = tabBar.locator('.liquid-tab-selection-scene')
@@ -236,12 +270,7 @@ test('keeps the four-slot dock track aligned without painted inactive lenses', a
   expect(scenePaint.image).toBe('none')
   expect(scenePaint.opacity).toBe(1)
 
-  const initialCenters = await tabBar.getByRole('button').evaluateAll((buttons) => buttons.map((button) => {
-    const rect = button.getBoundingClientRect()
-    return rect.left + rect.width / 2
-  }))
-  const gaps = initialCenters.slice(1).map((center, index) => center - initialCenters[index])
-  expect(Math.max(...gaps) - Math.min(...gaps)).toBeLessThanOrEqual(.01)
+  await expectDockActionsFit(page)
 
   const measureAlignment = () => surface.evaluate((element) => {
     const surfaceRect = element.getBoundingClientRect()
@@ -268,6 +297,16 @@ test('keeps the four-slot dock track aligned without painted inactive lenses', a
         : Number.NaN,
       leftInset: lensRect.left - surfaceRect.left,
       rightInset: surfaceRect.right - lensRect.right,
+      coverageError: Math.max(
+        Math.abs(lensRect.left - buttonRect.left), Math.abs(lensRect.right - buttonRect.right),
+        Math.abs(lensRect.top - buttonRect.top), Math.abs(lensRect.bottom - buttonRect.bottom),
+      ),
+      inactiveOverlap: [...element.querySelectorAll<HTMLButtonElement>('button:not([aria-current="page"])')]
+        .some((button) => {
+          const other = button.getBoundingClientRect()
+          return Math.min(lensRect.right, other.right) > Math.max(lensRect.left, other.left) + 1
+            && Math.min(lensRect.bottom, other.bottom) > Math.max(lensRect.top, other.top) + 1
+        }),
     }
   })
 
@@ -279,6 +318,8 @@ test('keeps the four-slot dock track aligned without painted inactive lenses', a
     await expect.poll(async () => (await measureAlignment()).coordinateError).toBeLessThanOrEqual(.5)
     await expect.poll(async () => (await measureAlignment()).opticalError).toBeLessThanOrEqual(.5)
     await expect.poll(async () => (await measureAlignment()).packageError).toBeLessThanOrEqual(.5)
+    await expect.poll(async () => (await measureAlignment()).coverageError).toBeLessThanOrEqual(.5)
+    expect((await measureAlignment()).inactiveOverlap).toBe(false)
     const bounds = await measureAlignment()
     if (index === 0) firstBounds = bounds
     if (index === tabNames.length - 1) lastBounds = bounds
@@ -288,8 +329,6 @@ test('keeps the four-slot dock track aligned without painted inactive lenses', a
   expect(lastBounds).toBeDefined()
   expect(firstBounds!.leftInset).toBeGreaterThanOrEqual(0)
   expect(lastBounds!.rightInset).toBeGreaterThanOrEqual(0)
-  expect(Math.abs(firstBounds!.leftInset - lastBounds!.rightInset)).toBeLessThanOrEqual(.5)
-  expect(Math.abs(firstBounds!.rightInset - lastBounds!.leftInset)).toBeLessThanOrEqual(.5)
 
   await page.emulateMedia({ colorScheme: 'light' })
   const lightAlpha = await surface.evaluate((element) => Number(getComputedStyle(element).backgroundColor.match(/[\d.]+(?=\)$)/)?.[0] ?? '1'))
@@ -355,8 +394,11 @@ test('fits first and last dock lenses at 320px in normal and pressed states', as
     }).toBeLessThanOrEqual(.5)
 
     const normal = await measure()
-    const expectedNormalWidth = Math.min(92, normal.buttonWidth + 5.5)
-    await expect.poll(async () => Math.abs((await measure()).opticalWidth - expectedNormalWidth)).toBeLessThanOrEqual(.1)
+    await expectDockActionsFit(page)
+    await expect.poll(async () => Math.abs((await measure()).opticalWidth - normal.buttonWidth)).toBeLessThanOrEqual(.5)
+    // The package subregion contracts each edge by 0.5px to avoid SVG edge
+    // artifacts. The optical rim still covers the complete measured target.
+    expect(Math.abs(normal.packageWidth - (normal.buttonWidth - 1))).toBeLessThanOrEqual(.5)
     expect(Number.isFinite(normal.packageWidth)).toBe(true)
     expect(normal.packageWidth).toBeGreaterThan(0)
     expect(normal.opticalLeftInset).toBeGreaterThanOrEqual(0)
@@ -368,8 +410,7 @@ test('fits first and last dock lenses at 320px in normal and pressed states', as
     await button.hover({ position: { x: normal.buttonWidth / 2, y: 28 } })
     await page.mouse.down()
     await expect(tabBar).toHaveAttribute('data-lens-pressed', id)
-    const expectedPressedWidth = expectedNormalWidth
-    await expect.poll(async () => Math.abs((await measure()).opticalWidth - expectedPressedWidth)).toBeLessThanOrEqual(.1)
+    await expect.poll(async () => Math.abs((await measure()).opticalWidth - normal.buttonWidth)).toBeLessThanOrEqual(.5)
     await expect.poll(async () => {
       const bounds = await measure()
       return Math.max(bounds.opticalCenterError, bounds.packageCenterError)
@@ -387,12 +428,10 @@ test('fits first and last dock lenses at 320px in normal and pressed states', as
     await expect(tabBar).not.toHaveAttribute('data-lens-pressed')
   }
 
-  for (const bounds of [normalBounds, pressedBounds]) {
-    const [first, last] = bounds
-    expect(Math.abs(first.opticalLeftInset - last.opticalRightInset)).toBeLessThanOrEqual(.5)
-    expect(Math.abs(first.opticalRightInset - last.opticalLeftInset)).toBeLessThanOrEqual(.5)
-    expect(Math.abs(first.packageLeftInset - last.packageRightInset)).toBeLessThanOrEqual(.5)
-    expect(Math.abs(first.packageRightInset - last.packageLeftInset)).toBeLessThanOrEqual(.5)
+  for (const [index, normal] of normalBounds.entries()) {
+    const pressed = pressedBounds[index]
+    expect(Math.abs(normal.opticalWidth - pressed.opticalWidth)).toBeLessThanOrEqual(.5)
+    expect(Math.abs(normal.packageWidth - pressed.packageWidth)).toBeLessThanOrEqual(.5)
   }
 })
 
@@ -470,6 +509,15 @@ test('keeps selection lens size fixed on press without duplicating actions', asy
     const style = getComputedStyle(element)
     return { width: style.getPropertyValue('--dock-lens-width'), height: style.getPropertyValue('--dock-lens-height') }
   })
+  // Content-sized tabs have different widths. Compare the same selected tab
+  // before, during, and after its press, rather than two different labels.
+  await button.click()
+  await expect(button).toHaveAttribute('aria-current', 'page')
+  await expect.poll(async () => button.evaluate((element) => {
+    const target = element.getBoundingClientRect()
+    const lens = element.closest('.liquid-tab-bar-surface')!.querySelector('.liquid-dock-optical-lens')!.getBoundingClientRect()
+    return Math.max(Math.abs(target.left - lens.left), Math.abs(target.right - lens.right), Math.abs(target.top - lens.top), Math.abs(target.bottom - lens.bottom))
+  })).toBeLessThanOrEqual(.5)
   const before = await dimensions()
   const beforeColor = await button.evaluate((element) => getComputedStyle(element).backgroundColor)
 

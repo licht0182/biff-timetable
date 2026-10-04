@@ -1,5 +1,4 @@
-/* Opt-in pill geometry for ordinary text actions. Keep each control's own
- * background, foreground, active state, width, and layout display. */
+/* Opt-in glass rim for ordinary text actions; button-pill.css owns geometry. */
 dialog,
 [role="dialog"] {
   --text-chip-min-height: 44px;
@@ -10,17 +9,19 @@ dialog,
   --control-rim-white-mid: rgba(255, 255, 255, .28);
   --control-rim-white-peak: rgba(255, 255, 255, .68);
   --control-rim-width: 1px;
+  --ui-control-height: max(44px, calc(2.25em + 2px));
   position: relative;
   box-sizing: border-box;
-  height: auto !important;
-  min-width: var(--text-chip-min-height, 40px);
-  min-height: var(--text-chip-min-height, 40px) !important;
+  width: max-content !important;
+  height: var(--ui-control-height) !important;
+  min-width: 0;
+  min-height: var(--ui-control-height) !important;
   padding-block: .5em !important;
-  padding-inline: 1em !important;
+  padding-inline: calc(var(--ui-control-height) / 2) !important;
   border-radius: 999em !important;
   border-color: transparent !important;
-  white-space: normal !important;
-  overflow-wrap: anywhere;
+  white-space: nowrap !important;
+  overflow-wrap: normal;
   line-height: 1.25;
 }
 

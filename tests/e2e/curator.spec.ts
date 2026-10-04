@@ -44,12 +44,13 @@ test('navigates the director gallery with controls and keyboard', async ({ page 
 })
 
 test('starts rotation only on request and stops it for reduced motion', async ({ page }) => {
-  await page.clock.install()
   await page.goto('./')
   await page.getByRole('button', { name: 'AI 도슨트' }).click()
   const gallery = page.getByRole('region', { name: '감독의 시선으로 고르는 영화' })
   const start = gallery.getByRole('button', { name: '자동 넘김 시작' })
   await expect(start).toHaveAttribute('aria-pressed', 'false')
+  // Let the lazy page mount on the browser clock before controlling rotation.
+  await page.clock.install()
   await start.click()
   await expect(gallery.getByRole('button', { name: '자동 넘김 일시정지' })).toHaveAttribute('aria-pressed', 'true')
   await page.clock.fastForward(6100)

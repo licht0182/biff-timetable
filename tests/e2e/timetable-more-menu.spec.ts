@@ -1,9 +1,43 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 
 const SELECTED_KEY = 'biff-timetable:selected-screenings:v1'
 const STATUS_KEY = 'biff-timetable:ticket-status:v1'
 
 type FilmData = { films: Array<{ screenings: Array<{ id: string }> }> }
+
+async function expectLabelsInStraightCenter(control: Locator) {
+  const geometry = await control.evaluate((element) => {
+    const box = element.getBoundingClientRect()
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT)
+    const boxes: DOMRect[] = []
+    while (walker.nextNode()) {
+      if (!walker.currentNode.textContent?.trim()) continue
+      const range = document.createRange()
+      range.selectNodeContents(walker.currentNode)
+      boxes.push(range.getBoundingClientRect())
+    }
+    return {
+      height: box.height,
+      leftGap: Math.min(...boxes.map((text) => text.left)) - box.left,
+      rightGap: box.right - Math.max(...boxes.map((text) => text.right)),
+      radius: Number.parseFloat(getComputedStyle(element).borderRadius),
+    }
+  })
+  expect(geometry.height).toBeGreaterThanOrEqual(44)
+  expect(geometry.radius).toBeGreaterThanOrEqual(geometry.height / 2)
+  expect(geometry.leftGap).toBeGreaterThanOrEqual(geometry.height / 2 - 1)
+  expect(geometry.rightGap).toBeGreaterThanOrEqual(geometry.height / 2 - 1)
+}
+
+async function expectFloatingMenuInViewport(menu: Locator) {
+  const bounds = await menu.evaluate((element) => {
+    const boxes = [element, ...element.querySelectorAll('button')]
+      .map((control) => control.getBoundingClientRect()).filter((box) => box.width > 0 && box.height > 0)
+    return { left: Math.min(...boxes.map((box) => box.left)), right: Math.max(...boxes.map((box) => box.right)), width: window.innerWidth }
+  })
+  expect(bounds.left).toBeGreaterThanOrEqual(-1)
+  expect(bounds.right).toBeLessThanOrEqual(bounds.width + 1)
+}
 
 async function seedTimetable(page: Page, request: any) {
   const response = await request.get('./screenings.json')
@@ -84,10 +118,12 @@ test('empty timetable controls share font-relative chip geometry and dark materi
   expect(styles.switcher.background).not.toBe('rgba(0, 0, 0, 0)')
   expect(styles.switcher.height).toBeCloseTo(styles.add.height, 0)
   for (const control of styles.controls) {
-    expect(control.height).toBeGreaterThanOrEqual(36)
+    expect(control.height).toBeGreaterThanOrEqual(44)
     expect(control.fontSize).toBeGreaterThanOrEqual(12)
-    expect(control.radius).toBeGreaterThan(control.height / 2)
   }
+  await expectLabelsInStraightCenter(actions.locator('.timetable-view-switch'))
+  await expectLabelsInStraightCenter(actions.locator('.custom-event-add-button'))
+  await expectLabelsInStraightCenter(actions.locator('.timetable-more-menu > summary'))
   const moreStyle = styles.controls[styles.controls.length - 1]
   expect(moreStyle.background).toBe(styles.add.background)
   expect(moreStyle.color).toBe(styles.add.color)
@@ -97,6 +133,7 @@ test('empty timetable controls share font-relative chip geometry and dark materi
   await expect(more).toHaveAttribute('open', '')
   const menuBackground = await more.locator(':scope > div').evaluate((element) => getComputedStyle(element).backgroundColor)
   expect(menuBackground).not.toBe('rgb(255, 255, 255)')
+  await expectFloatingMenuInViewport(more.locator(':scope > div'))
 })
 
 test('populated timetable controls keep the shared dark chip geometry', async ({ page, request }) => {
@@ -132,10 +169,12 @@ test('populated timetable controls keep the shared dark chip geometry', async ({
   expect(styles.switcher.background).not.toBe('rgba(0, 0, 0, 0)')
   expect(styles.switcher.height).toBeCloseTo(styles.add.height, 0)
   for (const control of styles.controls) {
-    expect(control.height).toBeGreaterThanOrEqual(36)
+    expect(control.height).toBeGreaterThanOrEqual(44)
     expect(control.fontSize).toBeGreaterThanOrEqual(12)
-    expect(control.radius).toBeGreaterThan(control.height / 2)
   }
+  await expectLabelsInStraightCenter(actions.locator('.timetable-view-switch'))
+  await expectLabelsInStraightCenter(actions.locator('.custom-event-add-button'))
+  await expectLabelsInStraightCenter(actions.locator('.timetable-more-menu > summary'))
   const moreStyle = styles.controls[styles.controls.length - 1]
   expect(moreStyle.background).toBe(styles.add.background)
   expect(moreStyle.color).toBe(styles.add.color)
@@ -181,6 +220,7 @@ test('toggles calendar, backup, and clear-all inside the timetable more menu wit
   await expect(clearAll).toBeVisible()
   await expect(saveBackup).toBeVisible()
   await expect(importBackup).toBeVisible()
+  await expectFloatingMenuInViewport(more.locator(':scope > div'))
 
   const afterOpenHeight = (await timetable.boundingBox())?.height ?? 0
   expect(Math.abs(afterOpenHeight - beforeHeight)).toBeLessThanOrEqual(1)
@@ -232,11 +272,23 @@ test('empty timetable keeps its primary action and touch controls readable on sm
     if (width <= 700) {
       for (const control of [geometry.find, geometry.add, geometry.more]) expect(control.height).toBeGreaterThanOrEqual(44)
       expect(geometry.switcher.height).toBeGreaterThanOrEqual(44)
-      expect(Math.abs(geometry.switcher.top - geometry.find.top)).toBeLessThanOrEqual(2)
-      expect(geometry.find.top).toBe(geometry.add.top)
-      expect(geometry.find.right).toBeLessThan(geometry.add.left)
-      expect(geometry.more.top).toBe(geometry.find.top)
+      const controls = [geometry.switcher, geometry.find, geometry.add, geometry.more]
+      for (const [index, control] of controls.entries()) {
+        expect(control.left).toBeGreaterThanOrEqual(0)
+        expect(control.right).toBeLessThanOrEqual(width)
+        for (const other of controls.slice(index + 1)) {
+          const overlaps = Math.min(control.right, other.right) > Math.max(control.left, other.left) + 1
+            && Math.min(control.bottom, other.bottom) > Math.max(control.top, other.top) + 1
+          expect(overlaps).toBe(false)
+        }
+      }
     }
+    for (const selector of ['.timetable-view-switch', '.timetable-empty-find-button', '.custom-event-add-button', '.timetable-empty-backup > summary']) {
+      await expectLabelsInStraightCenter(actions.locator(selector))
+    }
+    await actions.locator('.timetable-empty-backup > summary').click()
+    await expectFloatingMenuInViewport(actions.locator('.timetable-empty-backup > div'))
+    await actions.locator('.timetable-empty-backup > summary').click()
   }
 
   await actions.getByRole('button', { name: '영화 찾기' }).click()
@@ -273,7 +325,10 @@ test('populated action row stays complete in normal and delete selection states'
         : ['.timetable-view-switch', '.custom-event-add-button', '.timetable-selection-button', '.timetable-more-menu > summary']
       const boxes = selectors.map((selector) => container.querySelector(selector)!.getBoundingClientRect())
       return {
-        tops: boxes.map((box) => Math.round(box.top)),
+        overlap: boxes.some((box, index) => boxes.slice(index + 1).some((other) => (
+          Math.min(box.right, other.right) > Math.max(box.left, other.left) + 1
+          && Math.min(box.bottom, other.bottom) > Math.max(box.top, other.top) + 1
+        ))),
         left: Math.min(...boxes.map((box) => box.left)),
         right: Math.max(...boxes.map((box) => box.right)),
         minHeight: Math.min(...boxes.map((box) => box.height)),
@@ -281,7 +336,7 @@ test('populated action row stays complete in normal and delete selection states'
       }
     }, selection)
     const normal = await measure(false)
-    expect(new Set(normal.tops).size, `${width}px normal row`).toBe(1)
+    expect(normal.overlap, `${width}px normal controls`).toBe(false)
     expect(normal.left).toBeGreaterThanOrEqual(0)
     expect(normal.right).toBeLessThanOrEqual(width)
     expect(normal.minHeight).toBeGreaterThanOrEqual(44)
@@ -291,7 +346,7 @@ test('populated action row stays complete in normal and delete selection states'
     await expect(actions.getByRole('button', { name: '선택 취소' })).toHaveText('취소')
     await expect(actions.locator(':scope > .custom-event-add-button')).toBeHidden()
     const selected = await measure(true)
-    expect(new Set(selected.tops).size, `${width}px delete row`).toBe(1)
+    expect(selected.overlap, `${width}px delete controls`).toBe(false)
     expect(selected.right).toBeLessThanOrEqual(width)
     expect(selected.minHeight).toBeGreaterThanOrEqual(44)
     expect(selected.overflow).toBeLessThanOrEqual(1)
@@ -299,6 +354,7 @@ test('populated action row stays complete in normal and delete selection states'
     await more.locator(':scope > summary').click()
     await expect(more.getByRole('button', { name: 'PNG 저장' })).toBeVisible()
     await expect(more.getByRole('button', { name: '일정 추가' })).toBeVisible()
+    await expectFloatingMenuInViewport(more.locator(':scope > div'))
     await more.locator(':scope > summary').click()
     await actions.getByRole('button', { name: '선택 취소' }).click()
   }

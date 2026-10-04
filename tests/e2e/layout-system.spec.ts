@@ -63,6 +63,10 @@ for (const width of [320, 390, 768, 1280]) {
       expect(canonical.header.borderColor).toBe(colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.14)' : 'rgba(255, 255, 255, 0.48)')
       expect(canonical.header.borderWidths).toEqual(['0px', '0px', '0px', '0px'])
       const expectCanonicalHeader = async () => {
+        // Clicking the first screening can scroll it into view. Compare the
+        // shared header at the same document position in every section.
+        await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' }))
+        await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
         await expect.poll(async () => {
           const height = await page.locator('.topbar').evaluate((element) => element.getBoundingClientRect().height)
           return Math.abs(height - canonical.header.height)
@@ -175,19 +179,36 @@ for (const viewport of [
     await page.goto('./')
     await expect(page.locator('.film-card').first()).toBeVisible({ timeout: 15_000 })
 
-    const measureDirectGaps = async (selector: string) => page.locator(selector).evaluate((container) => {
-      const children = Array.from(container.children).filter((child) => {
-        const element = child as HTMLElement
-        const style = getComputedStyle(element)
-        const rect = element.getBoundingClientRect()
-        return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 1 && rect.height > 1
-      }) as HTMLElement[]
-      const rectangles = children.map((child) => child.getBoundingClientRect())
-      return {
-        display: getComputedStyle(container).display,
-        gaps: rectangles.slice(1).map((rect, index) => Number((rect.top - rectangles[index].bottom).toFixed(2))),
-      }
-    })
+    const measureDirectGaps = async (selector: string) => {
+      // Navigation resets the previous section's scroll on the next task. A
+      // sticky timetable toolbar measures its scroll offset until that finishes.
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
+      return page.locator(selector).evaluate((container, selector) => {
+        const children = Array.from(container.children).filter((child) => {
+          const element = child as HTMLElement
+          const style = getComputedStyle(element)
+          const rect = element.getBoundingClientRect()
+          return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 1 && rect.height > 1
+        }) as HTMLElement[]
+        const rectangles = children.map((child) => child.getBoundingClientRect())
+        return {
+          selector,
+          scrollY: window.scrollY,
+          display: getComputedStyle(container).display,
+          rowGap: getComputedStyle(container).rowGap,
+          children: children.map((child, index) => ({
+            className: child.className,
+            top: rectangles[index].top,
+            bottom: rectangles[index].bottom,
+            height: rectangles[index].height,
+            position: getComputedStyle(child).position,
+            margin: getComputedStyle(child).margin,
+            transform: getComputedStyle(child).transform,
+          })),
+          gaps: rectangles.slice(1).map((rect, index) => Number((rect.top - rectangles[index].bottom).toFixed(2))),
+        }
+      }, selector)
+    }
 
     const film = await measureDirectGaps('.app-page--films')
     expect(film.display).toBe('grid')
@@ -210,7 +231,7 @@ for (const viewport of [
     for (const section of [timetable, settings]) {
       expect(section.display).toBe('grid')
       expect(section.gaps.length).toBeGreaterThan(0)
-      expect(section.gaps.every((gap) => Math.abs(gap - 10) <= 0.1)).toBe(true)
+      expect(section.gaps.every((gap) => Math.abs(gap - 10) <= 0.1), JSON.stringify(section)).toBe(true)
     }
     expect(curator.display).toBe('grid')
     expect(curator.gaps.length).toBeGreaterThan(0)
@@ -310,18 +331,29 @@ test('keeps text and icon actions pill-shaped while the search input retains its
     await expect(control).toHaveClass(/ui-text-chip/)
     const shape = await control.evaluate((element) => {
       const style = getComputedStyle(element)
+      const box = element.getBoundingClientRect()
+      const range = document.createRange()
+      range.selectNodeContents(element)
+      const text = range.getBoundingClientRect()
       return {
         radius: Number.parseFloat(style.borderRadius),
         fontSize: Number.parseFloat(style.fontSize),
-        height: element.getBoundingClientRect().height,
+        height: box.height,
+        leftGap: text.left - box.left,
+        rightGap: box.right - text.right,
       }
     })
     expect(shape.radius).toBeGreaterThan(shape.height / 2)
+    expect(shape.height).toBeGreaterThanOrEqual(44)
+    expect(shape.leftGap).toBeGreaterThanOrEqual(shape.height / 2 - 1)
+    expect(shape.rightGap).toBeGreaterThanOrEqual(shape.height / 2 - 1)
   }
   const favorite = await page.locator('.favorite-button').first().evaluate((element) => {
     const box = element.getBoundingClientRect()
-    return { radius: Number.parseFloat(getComputedStyle(element).borderRadius), shortestSide: Math.min(box.width, box.height) }
+    return { radius: Number.parseFloat(getComputedStyle(element).borderRadius), width: box.width, height: box.height, shortestSide: Math.min(box.width, box.height) }
   })
+  expect(favorite.width).toBeCloseTo(favorite.height, 1)
+  expect(favorite.shortestSide).toBeGreaterThanOrEqual(44)
   expect(favorite.radius).toBeGreaterThanOrEqual(favorite.shortestSide / 2)
 })
 

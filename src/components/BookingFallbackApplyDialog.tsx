@@ -42,7 +42,7 @@ export default function BookingFallbackApplyDialog({
             <span>다음 예매 대안</span>
             <h2 id="booking-apply-title">시간표에 적용하시겠습니까?</h2>
           </div>
-          <button type="button" data-dialog-initial-focus onClick={onClose} aria-label="대안 적용 창 닫기">×</button>
+          <button type="button" className="ui-icon-button" data-dialog-initial-focus onClick={onClose} aria-label="대안 적용 창 닫기">×</button>
         </div>
 
         <div className="booking-apply-candidate">

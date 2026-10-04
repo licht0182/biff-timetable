@@ -1,5 +1,20 @@
 /* Preserve card geometry and typography, even when a card is a native button. */
-:root body :is(button, [role="button"]):not(.event-block, .curator-card, .curator-featured-card, .schedule-list-main, .global-search-quick-links button) {
+:root body :is(button, [role="button"]):not(.event-block, .curator-card, .curator-featured-card, .schedule-list-main, .film-search-suggestion) {
+  --ui-control-height: max(44px, calc(2.25em + 2px));
+  box-sizing: border-box;
+  width: max-content !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: var(--ui-control-height) !important;
+  min-height: var(--ui-control-height) !important;
+  padding-block: .5em !important;
+  /* Each semicircle occupies H/2; the entire content lives between them. */
+  padding-inline: calc(var(--ui-control-height) / 2) !important;
+  flex: 0 0 auto !important;
+  justify-self: start;
+  white-space: nowrap !important;
+  overflow-wrap: normal;
+  line-height: 1.25;
   border-radius: 9999px !important;
   text-align: center !important;
   align-items: center !important;
@@ -7,18 +22,46 @@
 }
 
 /* Low specificity keeps responsive visibility and card display modes intact. */
-:where(button:not(.event-block, .curator-card, .curator-featured-card, .schedule-list-main, .global-search-quick-links button),
-[role="button"]:not(.event-block, .curator-card, .curator-featured-card, .schedule-list-main)) {
+:where(button:not(.event-block, .curator-card, .curator-featured-card, .schedule-list-main, .film-search-suggestion),
+[role="button"]:not(.event-block, .curator-card, .curator-featured-card, .schedule-list-main, .film-search-suggestion)) {
   display: inline-flex;
 }
 
-:root body button:not(.event-block, .curator-card, .curator-featured-card, .schedule-list-main, .global-search-quick-links button) > :is(span, strong, em) {
+:root body button:not(.event-block, .curator-card, .curator-featured-card, .schedule-list-main, .film-search-suggestion) > :is(span, strong, em) {
   text-align: center !important;
 }
 
-/* Dock icons and labels remain a single centered group. */
-.liquid-tab-bar .liquid-tab-actions > button {
+/* Explicit icon controls never rely on their label or character count. */
+:root body :is(button, [role="button"]).ui-icon-button {
+  --ui-control-height: max(44px, calc(1.25em + 2px));
+  width: var(--ui-control-height) !important;
+  min-width: var(--ui-control-height) !important;
+  padding: 0 !important;
+  aspect-ratio: 1;
+  border-radius: 50% !important;
+}
+
+/* Navigation actions carry two lines; their caps follow the taller content. */
+:root body .global-search-quick-links > button:not(.ui-icon-button) {
+  --ui-control-height: max(44px, calc(3.5em + 2px));
+  display: inline-flex;
   flex-direction: column;
+  gap: 0;
+}
+
+/* Controls wrap as whole capsules, preserving their intrinsic content width. */
+:root body :is(.tabs, .film-actions, .screening-row-actions, .modal-screening-actions,
+  .custom-event-form-actions, .booking-plan-item-actions, .booking-conflict-actions,
+  .booking-apply-actions, .png-ios-actions, .curator-filter-chips,
+  .timetable-action-buttons, .timetable-empty-actions, .global-search-quick-links) {
+  flex-wrap: wrap !important;
+}
+
+/* Horizontal icon + label capsules keep every dock action accessible. */
+:root body .liquid-tab-bar .liquid-tab-actions > button {
+  display: inline-flex;
+  flex-direction: row;
+  gap: 4px;
 }
 
 /* Native disclosure controls need the same centered label as ordinary buttons. */
@@ -28,6 +71,16 @@
   justify-content: center !important;
   text-align: center !important;
   border-radius: 9999px !important;
+}
+
+:root body summary.ui-text-chip {
+  --ui-control-height: max(44px, calc(2.25em + 2px));
+  width: max-content !important;
+  min-width: 0 !important;
+  height: var(--ui-control-height) !important;
+  min-height: var(--ui-control-height) !important;
+  padding-inline: calc(var(--ui-control-height) / 2) !important;
+  white-space: nowrap !important;
 }
 
 /* Feedback changes color only. No press/hover scale, lift, or bounce. */
@@ -40,7 +93,7 @@
   transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease !important;
 }
 
-:root body :is(button, [role="button"], summary.ui-text-chip):not(.event-block, .curator-card, .curator-featured-card, .schedule-list-main, .global-search-quick-links button):not(:disabled):active {
+:root body :is(button, [role="button"], summary.ui-text-chip):not(.event-block, .curator-card, .curator-featured-card, .schedule-list-main, .film-search-suggestion):not(:disabled):active {
   background-color: var(--biff-action-pressed, #9f2f24) !important;
   border-color: var(--biff-action-pressed, #9f2f24) !important;
   color: var(--biff-on-action, #fff) !important;

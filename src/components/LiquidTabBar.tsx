@@ -118,12 +118,14 @@ function useDockLensGeometry(activeTab: AppTab, enabled: boolean) {
       || buttonRect.height <= 0
     ) return
 
-    // The actions own an explicit, inset four-slot track. Measure its actual
-    // center rather than reconstructing it from the outer surface, so the SVG
-    // lens, optical lens, and hit targets stay on one coordinate system.
-    const width = Math.min(92, buttonRect.width + 5.5)
+    // Reserve enough scrollable page space for every wrapped action row.
+    dock.closest<HTMLElement>('.app-shell')?.style.setProperty('--layout-dock-surface-height', `${dockRect.height}px`)
+
+    // Content-sized actions can wrap. Their measured capsules remain the one
+    // coordinate system for the SVG lens, optical lens, and hit targets.
+    const width = buttonRect.width
     if (!Number.isFinite(width) || width <= 0) return
-    const height = Math.min(60, Math.max(58, buttonRect.height))
+    const height = buttonRect.height
     setGeometry((current) => (
       Math.abs(current.width - width) < 0.1
       && Math.abs(current.height - height) < 0.1
@@ -172,7 +174,7 @@ function useDockLensGeometry(activeTab: AppTab, enabled: boolean) {
       ...ACTIVE_LENS_OPTIONS,
       width: geometry.width,
       height: geometry.height,
-      radius: 30,
+      radius: geometry.height / 2,
       specularAngle: 45,
     })
   }, [enabled, geometry.height, geometry.width, syncLensDimensions])
@@ -286,7 +288,7 @@ export default function LiquidTabBar({ activeTab, timetableCount, onOpenFilms, o
               y={0.5}
               width={geometry.width}
               height={geometry.height}
-              radius={30}
+              radius={geometry.height / 2}
               {...ACTIVE_LENS_OPTIONS}
               quality={192}
               shadow={false}
