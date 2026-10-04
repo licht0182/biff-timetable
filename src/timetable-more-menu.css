@@ -220,6 +220,9 @@
     flex-wrap:nowrap!important;
     justify-content:flex-start!important;
     gap:3px!important;
+    --toolbar-surface-height:30px;
+    --toolbar-font-size:12px;
+    --toolbar-segment-gap:3px;
     min-width:0;
     width:100%;
   }
@@ -249,27 +252,104 @@
     width:max-content!important;
     min-width:44px!important;
     min-height:44px!important;
-    padding-block:.5em!important;
-    padding-inline:8px!important;
-    font-size:12px!important;
+    height:44px!important;
+    padding-block:0!important;
+    padding-inline:calc(var(--toolbar-surface-height) / 2)!important;
+    font-size:var(--toolbar-font-size)!important;
     line-height:1!important;
     white-space:nowrap!important;
     overflow-wrap:normal;
   }
   .timetable-page .timetable-empty-actions>.timetable-empty-backup{grid-column:auto;justify-self:auto;margin-left:0}
   :root body .timetable-page .timetable-empty-actions>.timetable-empty-find-button{min-width:44px!important}
-  :root body .timetable-page .timetable-view-switch>button.ui-text-chip{padding-inline:8px!important}
-  :root body .timetable-page .timetable-view-switch>button.ui-text-chip:first-child{padding-inline-start:12px!important}
-  :root body .timetable-page .timetable-view-switch>button.ui-text-chip:last-child{padding-inline-end:12px!important}
+  :root body .timetable-page .timetable-view-switch>button.ui-text-chip{
+    min-width:0!important;
+    padding-inline:var(--toolbar-segment-gap)!important;
+    font-size:var(--toolbar-font-size)!important;
+  }
+  :root body .timetable-page .timetable-view-switch>button.ui-text-chip:first-child{padding-inline-start:calc(var(--toolbar-surface-height) / 2)!important}
+  :root body .timetable-page .timetable-view-switch>button.ui-text-chip:last-child{padding-inline-end:calc(var(--toolbar-surface-height) / 2)!important}
   .timetable-page .timetable-more-menu>div button{min-height:44px;font-size:12px!important}
+
+  /* A proportional visual capsule sits inside the native 44px touch target.
+     Text reserves a complete H/2 cap at each outer edge, at every size. */
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>button.ui-text-chip,
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>.timetable-more-menu>summary.ui-text-chip,
+  :root body .timetable-page .timetable-view-switch{
+    --toolbar-surface-background:var(--ios-surface-soft, rgba(255,255,255,.48));
+    position:relative;
+    isolation:isolate;
+    border:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    overflow:visible;
+  }
+  :root body .timetable-page .timetable-empty-actions>.timetable-empty-find-button{
+    --toolbar-surface-background:var(--biff-action, #c7372b)!important;
+  }
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>button.ui-text-chip::before,
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>.timetable-more-menu>summary.ui-text-chip::before,
+  :root body .timetable-page .timetable-view-switch::before{
+    inset:calc((44px - var(--toolbar-surface-height)) / 2) 0;
+    z-index:-1;
+    padding:0;
+    background:var(--toolbar-surface-background);
+    box-shadow:0 1px 3px rgba(15,23,42,.1);
+    backdrop-filter:blur(10px) saturate(180%);
+    -webkit-backdrop-filter:blur(10px) saturate(180%);
+    -webkit-mask:none;
+    mask:none;
+  }
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>button.ui-text-chip::after,
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>.timetable-more-menu>summary.ui-text-chip::after,
+  :root body .timetable-page .timetable-view-switch::after{
+    inset:calc((44px - var(--toolbar-surface-height)) / 2) 0;
+    background:linear-gradient(180deg,var(--control-rim-white-peak) 0%,var(--control-rim-white-mid) 8%,transparent 30%,transparent 70%,var(--control-rim-white-mid) 92%,var(--control-rim-white-peak) 100%),linear-gradient(90deg,var(--control-rim-dark) 0%,var(--control-rim-dark) 1.5%,transparent 10%,transparent 90%,var(--control-rim-dark) 98.5%,var(--control-rim-dark) 100%);
+  }
+  :root body .timetable-page .timetable-view-switch>button.ui-text-chip:first-child::after{
+    inset:calc(22px - var(--toolbar-surface-height) / 4) 0 calc(22px - var(--toolbar-surface-height) / 4) auto;
+  }
+  :root body .timetable-page .timetable-view-switch>button.ui-text-chip:not(:disabled):active{background:transparent!important}
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>button.ui-text-chip:not(:disabled):active,
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>.timetable-more-menu>summary.ui-text-chip:active{
+    --toolbar-surface-background:var(--biff-action-pressed, #9f2f24)!important;
+    background:transparent!important;
+  }
 }
 
+@media(min-width:411px) and (max-width:479px){
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){--toolbar-surface-height:34px;--toolbar-segment-gap:4px}
+}
+@media(min-width:480px) and (max-width:700px){
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){--toolbar-surface-height:44px;--toolbar-segment-gap:12px}
+}
+@media(max-width:389px){
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){--toolbar-surface-height:26px;--toolbar-font-size:11px;gap:2px!important}
+}
+@media(max-width:350px){
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){--toolbar-surface-height:24px;--toolbar-font-size:10.5px;--toolbar-segment-gap:2px}
+}
+@media(max-width:340px){
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){--toolbar-surface-height:22px;--toolbar-font-size:10px;--toolbar-segment-gap:2px}
+}
+
+/* Populated rows have shorter labels and more room than the empty-state card. */
+@media(max-width:700px){
+  :root body .timetable-page .timetable-action-buttons{--toolbar-surface-height:44px;--toolbar-font-size:12px}
+}
+@media(max-width:400px){
+  :root body .timetable-page .timetable-action-buttons{--toolbar-surface-height:40px}
+}
+@media(max-width:389px){
+  :root body .timetable-page .timetable-action-buttons{--toolbar-surface-height:34px}
+}
 @media(max-width:360px){
-  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){gap:2px!important}
-  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>button.ui-text-chip,
-  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>.timetable-more-menu>summary.ui-text-chip{padding-inline:4px!important}
-  :root body .timetable-page .timetable-view-switch>button.ui-text-chip:first-child{padding-inline-start:8px!important}
-  :root body .timetable-page .timetable-view-switch>button.ui-text-chip:last-child{padding-inline-end:8px!important}
+  :root body .timetable-page .timetable-action-buttons{--toolbar-surface-height:32px;--toolbar-font-size:11px}
+}
+@media(max-width:340px){
+  :root body .timetable-page .timetable-action-buttons{--toolbar-surface-height:28px;--toolbar-font-size:11px}
 }
 
 @media(prefers-color-scheme:dark){

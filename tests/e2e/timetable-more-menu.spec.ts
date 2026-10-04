@@ -5,9 +5,23 @@ const STATUS_KEY = 'biff-timetable:ticket-status:v1'
 
 type FilmData = { films: Array<{ screenings: Array<{ id: string }> }> }
 
+async function settleToolbar(actions: Locator) {
+  // Flush responsive styles before checking transitions created by that resize.
+  await actions.evaluate((container) => {
+    for (const control of container.querySelectorAll('button, summary, .timetable-view-switch')) {
+      getComputedStyle(control).backgroundColor
+      control.getBoundingClientRect()
+    }
+  })
+  await actions.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  await expect.poll(() => actions.evaluate((element) => element.getAnimations({ subtree: true }).filter((animation) => animation.playState === 'running').length)).toBe(0)
+}
+
 async function expectLabelsInStraightCenter(control: Locator) {
   const geometry = await control.evaluate((element) => {
     const box = element.getBoundingClientRect()
+    const compactToolbar = window.innerWidth <= 700 && Boolean(element.closest('.timetable-empty-actions, .timetable-action-buttons')) && !element.closest('.timetable-more-menu > div')
+    const surface = getComputedStyle(element, '::before')
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT)
     const boxes: DOMRect[] = []
     while (walker.nextNode()) {
@@ -18,15 +32,16 @@ async function expectLabelsInStraightCenter(control: Locator) {
     }
     return {
       height: box.height,
+      surfaceHeight: compactToolbar ? box.height - Number.parseFloat(surface.top) - Number.parseFloat(surface.bottom) : box.height,
       leftGap: Math.min(...boxes.map((text) => text.left)) - box.left,
       rightGap: box.right - Math.max(...boxes.map((text) => text.right)),
       radius: Number.parseFloat(getComputedStyle(element).borderRadius),
-      compactToolbar: window.innerWidth <= 700 && Boolean(element.closest('.timetable-empty-actions, .timetable-action-buttons')) && !element.closest('.timetable-more-menu > div'),
     }
   })
   expect(geometry.height).toBeGreaterThanOrEqual(44)
   expect(geometry.radius).toBeGreaterThanOrEqual(geometry.height / 2)
-  const minimumGap = geometry.compactToolbar ? 4 : geometry.height / 2 - 1
+  // The native touch target stays 44px; caps follow the actual visible surface.
+  const minimumGap = geometry.surfaceHeight / 2 - .25
   expect(geometry.leftGap).toBeGreaterThanOrEqual(minimumGap)
   expect(geometry.rightGap).toBeGreaterThanOrEqual(minimumGap)
 }
@@ -102,6 +117,7 @@ test('empty timetable controls share font-relative chip geometry and dark materi
     ]
     const styleOf = (element: Element) => {
       const style = getComputedStyle(element)
+      const surface = getComputedStyle(element, '::before')
       return {
         height: element.getBoundingClientRect().height,
         fontSize: Number.parseFloat(style.fontSize),
@@ -110,7 +126,7 @@ test('empty timetable controls share font-relative chip geometry and dark materi
         radius: Number.parseFloat(style.borderRadius),
         border: style.borderColor,
         rim: getComputedStyle(element, '::before').backgroundImage,
-        background: style.backgroundColor,
+        background: surface.backgroundColor,
         color: style.color,
       }
     }
@@ -153,6 +169,7 @@ test('populated timetable controls keep the shared dark chip geometry', async ({
     const more = container.querySelector('.timetable-more-menu > summary')!
     const styleOf = (element: Element) => {
       const style = getComputedStyle(element)
+      const surface = getComputedStyle(element, '::before')
       return {
         height: element.getBoundingClientRect().height,
         fontSize: Number.parseFloat(style.fontSize),
@@ -161,7 +178,7 @@ test('populated timetable controls keep the shared dark chip geometry', async ({
         radius: Number.parseFloat(style.borderRadius),
         border: style.borderColor,
         rim: getComputedStyle(element, '::before').backgroundImage,
-        background: style.backgroundColor,
+        background: surface.backgroundColor,
         color: style.color,
       }
     }
@@ -245,8 +262,9 @@ test('empty timetable keeps its primary action and touch controls readable on sm
   const actions = page.locator('.timetable-empty-actions')
   await expect(actions).toBeVisible()
 
-  for (const width of [320, 390, 700, 1440]) {
+  for (const width of [320, 341, 360, 361, 390, 401, 410, 411, 430, 480, 700, 768, 1440]) {
     await page.setViewportSize({ width, height: 844 })
+    await settleToolbar(actions)
     await expect(actions).toHaveCSS('display', 'flex')
     if (width <= 700) {
       for (const selector of ['.timetable-view-switch button', '.timetable-empty-find-button', '.custom-event-add-button', '.timetable-empty-backup > summary']) {
@@ -265,8 +283,8 @@ test('empty timetable keeps its primary action and touch controls readable on sm
         find: rect('.timetable-empty-find-button'),
         add: rect('.custom-event-add-button'),
         more: rect('.timetable-empty-backup > summary'),
-        findBackground: getComputedStyle(container.querySelector('.timetable-empty-find-button')!).backgroundColor,
-        addBackground: getComputedStyle(container.querySelector('.custom-event-add-button')!).backgroundColor,
+        findBackground: getComputedStyle(container.querySelector('.timetable-empty-find-button')!, window.innerWidth <= 700 ? '::before' : null).backgroundColor,
+        addBackground: getComputedStyle(container.querySelector('.custom-event-add-button')!, window.innerWidth <= 700 ? '::before' : null).backgroundColor,
       }
     })
     expect(geometry.pageWidth).toBeLessThanOrEqual(width)
@@ -318,7 +336,7 @@ test('populated action row stays complete in normal and delete selection states'
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
 
-  for (const width of [320, 360, 390, 430, 700]) {
+  for (const width of [320, 341, 360, 361, 390, 401, 410, 411, 430, 480, 700]) {
     await page.setViewportSize({ width, height: 844 })
     const actions = page.locator('.timetable-action-buttons')
     await expect.poll(() => actions.evaluate((element) => element.getAnimations({ subtree: true }).filter((animation) => animation.playState === 'running').length)).toBe(0)
@@ -348,6 +366,9 @@ test('populated action row stays complete in normal and delete selection states'
     expect(normal.minWidth).toBeGreaterThanOrEqual(44)
     expect(normal.rowSpread).toBeLessThanOrEqual(1)
     expect(normal.overflow).toBeLessThanOrEqual(1)
+    for (const selector of ['.timetable-view-switch', '.custom-event-add-button', '.timetable-selection-button', '.timetable-more-menu > summary']) {
+      await expectLabelsInStraightCenter(actions.locator(selector))
+    }
 
     await actions.getByRole('button', { name: '선택', exact: true }).click()
     await expect(actions.getByRole('button', { name: '선택 취소' })).toHaveText('취소')
@@ -359,6 +380,20 @@ test('populated action row stays complete in normal and delete selection states'
     expect(selected.minWidth).toBeGreaterThanOrEqual(44)
     expect(selected.rowSpread).toBeLessThanOrEqual(1)
     expect(selected.overflow).toBeLessThanOrEqual(1)
+    for (const selector of ['.timetable-view-switch', '.timetable-selection-button', '.timetable-delete-button', '.timetable-more-menu > summary']) {
+      await expectLabelsInStraightCenter(actions.locator(selector))
+    }
+    // Exercise the widest practical count without changing the selection state.
+    const deleteButton = actions.locator('.timetable-delete-button')
+    const deleteLabel = await deleteButton.textContent()
+    for (const count of [12, 25]) {
+      await deleteButton.evaluate((element, value) => { element.textContent = `삭제 ${value}` }, count)
+      await expectLabelsInStraightCenter(deleteButton)
+      const counted = await measure(true)
+      expect(counted.overlap, `${width}px delete ${count} controls`).toBe(false)
+      expect(counted.right).toBeLessThanOrEqual(width)
+    }
+    await deleteButton.evaluate((element, label) => { element.textContent = label }, deleteLabel)
     const more = actions.locator('.timetable-more-menu')
     await more.locator(':scope > summary').click()
     await expect(more.getByRole('button', { name: 'PNG 저장' })).toBeVisible()
@@ -378,11 +413,13 @@ for (const colorScheme of ['light', 'dark'] as const) {
     const actions = page.locator('.timetable-action-buttons')
     for (const width of [320, 360, 390, 430, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 })
+      await settleToolbar(actions)
       const material = await actions.evaluate((container) => {
         const capsule = container.querySelector('.timetable-view-switch')!
         const neighbor = container.querySelector('.custom-event-add-button')!
-        const style = getComputedStyle(capsule)
-        const adjacent = getComputedStyle(neighbor)
+        const pseudo = window.innerWidth <= 700 ? '::before' : null
+        const style = getComputedStyle(capsule, pseudo)
+        const adjacent = getComputedStyle(neighbor, pseudo)
         const visible = [...container.children].filter((element) => element.getBoundingClientRect().width > 0)
         const bounds = visible.map((element) => element.getBoundingClientRect())
         return {
@@ -392,14 +429,14 @@ for (const colorScheme of ['light', 'dark'] as const) {
           adjacentBackdrop: adjacent.backdropFilter || adjacent.getPropertyValue('-webkit-backdrop-filter'),
           shadow: style.boxShadow,
           adjacentShadow: adjacent.boxShadow,
-          rim: getComputedStyle(capsule, '::before').backgroundImage,
+          rim: getComputedStyle(capsule, window.innerWidth <= 700 ? '::after' : '::before').backgroundImage,
           divider: getComputedStyle(capsule.querySelector('button')!, '::after').display,
           rowSpread: Math.max(...bounds.map((box) => box.top)) - Math.min(...bounds.map((box) => box.top)),
           right: Math.max(...bounds.map((box) => box.right)),
         }
       })
       expect(material.background, `${width}px material`).toBe(material.adjacentBackground)
-      expect(material.backdrop).toBe(material.adjacentBackdrop)
+      expect(material.backdrop, `${width}px backdrop`).toBe(material.adjacentBackdrop)
       expect(material.shadow).toBe(material.adjacentShadow)
       expect(material.rim).toContain('linear-gradient')
       expect(material.divider).toBe('block')
