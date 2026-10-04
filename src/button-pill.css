@@ -1,5 +1,5 @@
 /* Preserve card geometry and typography, even when a card is a native button. */
-:root body :is(button, [role="button"]):not(.event-block, .curator-card, .curator-featured-card, .schedule-list-main, .film-search-suggestion) {
+:root body :is(button, [role="button"]):not(.event-block, .curator-card, .curator-featured-card, .schedule-list-main, .film-search-suggestion, :where(.liquid-tab-actions > button)) {
   --ui-control-height: max(44px, calc(2.25em + 2px));
   box-sizing: border-box;
   width: max-content !important;
@@ -57,11 +57,14 @@
   flex-wrap: wrap !important;
 }
 
-/* Horizontal icon + label capsules keep every dock action accessible. */
+/* Dock icons and labels remain a single centered group. */
 :root body .liquid-tab-bar .liquid-tab-actions > button {
   display: inline-flex;
-  flex-direction: row;
-  gap: 4px;
+  flex-direction: column;
+  border-radius: 9999px !important;
+  text-align: center !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 /* Native disclosure controls need the same centered label as ordinary buttons. */

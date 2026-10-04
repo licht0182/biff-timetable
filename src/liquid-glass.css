@@ -581,22 +581,17 @@ select option{background:#f3f4f6;color:#111827}
   pointer-events:none;
   transform:translate(-50%,-50%);
   border:1px solid rgba(255,255,255,.42);
-  border-radius:calc(var(--dock-lens-height) / 2);
+  border-radius:30px;
   background:radial-gradient(ellipse at 28% 8%,rgba(255,255,255,.32),transparent 46%),linear-gradient(145deg,rgba(255,255,255,.17),rgba(118,118,128,.1) 72%,rgba(217,45,32,.045));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.46),inset 0 -1px 0 rgba(17,24,39,.08),0 2px 5px rgba(15,23,42,.1);
   transition:width .12s ease,height .12s ease,border-radius .12s ease;
 }
 .liquid-tab-bar .liquid-tab-actions{
-  position:relative;
-  inset:auto;
+  position:absolute;
+  inset:1px var(--dock-track-inline-inset);
   z-index:3;
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-  align-items:center;
-  gap:4px;
-  width:max-content;
-  max-width:100%;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
   pointer-events:auto;
 }
 .liquid-tab-bar .liquid-tab-icon,
@@ -613,9 +608,9 @@ select option{background:#f3f4f6;color:#111827}
   -webkit-backdrop-filter:none!important;
 }
 .liquid-tab-bar .liquid-tab-actions>button{
-  min-height:44px!important;
-  height:auto;
-  gap:4px;
+  min-height:59px!important;
+  height:59px;
+  gap:1px;
   border:0;
   border-radius:30px;
   background:transparent!important;
