@@ -220,7 +220,7 @@
     flex-wrap:nowrap!important;
     justify-content:flex-start!important;
     gap:3px!important;
-    --toolbar-surface-height:30px;
+    --toolbar-surface-height:26px;
     --toolbar-font-size:12px;
     --toolbar-segment-gap:3px;
     min-width:0;
@@ -271,6 +271,26 @@
   :root body .timetable-page .timetable-view-switch>button.ui-text-chip:last-child{padding-inline-end:calc(var(--toolbar-surface-height) / 2)!important}
   .timetable-page .timetable-more-menu>div button{min-height:44px;font-size:12px!important}
 
+}
+
+/* Both mobile and desktop retain their native touch target while presenting
+   a smaller capsule. Font declarations remain in their existing rules. */
+@media(min-width:701px){
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){
+    --toolbar-surface-height:34px;
+  }
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>button.ui-text-chip,
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>.timetable-more-menu>summary.ui-text-chip{
+    width:max-content!important;
+    min-width:44px!important;
+    height:44px!important;
+    padding-block:0!important;
+    padding-inline:calc(var(--toolbar-surface-height) / 2)!important;
+  }
+  :root body .timetable-page .timetable-view-switch>button.ui-text-chip:first-child{padding-inline-start:calc(var(--toolbar-surface-height) / 2)!important}
+  :root body .timetable-page .timetable-view-switch>button.ui-text-chip:last-child{padding-inline-end:calc(var(--toolbar-surface-height) / 2)!important}
+}
+
   /* A proportional visual capsule sits inside the native 44px touch target.
      Text reserves a complete H/2 cap at each outer edge, at every size. */
   :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>button.ui-text-chip,
@@ -317,39 +337,45 @@
     --toolbar-surface-background:var(--biff-action-pressed, #9f2f24)!important;
     background:transparent!important;
   }
-}
-
 @media(min-width:411px) and (max-width:479px){
-  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){--toolbar-surface-height:34px;--toolbar-segment-gap:4px}
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){--toolbar-surface-height:28px;--toolbar-segment-gap:4px}
 }
 @media(min-width:480px) and (max-width:700px){
-  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){--toolbar-surface-height:44px;--toolbar-segment-gap:12px}
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){--toolbar-surface-height:34px;--toolbar-segment-gap:12px}
 }
 @media(max-width:389px){
-  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){--toolbar-surface-height:26px;--toolbar-font-size:11px;gap:2px!important}
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){--toolbar-surface-height:22px;--toolbar-font-size:11px;gap:2px!important}
 }
 @media(max-width:350px){
-  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){--toolbar-surface-height:24px;--toolbar-font-size:10.5px;--toolbar-segment-gap:2px}
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){--toolbar-surface-height:22px;--toolbar-font-size:10.5px;--toolbar-segment-gap:2px}
 }
 @media(max-width:340px){
-  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){--toolbar-surface-height:22px;--toolbar-font-size:10px;--toolbar-segment-gap:2px}
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){--toolbar-surface-height:20px;--toolbar-font-size:10px;--toolbar-segment-gap:2px}
 }
 
 /* Populated rows have shorter labels and more room than the empty-state card. */
 @media(max-width:700px){
-  :root body .timetable-page .timetable-action-buttons{--toolbar-surface-height:44px;--toolbar-font-size:12px}
+  :root body .timetable-page .timetable-action-buttons{--toolbar-surface-height:34px;--toolbar-font-size:12px}
 }
 @media(max-width:400px){
-  :root body .timetable-page .timetable-action-buttons{--toolbar-surface-height:40px}
+  :root body .timetable-page .timetable-action-buttons{--toolbar-surface-height:32px}
 }
 @media(max-width:389px){
-  :root body .timetable-page .timetable-action-buttons{--toolbar-surface-height:34px}
+  :root body .timetable-page .timetable-action-buttons{--toolbar-surface-height:28px}
 }
 @media(max-width:360px){
-  :root body .timetable-page .timetable-action-buttons{--toolbar-surface-height:32px;--toolbar-font-size:11px}
+  :root body .timetable-page .timetable-action-buttons{--toolbar-surface-height:26px;--toolbar-font-size:11px}
 }
 @media(max-width:340px){
-  :root body .timetable-page .timetable-action-buttons{--toolbar-surface-height:28px;--toolbar-font-size:11px}
+  :root body .timetable-page .timetable-action-buttons{--toolbar-surface-height:24px;--toolbar-font-size:11px}
+}
+
+/* Keep the existing active underline inside the shallowest visible capsules. */
+@media(max-width:389px){
+  :root body .timetable-page .timetable-empty-actions .timetable-view-switch>button.ui-text-chip.active{text-underline-offset:3px}
+}
+@media(max-width:340px){
+  :root body .timetable-page .timetable-action-buttons .timetable-view-switch>button.ui-text-chip.active{text-underline-offset:3px}
 }
 
 @media(prefers-color-scheme:dark){

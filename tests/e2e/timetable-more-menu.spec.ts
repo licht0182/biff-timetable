@@ -20,7 +20,7 @@ async function settleToolbar(actions: Locator) {
 async function expectLabelsInStraightCenter(control: Locator) {
   const geometry = await control.evaluate((element) => {
     const box = element.getBoundingClientRect()
-    const compactToolbar = window.innerWidth <= 700 && Boolean(element.closest('.timetable-empty-actions, .timetable-action-buttons')) && !element.closest('.timetable-more-menu > div')
+    const compactToolbar = Boolean(element.closest('.timetable-empty-actions, .timetable-action-buttons')) && !element.closest('.timetable-more-menu > div')
     const surface = getComputedStyle(element, '::before')
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT)
     const boxes: DOMRect[] = []
@@ -283,12 +283,18 @@ test('empty timetable keeps its primary action and touch controls readable on sm
         find: rect('.timetable-empty-find-button'),
         add: rect('.custom-event-add-button'),
         more: rect('.timetable-empty-backup > summary'),
-        findBackground: getComputedStyle(container.querySelector('.timetable-empty-find-button')!, window.innerWidth <= 700 ? '::before' : null).backgroundColor,
-        addBackground: getComputedStyle(container.querySelector('.custom-event-add-button')!, window.innerWidth <= 700 ? '::before' : null).backgroundColor,
+        findBackground: getComputedStyle(container.querySelector('.timetable-empty-find-button')!, '::before').backgroundColor,
+        addBackground: getComputedStyle(container.querySelector('.custom-event-add-button')!, '::before').backgroundColor,
+        fonts: [...container.querySelectorAll('.timetable-view-switch button, :scope > button, .timetable-empty-backup > summary')].map((element) => ({
+          more: element.matches('summary'), font: Number.parseFloat(getComputedStyle(element).fontSize),
+        })),
       }
     })
     expect(geometry.pageWidth).toBeLessThanOrEqual(width)
     expect(geometry.findBackground).not.toBe(geometry.addBackground)
+    // Responsive typography is intentionally unchanged while capsules shrink.
+    const expectedFont = width <= 340 ? 10 : width <= 350 ? 10.5 : width <= 389 ? 11 : 12
+    for (const control of geometry.fonts) expect(control.font).toBe(width > 700 && control.more ? 10 : expectedFont)
     if (width <= 700) {
       for (const control of [geometry.find, geometry.add, geometry.more]) expect(control.height).toBeGreaterThanOrEqual(44)
       expect(geometry.switcher.height).toBeGreaterThanOrEqual(44)
@@ -359,6 +365,8 @@ test('populated action row stays complete in normal and delete selection states'
       }
     }, selection)
     const normal = await measure(false)
+    const fonts = await actions.locator('.timetable-view-switch button, :scope > button, .timetable-more-menu > summary').evaluateAll((elements) => elements.map((element) => Number.parseFloat(getComputedStyle(element).fontSize)))
+    for (const font of fonts) expect(font).toBe(width <= 360 ? 11 : 12)
     expect(normal.overlap, `${width}px normal controls`).toBe(false)
     expect(normal.left).toBeGreaterThanOrEqual(0)
     expect(normal.right).toBeLessThanOrEqual(width)
@@ -417,7 +425,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       const material = await actions.evaluate((container) => {
         const capsule = container.querySelector('.timetable-view-switch')!
         const neighbor = container.querySelector('.custom-event-add-button')!
-        const pseudo = window.innerWidth <= 700 ? '::before' : null
+        const pseudo = '::before'
         const style = getComputedStyle(capsule, pseudo)
         const adjacent = getComputedStyle(neighbor, pseudo)
         const visible = [...container.children].filter((element) => element.getBoundingClientRect().width > 0)
@@ -429,7 +437,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
           adjacentBackdrop: adjacent.backdropFilter || adjacent.getPropertyValue('-webkit-backdrop-filter'),
           shadow: style.boxShadow,
           adjacentShadow: adjacent.boxShadow,
-          rim: getComputedStyle(capsule, window.innerWidth <= 700 ? '::after' : '::before').backgroundImage,
+          rim: getComputedStyle(capsule, '::after').backgroundImage,
           divider: getComputedStyle(capsule.querySelector('button')!, '::after').display,
           rowSpread: Math.max(...bounds.map((box) => box.top)) - Math.min(...bounds.map((box) => box.top)),
           right: Math.max(...bounds.map((box) => box.right)),
