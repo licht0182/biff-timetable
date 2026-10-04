@@ -21,12 +21,14 @@ async function expectLabelsInStraightCenter(control: Locator) {
       leftGap: Math.min(...boxes.map((text) => text.left)) - box.left,
       rightGap: box.right - Math.max(...boxes.map((text) => text.right)),
       radius: Number.parseFloat(getComputedStyle(element).borderRadius),
+      compactToolbar: window.innerWidth <= 700 && Boolean(element.closest('.timetable-empty-actions, .timetable-action-buttons')) && !element.closest('.timetable-more-menu > div'),
     }
   })
   expect(geometry.height).toBeGreaterThanOrEqual(44)
   expect(geometry.radius).toBeGreaterThanOrEqual(geometry.height / 2)
-  expect(geometry.leftGap).toBeGreaterThanOrEqual(geometry.height / 2 - 1)
-  expect(geometry.rightGap).toBeGreaterThanOrEqual(geometry.height / 2 - 1)
+  const minimumGap = geometry.compactToolbar ? 4 : geometry.height / 2 - 1
+  expect(geometry.leftGap).toBeGreaterThanOrEqual(minimumGap)
+  expect(geometry.rightGap).toBeGreaterThanOrEqual(minimumGap)
 }
 
 async function expectFloatingMenuInViewport(menu: Locator) {
@@ -273,6 +275,7 @@ test('empty timetable keeps its primary action and touch controls readable on sm
       for (const control of [geometry.find, geometry.add, geometry.more]) expect(control.height).toBeGreaterThanOrEqual(44)
       expect(geometry.switcher.height).toBeGreaterThanOrEqual(44)
       const controls = [geometry.switcher, geometry.find, geometry.add, geometry.more]
+      expect(Math.max(...controls.map((control) => control.top)) - Math.min(...controls.map((control) => control.top))).toBeLessThanOrEqual(1)
       for (const [index, control] of controls.entries()) {
         expect(control.left).toBeGreaterThanOrEqual(0)
         expect(control.right).toBeLessThanOrEqual(width)
@@ -315,7 +318,7 @@ test('populated action row stays complete in normal and delete selection states'
   await page.goto('./')
   await page.getByRole('button', { name: '내 시간표' }).click()
 
-  for (const width of [320, 390, 402, 700]) {
+  for (const width of [320, 360, 390, 430, 700]) {
     await page.setViewportSize({ width, height: 844 })
     const actions = page.locator('.timetable-action-buttons')
     await expect.poll(() => actions.evaluate((element) => element.getAnimations({ subtree: true }).filter((animation) => animation.playState === 'running').length)).toBe(0)
@@ -332,6 +335,8 @@ test('populated action row stays complete in normal and delete selection states'
         left: Math.min(...boxes.map((box) => box.left)),
         right: Math.max(...boxes.map((box) => box.right)),
         minHeight: Math.min(...boxes.map((box) => box.height)),
+        minWidth: Math.min(...boxes.map((box) => box.width)),
+        rowSpread: Math.max(...boxes.map((box) => box.top)) - Math.min(...boxes.map((box) => box.top)),
         overflow: document.documentElement.scrollWidth - window.innerWidth,
       }
     }, selection)
@@ -340,6 +345,8 @@ test('populated action row stays complete in normal and delete selection states'
     expect(normal.left).toBeGreaterThanOrEqual(0)
     expect(normal.right).toBeLessThanOrEqual(width)
     expect(normal.minHeight).toBeGreaterThanOrEqual(44)
+    expect(normal.minWidth).toBeGreaterThanOrEqual(44)
+    expect(normal.rowSpread).toBeLessThanOrEqual(1)
     expect(normal.overflow).toBeLessThanOrEqual(1)
 
     await actions.getByRole('button', { name: '선택', exact: true }).click()
@@ -349,6 +356,8 @@ test('populated action row stays complete in normal and delete selection states'
     expect(selected.overlap, `${width}px delete controls`).toBe(false)
     expect(selected.right).toBeLessThanOrEqual(width)
     expect(selected.minHeight).toBeGreaterThanOrEqual(44)
+    expect(selected.minWidth).toBeGreaterThanOrEqual(44)
+    expect(selected.rowSpread).toBeLessThanOrEqual(1)
     expect(selected.overflow).toBeLessThanOrEqual(1)
     const more = actions.locator('.timetable-more-menu')
     await more.locator(':scope > summary').click()
@@ -359,3 +368,43 @@ test('populated action row stays complete in normal and delete selection states'
     await actions.getByRole('button', { name: '선택 취소' }).click()
   }
 })
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`toolbar capsule shares the adjacent glass material in ${colorScheme} mode`, async ({ page, request }) => {
+    await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' })
+    await seedTimetable(page, request)
+    await page.goto('./')
+    await page.getByRole('button', { name: '내 시간표' }).click()
+    const actions = page.locator('.timetable-action-buttons')
+    for (const width of [320, 360, 390, 430, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 })
+      const material = await actions.evaluate((container) => {
+        const capsule = container.querySelector('.timetable-view-switch')!
+        const neighbor = container.querySelector('.custom-event-add-button')!
+        const style = getComputedStyle(capsule)
+        const adjacent = getComputedStyle(neighbor)
+        const visible = [...container.children].filter((element) => element.getBoundingClientRect().width > 0)
+        const bounds = visible.map((element) => element.getBoundingClientRect())
+        return {
+          background: style.backgroundColor,
+          adjacentBackground: adjacent.backgroundColor,
+          backdrop: style.backdropFilter || style.getPropertyValue('-webkit-backdrop-filter'),
+          adjacentBackdrop: adjacent.backdropFilter || adjacent.getPropertyValue('-webkit-backdrop-filter'),
+          shadow: style.boxShadow,
+          adjacentShadow: adjacent.boxShadow,
+          rim: getComputedStyle(capsule, '::before').backgroundImage,
+          divider: getComputedStyle(capsule.querySelector('button')!, '::after').display,
+          rowSpread: Math.max(...bounds.map((box) => box.top)) - Math.min(...bounds.map((box) => box.top)),
+          right: Math.max(...bounds.map((box) => box.right)),
+        }
+      })
+      expect(material.background, `${width}px material`).toBe(material.adjacentBackground)
+      expect(material.backdrop).toBe(material.adjacentBackdrop)
+      expect(material.shadow).toBe(material.adjacentShadow)
+      expect(material.rim).toContain('linear-gradient')
+      expect(material.divider).toBe('block')
+      expect(material.rowSpread).toBeLessThanOrEqual(1)
+      expect(material.right).toBeLessThanOrEqual(width)
+    }
+  })
+}

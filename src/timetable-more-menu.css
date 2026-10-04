@@ -89,11 +89,37 @@
   padding:0!important;
   border:0!important;
   border-radius:999px!important;
-  background:var(--ios-surface-soft, #f1f1f1)!important;
-  background:color-mix(in srgb,var(--ios-label, #303030) 8%,var(--ios-surface-soft, #f1f1f1))!important;
-  box-shadow:inset 0 0 0 1px var(--ios-separator, #cfcfcf);
+  --control-rim-dark:rgba(0,0,0,.28);
+  --control-rim-white-mid:rgba(255,255,255,.28);
+  --control-rim-white-peak:rgba(255,255,255,.68);
+  background:var(--ios-surface-soft, rgba(255,255,255,.48))!important;
+  box-shadow:0 1px 3px rgba(15,23,42,.1);
+  backdrop-filter:blur(10px) saturate(180%);
+  -webkit-backdrop-filter:blur(10px) saturate(180%);
   overflow:hidden;
   white-space:nowrap;
+}
+
+/* The shared surface carries the same optical rim as the adjacent text chips. */
+.timetable-page .timetable-view-switch::before,
+.timetable-page .timetable-view-switch::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:8;
+  padding:1px;
+  border-radius:inherit;
+  pointer-events:none;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask-composite:exclude;
+}
+.timetable-page .timetable-view-switch::before{
+  background:linear-gradient(180deg,var(--control-rim-white-peak) 0%,var(--control-rim-white-mid) 8%,transparent 30%,transparent 70%,var(--control-rim-white-mid) 92%,var(--control-rim-white-peak) 100%);
+}
+.timetable-page .timetable-view-switch::after{
+  background:linear-gradient(90deg,var(--control-rim-dark) 0%,var(--control-rim-dark) 1.5%,transparent 10%,transparent 90%,var(--control-rim-dark) 98.5%,var(--control-rim-dark) 100%);
 }
 
 :root body .timetable-page .timetable-view-switch>button.ui-text-chip{
@@ -191,9 +217,9 @@
     position:relative;
     display:flex!important;
     align-items:center!important;
-    flex-wrap:wrap!important;
+    flex-wrap:nowrap!important;
     justify-content:flex-start!important;
-    gap:6px!important;
+    gap:3px!important;
     min-width:0;
     width:100%;
   }
@@ -221,18 +247,29 @@
     box-sizing:border-box;
     flex:0 0 auto;
     width:max-content!important;
-    min-width:0;
+    min-width:44px!important;
     min-height:44px!important;
     padding-block:.5em!important;
-    padding-inline:calc(var(--ui-control-height) / 2)!important;
+    padding-inline:8px!important;
     font-size:12px!important;
     line-height:1!important;
     white-space:nowrap!important;
     overflow-wrap:normal;
   }
   .timetable-page .timetable-empty-actions>.timetable-empty-backup{grid-column:auto;justify-self:auto;margin-left:0}
-  :root body .timetable-page .timetable-empty-actions>.timetable-empty-find-button{min-width:0!important}
+  :root body .timetable-page .timetable-empty-actions>.timetable-empty-find-button{min-width:44px!important}
+  :root body .timetable-page .timetable-view-switch>button.ui-text-chip{padding-inline:8px!important}
+  :root body .timetable-page .timetable-view-switch>button.ui-text-chip:first-child{padding-inline-start:12px!important}
+  :root body .timetable-page .timetable-view-switch>button.ui-text-chip:last-child{padding-inline-end:12px!important}
   .timetable-page .timetable-more-menu>div button{min-height:44px;font-size:12px!important}
+}
+
+@media(max-width:360px){
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons){gap:2px!important}
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>button.ui-text-chip,
+  :root body .timetable-page :is(.timetable-empty-actions,.timetable-action-buttons)>.timetable-more-menu>summary.ui-text-chip{padding-inline:4px!important}
+  :root body .timetable-page .timetable-view-switch>button.ui-text-chip:first-child{padding-inline-start:8px!important}
+  :root body .timetable-page .timetable-view-switch>button.ui-text-chip:last-child{padding-inline-end:8px!important}
 }
 
 @media(prefers-color-scheme:dark){
