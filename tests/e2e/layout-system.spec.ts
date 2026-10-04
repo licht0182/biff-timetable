@@ -329,11 +329,19 @@ test('keeps text and icon actions pill-shaped while the search input retains its
   for (const selector of ['.mobile-advanced-filter-toggle', '.chips button', '.detail-button']) {
     const control = page.locator(selector).first()
     await expect(control).toHaveClass(/ui-text-chip/)
+    if (selector === '.mobile-advanced-filter-toggle') {
+      await expect(control).toHaveAccessibleName('날짜·상영관·시간대 상세 필터')
+      await expect(control.locator('strong')).toBeVisible()
+    }
     const shape = await control.evaluate((element) => {
       const style = getComputedStyle(element)
       const box = element.getBoundingClientRect()
       const range = document.createRange()
-      range.selectNodeContents(element)
+      // Measure the visible label, excluding the clipped screen-reader description.
+      const label = element.matches('.mobile-advanced-filter-toggle')
+        ? element.querySelector('strong')!
+        : element
+      range.selectNodeContents(label)
       const text = range.getBoundingClientRect()
       return {
         radius: Number.parseFloat(style.borderRadius),
