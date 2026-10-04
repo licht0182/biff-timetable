@@ -1387,23 +1387,25 @@ export default function App() {
         {dataNote && <div className="layout-surface notice film-data-notice">{dataNote}{dataSource && <> <a href={dataSource} target="_blank" rel="noreferrer">공식 시간표 ↗</a></>}</div>}
         {filmDataFeedback}
         <section ref={filmControlsRef} id="film-controls" className="layout-surface controls enhanced-controls">
-          <FilmSearchAutocomplete
-            query={query}
-            suggestions={searchSuggestions}
-            onQueryChange={setQuery}
-            onSelect={() => window.setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }), 0)}
-            formatDate={formatDate}
-          />
-          <button
-            type="button"
-            className="ui-text-chip mobile-advanced-filter-toggle"
-            aria-expanded={mobileFiltersOpen}
-            aria-controls="film-advanced-filters"
-            onClick={() => setMobileFiltersOpen((open) => !open)}
-          >
-            <span>날짜·상영관·시간대</span>
-            <strong>{activeFilterCount > 0 ? `${activeFilterCount}개 적용` : mobileFiltersOpen ? '접기' : '상세 필터'}</strong>
-          </button>
+          <div className="film-search-filter-row">
+            <FilmSearchAutocomplete
+              query={query}
+              suggestions={searchSuggestions}
+              onQueryChange={setQuery}
+              onSelect={() => window.setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }), 0)}
+              formatDate={formatDate}
+            />
+            <button
+              type="button"
+              className="ui-text-chip mobile-advanced-filter-toggle"
+              aria-expanded={mobileFiltersOpen}
+              aria-controls="film-advanced-filters"
+              onClick={() => setMobileFiltersOpen((open) => !open)}
+            >
+              <span>날짜·상영관·시간대</span>
+              <strong>{activeFilterCount > 0 ? `${activeFilterCount}개 적용` : mobileFiltersOpen ? '접기' : '상세 필터'}</strong>
+            </button>
+          </div>
           {viewport.width > 700 && <div id="film-advanced-filters" className="filter-row" aria-labelledby="filter-sheet-title">{advancedFilterControls}</div>}
           <div className="chips" aria-label="상영작 섹션">{sections.map((item) => <button type="button" key={item} className={`ui-text-chip ${section === item ? 'active' : ''}`} aria-pressed={section === item} onClick={() => setSection(item)}>{item}</button>)}</div>
         </section>

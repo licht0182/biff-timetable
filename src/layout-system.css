@@ -605,6 +605,24 @@ body{min-width:0}
   }
 
   .controls input{min-height:var(--layout-touch-target)}
+  .film-page .film-search-filter-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-width:0;
+  }
+  .film-page .film-search-filter-row>.film-search-autocomplete{flex:1 1 0;min-width:0}
+  .film-page .film-search-filter-row>.mobile-advanced-filter-toggle{flex:0 0 auto;white-space:nowrap}
+  .film-page .film-search-filter-row>.mobile-advanced-filter-toggle>span{
+    position:absolute;
+    width:1px;
+    height:1px;
+    margin:-1px;
+    padding:0;
+    overflow:hidden;
+    clip-path:inset(50%);
+    border:0;
+  }
   .filter-row select,
   .time-range-inputs input,
   .time-range-action,
