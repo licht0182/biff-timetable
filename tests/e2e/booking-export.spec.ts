@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
+import { writeFile } from 'node:fs/promises'
 import { openPngExport } from './helpers/timetable-export'
 
 type Screening = { id: string; date: string; start: string; end?: string; venue: string }
@@ -106,6 +107,79 @@ async function emulateAppleAndPreserveExportHost(page: Page) {
       if (this instanceof HTMLElement && this.classList.contains('png-export-host')) return
       originalRemove.call(this)
     }
+  })
+}
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`keeps PNG text readable on an iPhone with ${colorScheme} appearance`, async ({ page, request }, testInfo) => {
+    const data = await screeningData(request)
+    const item = flatten(data)[0]
+    expect(item).toBeTruthy()
+    await emulateAppleAndPreserveExportHost(page)
+    await seedState(page, [item.screening.id], {}, {})
+    await page.setViewportSize({ width: 393, height: 852 })
+    await page.emulateMedia({ colorScheme })
+    await page.goto('./')
+    await page.getByRole('button', { name: '내 시간표' }).click()
+    await openPngExport(page)
+    await expect(page.locator('.png-ios-preview')).toBeVisible({ timeout: 20_000 })
+
+    const result = await page.evaluate(async () => {
+      const board = document.querySelector<HTMLElement>('.png-export-board')!
+      const heading = board.querySelector<HTMLElement>('h1')!
+      const title = board.querySelector<HTMLElement>('.png-export-event-title')!
+      const preview = document.querySelector<HTMLImageElement>('.png-ios-preview')!
+      await preview.decode()
+      const canvas = document.createElement('canvas')
+      canvas.width = preview.naturalWidth
+      canvas.height = preview.naturalHeight
+      const context = canvas.getContext('2d')!
+      context.drawImage(preview, 0, 0)
+      const boardRect = board.getBoundingClientRect()
+      const scale = preview.naturalWidth / boardRect.width
+      const inkPixels = (element: HTMLElement) => {
+        const rect = element.getBoundingClientRect()
+        const pixels = context.getImageData(
+          Math.round((rect.left - boardRect.left) * scale),
+          Math.round((rect.top - boardRect.top) * scale),
+          Math.max(1, Math.floor(rect.width * scale)),
+          Math.max(1, Math.floor(rect.height * scale)),
+        ).data
+        let count = 0
+        for (let index = 0; index < pixels.length; index += 4) {
+          if (pixels[index] < 100 && pixels[index + 1] < 100 && pixels[index + 2] < 100 && pixels[index + 3] > 200) count += 1
+        }
+        return count
+      }
+      const blob = await (await fetch(preview.src)).blob()
+      const bytes = new Uint8Array(await blob.arrayBuffer())
+      let binary = ''
+      bytes.forEach((byte) => { binary += String.fromCharCode(byte) })
+      return {
+        headingColor: getComputedStyle(heading).color,
+        titleColor: getComputedStyle(title).color,
+        headingFill: getComputedStyle(heading).getPropertyValue('-webkit-text-fill-color'),
+        titleFill: getComputedStyle(title).getPropertyValue('-webkit-text-fill-color'),
+        colorScheme: getComputedStyle(board).colorScheme,
+        headingShadow: getComputedStyle(heading).textShadow,
+        titleShadow: getComputedStyle(title).textShadow,
+        headingInk: inkPixels(heading),
+        titleInk: inkPixels(title),
+        png: btoa(binary),
+      }
+    })
+    const pngPath = testInfo.outputPath(`iphone-${colorScheme}.png`)
+    await writeFile(pngPath, Buffer.from(result.png, 'base64'))
+    await testInfo.attach(`iphone-${colorScheme}`, { path: pngPath, contentType: 'image/png' })
+    expect(result.headingColor).toBe('rgb(34, 34, 34)')
+    expect(result.titleColor).toBe('rgb(61, 61, 61)')
+    expect(result.headingFill).toBe(result.headingColor)
+    expect(result.titleFill).toBe(result.titleColor)
+    expect(result.colorScheme).toBe('light')
+    expect(result.headingShadow).toBe('none')
+    expect(result.titleShadow).toBe('none')
+    expect(result.headingInk).toBeGreaterThan(100)
+    expect(result.titleInk).toBeGreaterThan(100)
   })
 }
 
